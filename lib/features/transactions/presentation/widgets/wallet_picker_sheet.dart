@@ -14,6 +14,11 @@ Future<String?> showWalletPickerSheet(
   required List<Wallet> wallets,
   required Map<String, int> balances,
   required String? selectedId,
+  String hint = 'Questa scelta vale solo per questo movimento. Il portafoglio predefinito si cambia in Impostazioni.',
+
+  /// Nel trasferimento: l'altro portafoglio già scelto, indicato accanto al saldo.
+  String? otherSelectedId,
+  String? otherSelectedLabel,
 }) {
   return AppBottomSheet.show<String>(
     context,
@@ -29,7 +34,11 @@ Future<String?> showWalletPickerSheet(
                 checked: wallet.id == selectedId,
                 child: AppListRow(
                   title: wallet.name,
-                  subtitle: formatCents(balances[wallet.id] ?? wallet.initialBalanceCents),
+                  subtitle: [
+                    formatCents(balances[wallet.id] ?? wallet.initialBalanceCents),
+                    if (wallet.id == otherSelectedId && otherSelectedLabel != null)
+                      'già selezionato come $otherSelectedLabel',
+                  ].join(' · '),
                   trailing: _RadioDot(selected: wallet.id == selectedId),
                   onTap: () => Navigator.pop(sheetContext, wallet.id),
                 ),
@@ -37,10 +46,7 @@ Future<String?> showWalletPickerSheet(
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        Text(
-          'Questa scelta vale solo per questo movimento. Il portafoglio predefinito si cambia in Impostazioni.',
-          style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(height: 1.45),
-        ),
+        Text(hint, style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(height: 1.45)),
       ],
     ),
   );

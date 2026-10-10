@@ -13,7 +13,11 @@ class WalletsScreen extends StatelessWidget {
       title: 'Portafogli',
       leading: PlaceholderLeading.none,
       description: 'Patrimonio totale e portafogli per gruppo.',
-      links: {'Nuovo portafoglio': AppRoutes.newWallet, 'Portafoglio di esempio': AppRoutes.wallet('esempio')},
+      links: {
+        'Nuovo portafoglio': AppRoutes.newWallet,
+        'Portafoglio di esempio': AppRoutes.wallet('esempio'),
+        'Trasferisci': AppRoutes.add('transfer'),
+      },
     );
   }
 }

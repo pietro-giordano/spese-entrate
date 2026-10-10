@@ -17,8 +17,7 @@ final appDatabaseProvider = AppDatabaseProvider._();
 /// Unica istanza del database per tutta l'app. Nei test si sostituisce con
 /// `appDatabaseProvider.overrideWithValue(AppDatabase(NativeDatabase.memory()))`.
 
-final class AppDatabaseProvider
-    extends $FunctionalProvider<AppDatabase, AppDatabase, AppDatabase>
+final class AppDatabaseProvider extends $FunctionalProvider<AppDatabase, AppDatabase, AppDatabase>
     with $Provider<AppDatabase> {
   /// Unica istanza del database per tutta l'app. Nei test si sostituisce con
   /// `appDatabaseProvider.overrideWithValue(AppDatabase(NativeDatabase.memory()))`.
@@ -38,8 +37,7 @@ final class AppDatabaseProvider
 
   @$internal
   @override
-  $ProviderElement<AppDatabase> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<AppDatabase> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
   AppDatabase create(Ref ref) {
@@ -48,10 +46,7 @@ final class AppDatabaseProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(AppDatabase value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<AppDatabase>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<AppDatabase>(value));
   }
 }
 

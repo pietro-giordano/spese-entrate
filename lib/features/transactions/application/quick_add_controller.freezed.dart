@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 mixin _$QuickAddState {
 
  TransactionType get type; LocalDate get date; int get amountCents; String? get categoryId; Set<String> get labelIds;/// Portafogli scelti a mano, uno per tipo (null = usa il predefinito).
- String? get expenseWalletId; String? get incomeWalletId; String get note;/// Diventa true al primo tentativo di salvataggio: da lì si mostrano gli errori.
+ String? get expenseWalletId; String? get incomeWalletId;/// Portafogli scelti a mano per il trasferimento.
+ String? get fromWalletId; String? get toWalletId; String get note;/// Allegati scelti, copiati nella cartella dell'app solo al salvataggio.
+ List<PickedAttachment> get attachments;/// Diventa true al primo tentativo di salvataggio: da lì si mostrano gli errori.
  bool get showErrors; bool get saving;
 /// Create a copy of QuickAddState
 /// with the given fields replaced by the non-null parameter values.
@@ -29,20 +31,20 @@ $QuickAddStateCopyWith<QuickAddState> get copyWith => _$QuickAddStateCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as QuickAddState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuickAddState&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.amountCents, _this.amountCents) || other.amountCents == _this.amountCents)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.expenseWalletId, _this.expenseWalletId) || other.expenseWalletId == _this.expenseWalletId)&&(identical(other.incomeWalletId, _this.incomeWalletId) || other.incomeWalletId == _this.incomeWalletId)&&(identical(other.note, _this.note) || other.note == _this.note)&&(identical(other.showErrors, _this.showErrors) || other.showErrors == _this.showErrors)&&(identical(other.saving, _this.saving) || other.saving == _this.saving));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuickAddState&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.amountCents, _this.amountCents) || other.amountCents == _this.amountCents)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.expenseWalletId, _this.expenseWalletId) || other.expenseWalletId == _this.expenseWalletId)&&(identical(other.incomeWalletId, _this.incomeWalletId) || other.incomeWalletId == _this.incomeWalletId)&&(identical(other.fromWalletId, _this.fromWalletId) || other.fromWalletId == _this.fromWalletId)&&(identical(other.toWalletId, _this.toWalletId) || other.toWalletId == _this.toWalletId)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.attachments, _this.attachments)&&(identical(other.showErrors, _this.showErrors) || other.showErrors == _this.showErrors)&&(identical(other.saving, _this.saving) || other.saving == _this.saving));
 }
 
 
 @override
 int get hashCode {
   final _this = this as QuickAddState;
-  return Object.hash(runtimeType,_this.type,_this.date,_this.amountCents,_this.categoryId,const DeepCollectionEquality().hash(_this.labelIds),_this.expenseWalletId,_this.incomeWalletId,_this.note,_this.showErrors,_this.saving);
+  return Object.hash(runtimeType,_this.type,_this.date,_this.amountCents,_this.categoryId,const DeepCollectionEquality().hash(_this.labelIds),_this.expenseWalletId,_this.incomeWalletId,_this.fromWalletId,_this.toWalletId,_this.note,const DeepCollectionEquality().hash(_this.attachments),_this.showErrors,_this.saving);
 }
 
 @override
 String toString() {
   final _this = this as QuickAddState;
-  return 'QuickAddState(type: ${_this.type}, date: ${_this.date}, amountCents: ${_this.amountCents}, categoryId: ${_this.categoryId}, labelIds: ${_this.labelIds}, expenseWalletId: ${_this.expenseWalletId}, incomeWalletId: ${_this.incomeWalletId}, note: ${_this.note}, showErrors: ${_this.showErrors}, saving: ${_this.saving})';
+  return 'QuickAddState(type: ${_this.type}, date: ${_this.date}, amountCents: ${_this.amountCents}, categoryId: ${_this.categoryId}, labelIds: ${_this.labelIds}, expenseWalletId: ${_this.expenseWalletId}, incomeWalletId: ${_this.incomeWalletId}, fromWalletId: ${_this.fromWalletId}, toWalletId: ${_this.toWalletId}, note: ${_this.note}, attachments: ${_this.attachments}, showErrors: ${_this.showErrors}, saving: ${_this.saving})';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $QuickAddStateCopyWith<$Res>  {
   factory $QuickAddStateCopyWith(QuickAddState value, $Res Function(QuickAddState) _then) = _$QuickAddStateCopyWithImpl;
 @useResult
 $Res call({
- TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String note, bool showErrors, bool saving
+ TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<PickedAttachment> attachments, bool showErrors, bool saving
 });
 
 
@@ -70,7 +72,7 @@ class _$QuickAddStateCopyWithImpl<$Res>
 
 /// Create a copy of QuickAddState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? note = null,Object? showErrors = null,Object? saving = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? attachments = null,Object? showErrors = null,Object? saving = null,}) {
   return _then(QuickAddState(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -79,8 +81,11 @@ as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // igno
 as String?,labelIds: null == labelIds ? _self.labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,expenseWalletId: freezed == expenseWalletId ? _self.expenseWalletId : expenseWalletId // ignore: cast_nullable_to_non_nullable
 as String?,incomeWalletId: freezed == incomeWalletId ? _self.incomeWalletId : incomeWalletId // ignore: cast_nullable_to_non_nullable
+as String?,fromWalletId: freezed == fromWalletId ? _self.fromWalletId : fromWalletId // ignore: cast_nullable_to_non_nullable
+as String?,toWalletId: freezed == toWalletId ? _self.toWalletId : toWalletId // ignore: cast_nullable_to_non_nullable
 as String?,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
-as String,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
+as String,attachments: null == attachments ? _self.attachments : attachments // ignore: cast_nullable_to_non_nullable
+as List<PickedAttachment>,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
 as bool,saving: null == saving ? _self.saving : saving // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -167,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String note,  bool showErrors,  bool saving)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<PickedAttachment> attachments,  bool showErrors,  bool saving)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QuickAddState() when $default != null:
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.note,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.attachments,_that.showErrors,_that.saving);case _:
   return orElse();
 
 }
@@ -188,10 +193,10 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String note,  bool showErrors,  bool saving)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<PickedAttachment> attachments,  bool showErrors,  bool saving)  $default,) {final _that = this;
 switch (_that) {
 case _QuickAddState():
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.note,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.attachments,_that.showErrors,_that.saving);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +213,10 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String note,  bool showErrors,  bool saving)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<PickedAttachment> attachments,  bool showErrors,  bool saving)?  $default,) {final _that = this;
 switch (_that) {
 case _QuickAddState() when $default != null:
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.note,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.attachments,_that.showErrors,_that.saving);case _:
   return null;
 
 }
@@ -223,7 +228,7 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 
 
 class _QuickAddState extends QuickAddState {
-  const _QuickAddState({required this.type, required this.date, this.amountCents = 0, this.categoryId,  Set<String> labelIds = const <String>{}, this.expenseWalletId, this.incomeWalletId, this.note = '', this.showErrors = false, this.saving = false}): _labelIds = labelIds,super._();
+  const _QuickAddState({required this.type, required this.date, this.amountCents = 0, this.categoryId,  Set<String> labelIds = const <String>{}, this.expenseWalletId, this.incomeWalletId, this.fromWalletId, this.toWalletId, this.note = '',  List<PickedAttachment> attachments = const <PickedAttachment>[], this.showErrors = false, this.saving = false}): _labelIds = labelIds,_attachments = attachments,super._();
   
 
 @override final  TransactionType type;
@@ -240,7 +245,19 @@ class _QuickAddState extends QuickAddState {
 /// Portafogli scelti a mano, uno per tipo (null = usa il predefinito).
 @override final  String? expenseWalletId;
 @override final  String? incomeWalletId;
+/// Portafogli scelti a mano per il trasferimento.
+@override final  String? fromWalletId;
+@override final  String? toWalletId;
 @override@JsonKey() final  String note;
+/// Allegati scelti, copiati nella cartella dell'app solo al salvataggio.
+ final  List<PickedAttachment> _attachments;
+/// Allegati scelti, copiati nella cartella dell'app solo al salvataggio.
+@override@JsonKey() List<PickedAttachment> get attachments {
+  if (_attachments is EqualUnmodifiableListView) return _attachments;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_attachments);
+}
+
 /// Diventa true al primo tentativo di salvataggio: da lì si mostrano gli errori.
 @override@JsonKey() final  bool showErrors;
 @override@JsonKey() final  bool saving;
@@ -255,18 +272,18 @@ _$QuickAddStateCopyWith<_QuickAddState> get copyWith => __$QuickAddStateCopyWith
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuickAddState&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.amountCents, amountCents) || other.amountCents == amountCents)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.expenseWalletId, expenseWalletId) || other.expenseWalletId == expenseWalletId)&&(identical(other.incomeWalletId, incomeWalletId) || other.incomeWalletId == incomeWalletId)&&(identical(other.note, note) || other.note == note)&&(identical(other.showErrors, showErrors) || other.showErrors == showErrors)&&(identical(other.saving, saving) || other.saving == saving));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuickAddState&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.amountCents, amountCents) || other.amountCents == amountCents)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.expenseWalletId, expenseWalletId) || other.expenseWalletId == expenseWalletId)&&(identical(other.incomeWalletId, incomeWalletId) || other.incomeWalletId == incomeWalletId)&&(identical(other.fromWalletId, fromWalletId) || other.fromWalletId == fromWalletId)&&(identical(other.toWalletId, toWalletId) || other.toWalletId == toWalletId)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.attachments, _attachments)&&(identical(other.showErrors, showErrors) || other.showErrors == showErrors)&&(identical(other.saving, saving) || other.saving == saving));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,type,date,amountCents,categoryId,const DeepCollectionEquality().hash(_labelIds),expenseWalletId,incomeWalletId,note,showErrors,saving);
+    return Object.hash(runtimeType,type,date,amountCents,categoryId,const DeepCollectionEquality().hash(_labelIds),expenseWalletId,incomeWalletId,fromWalletId,toWalletId,note,const DeepCollectionEquality().hash(_attachments),showErrors,saving);
 }
 
 @override
 String toString() {
-    return 'QuickAddState(type: $type, date: $date, amountCents: $amountCents, categoryId: $categoryId, labelIds: $labelIds, expenseWalletId: $expenseWalletId, incomeWalletId: $incomeWalletId, note: $note, showErrors: $showErrors, saving: $saving)';
+    return 'QuickAddState(type: $type, date: $date, amountCents: $amountCents, categoryId: $categoryId, labelIds: $labelIds, expenseWalletId: $expenseWalletId, incomeWalletId: $incomeWalletId, fromWalletId: $fromWalletId, toWalletId: $toWalletId, note: $note, attachments: $attachments, showErrors: $showErrors, saving: $saving)';
 }
 
 
@@ -277,7 +294,7 @@ abstract mixin class _$QuickAddStateCopyWith<$Res> implements $QuickAddStateCopy
   factory _$QuickAddStateCopyWith(_QuickAddState value, $Res Function(_QuickAddState) _then) = __$QuickAddStateCopyWithImpl;
 @override @useResult
 $Res call({
- TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String note, bool showErrors, bool saving
+ TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<PickedAttachment> attachments, bool showErrors, bool saving
 });
 
 
@@ -294,7 +311,7 @@ class __$QuickAddStateCopyWithImpl<$Res>
 
 /// Create a copy of QuickAddState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? note = null,Object? showErrors = null,Object? saving = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? attachments = null,Object? showErrors = null,Object? saving = null,}) {
   return _then(_QuickAddState(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -303,8 +320,11 @@ as int,categoryId: freezed == categoryId ? _self.categoryId : categoryId // igno
 as String?,labelIds: null == labelIds ? _self._labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,expenseWalletId: freezed == expenseWalletId ? _self.expenseWalletId : expenseWalletId // ignore: cast_nullable_to_non_nullable
 as String?,incomeWalletId: freezed == incomeWalletId ? _self.incomeWalletId : incomeWalletId // ignore: cast_nullable_to_non_nullable
+as String?,fromWalletId: freezed == fromWalletId ? _self.fromWalletId : fromWalletId // ignore: cast_nullable_to_non_nullable
+as String?,toWalletId: freezed == toWalletId ? _self.toWalletId : toWalletId // ignore: cast_nullable_to_non_nullable
 as String?,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
-as String,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
+as String,attachments: null == attachments ? _self._attachments : attachments // ignore: cast_nullable_to_non_nullable
+as List<PickedAttachment>,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
 as bool,saving: null == saving ? _self.saving : saving // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

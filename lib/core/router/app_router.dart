@@ -82,8 +82,11 @@ GoRouter appRouter(Ref ref) {
         pageBuilder: (context, state) => _slideUpPage(
           state,
           QuickAddScreen(
-            // Per ora solo spese ed entrate: il trasferimento arriverà in un passo successivo.
-            type: state.uri.queryParameters['type'] == 'income' ? TransactionType.income : TransactionType.expense,
+            type: switch (state.uri.queryParameters['type']) {
+              'income' => TransactionType.income,
+              'transfer' => TransactionType.transfer,
+              _ => TransactionType.expense,
+            },
           ),
         ),
       ),

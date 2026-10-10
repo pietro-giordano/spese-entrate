@@ -1,4 +1,5 @@
 import '../../core/dates.dart';
+import '../models/attachment.dart';
 import '../models/transaction.dart';
 
 abstract interface class TransactionRepository {
@@ -11,7 +12,12 @@ abstract interface class TransactionRepository {
   Future<Transaction?> getById(String id);
 
   /// Crea o aggiorna per ID, comprese le label del movimento.
-  Future<void> save(Transaction transaction);
+  /// [attachments] sono allegati da aggiungere (i file sono già nella cartella dell'app):
+  /// vengono scritti nella stessa transazione del movimento.
+  Future<void> save(Transaction transaction, {List<Attachment> attachments = const []});
+
+  /// Allegati non cancellati del movimento, dal primo aggiunto.
+  Future<List<Attachment>> getAttachments(String transactionId);
 
   /// Cancellazione logica. Label e allegati restano, per poter annullare.
   Future<void> delete(String id);

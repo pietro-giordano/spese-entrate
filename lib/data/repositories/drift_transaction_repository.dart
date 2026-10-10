@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/dates.dart';
 import '../../core/ids.dart';
+import '../../domain/models/attachment.dart';
 import '../../domain/models/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../db/app_database.dart';
@@ -31,11 +32,23 @@ class DriftTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<void> save(Transaction transaction) {
+  Future<void> save(Transaction transaction, {List<Attachment> attachments = const []}) {
     return _db.transaction(() async {
       await _db.upsertSynced(_db.transactions, transaction.id, transactionToCompanion(transaction));
       await _syncLabels(transaction.id, transaction.labelIds.toSet());
+      for (final attachment in attachments) {
+        await _db.upsertSynced(_db.attachments, attachment.id, attachmentToCompanion(attachment));
+      }
     });
+  }
+
+  @override
+  Future<List<Attachment>> getAttachments(String transactionId) async {
+    final query = _db.select(_db.attachments)
+      ..whereNotDeleted()
+      ..where((a) => a.transactionId.equals(transactionId))
+      ..orderBy([(a) => OrderingTerm(expression: a.createdAt), (a) => OrderingTerm(expression: a.id)]);
+    return (await query.get()).map(attachmentFromRow).toList();
   }
 
   @override

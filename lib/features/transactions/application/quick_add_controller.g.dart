@@ -16,20 +16,17 @@ final quickAddControllerProvider = QuickAddControllerFamily._();
 
 /// Stato dell'inserimento rapido. [initialType] arriva dalla rotta (`/add?type=`).
 /// Si auto-elimina quando la schermata si chiude, così ogni apertura riparte da zero.
-final class QuickAddControllerProvider
-    extends $NotifierProvider<QuickAddController, QuickAddState> {
+final class QuickAddControllerProvider extends $NotifierProvider<QuickAddController, QuickAddState> {
   /// Stato dell'inserimento rapido. [initialType] arriva dalla rotta (`/add?type=`).
   /// Si auto-elimina quando la schermata si chiude, così ogni apertura riparte da zero.
-  QuickAddControllerProvider._({
-    required QuickAddControllerFamily super.from,
-    required TransactionType super.argument,
-  }) : super(
-         retry: null,
-         name: r'quickAddControllerProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
+  QuickAddControllerProvider._({required QuickAddControllerFamily super.from, required TransactionType super.argument})
+    : super(
+        retry: null,
+        name: r'quickAddControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$quickAddControllerHash();
@@ -47,10 +44,7 @@ final class QuickAddControllerProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(QuickAddState value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<QuickAddState>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<QuickAddState>(value));
   }
 
   @override
@@ -64,21 +58,13 @@ final class QuickAddControllerProvider
   }
 }
 
-String _$quickAddControllerHash() =>
-    r'c8deaf3b459d65ab2470b26be29bb26351c4f978';
+String _$quickAddControllerHash() => r'36eb456051a02ac07918a78ba2a4372a29140319';
 
 /// Stato dell'inserimento rapido. [initialType] arriva dalla rotta (`/add?type=`).
 /// Si auto-elimina quando la schermata si chiude, così ogni apertura riparte da zero.
 
 final class QuickAddControllerFamily extends $Family
-    with
-        $ClassFamilyOverride<
-          QuickAddController,
-          QuickAddState,
-          QuickAddState,
-          QuickAddState,
-          TransactionType
-        > {
+    with $ClassFamilyOverride<QuickAddController, QuickAddState, QuickAddState, QuickAddState, TransactionType> {
   QuickAddControllerFamily._()
     : super(
         retry: null,
@@ -112,12 +98,7 @@ abstract class _$QuickAddController extends $Notifier<QuickAddState> {
     final ref = this.ref as $Ref<QuickAddState, QuickAddState>;
     final element =
         ref.element
-            as $ClassProviderElement<
-              AnyNotifier<QuickAddState, QuickAddState>,
-              QuickAddState,
-              Object?,
-              Object?
-            >;
+            as $ClassProviderElement<AnyNotifier<QuickAddState, QuickAddState>, QuickAddState, Object?, Object?>;
     return element.handleCreate(ref, () => build(_$args));
   }
 }

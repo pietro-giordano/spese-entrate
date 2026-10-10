@@ -15,13 +15,7 @@ final walletsProvider = WalletsProvider._();
 
 /// Portafogli non cancellati, archiviati compresi.
 
-final class WalletsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Wallet>>,
-          List<Wallet>,
-          Stream<List<Wallet>>
-        >
+final class WalletsProvider extends $FunctionalProvider<AsyncValue<List<Wallet>>, List<Wallet>, Stream<List<Wallet>>>
     with $FutureModifier<List<Wallet>>, $StreamProvider<List<Wallet>> {
   /// Portafogli non cancellati, archiviati compresi.
   WalletsProvider._()
@@ -40,9 +34,7 @@ final class WalletsProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<Wallet>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<List<Wallet>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<List<Wallet>> create(Ref ref) {
@@ -60,12 +52,7 @@ final walletBalancesProvider = WalletBalancesProvider._();
 /// Saldo di ogni portafoglio, per ID. Si ricalcola quando cambiano portafogli o movimenti.
 
 final class WalletBalancesProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<Map<String, int>>,
-          Map<String, int>,
-          FutureOr<Map<String, int>>
-        >
+    extends $FunctionalProvider<AsyncValue<Map<String, int>>, Map<String, int>, FutureOr<Map<String, int>>>
     with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
   /// Saldo di ogni portafoglio, per ID. Si ricalcola quando cambiano portafogli o movimenti.
   WalletBalancesProvider._()
@@ -84,9 +71,7 @@ final class WalletBalancesProvider
 
   @$internal
   @override
-  $FutureProviderElement<Map<String, int>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<Map<String, int>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<Map<String, int>> create(Ref ref) {
@@ -103,8 +88,7 @@ final netWorthProvider = NetWorthProvider._();
 
 /// Patrimonio totale (portafogli inclusi nel totale e non archiviati).
 
-final class NetWorthProvider
-    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+final class NetWorthProvider extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
     with $FutureModifier<int>, $FutureProvider<int> {
   /// Patrimonio totale (portafogli inclusi nel totale e non archiviati).
   NetWorthProvider._()
@@ -123,8 +107,7 @@ final class NetWorthProvider
 
   @$internal
   @override
-  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<int> create(Ref ref) {

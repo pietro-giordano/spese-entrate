@@ -12,13 +12,7 @@ part of 'settings_providers.dart';
 @ProviderFor(appSettings)
 final appSettingsProvider = AppSettingsProvider._();
 
-final class AppSettingsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<AppSettings>,
-          AppSettings,
-          Stream<AppSettings>
-        >
+final class AppSettingsProvider extends $FunctionalProvider<AsyncValue<AppSettings>, AppSettings, Stream<AppSettings>>
     with $FutureModifier<AppSettings>, $StreamProvider<AppSettings> {
   AppSettingsProvider._()
     : super(
@@ -36,9 +30,7 @@ final class AppSettingsProvider
 
   @$internal
   @override
-  $StreamProviderElement<AppSettings> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<AppSettings> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<AppSettings> create(Ref ref) {
@@ -56,12 +48,7 @@ final categoriesProvider = CategoriesProvider._();
 /// Categorie non cancellate (anche archiviate).
 
 final class CategoriesProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Category>>,
-          List<Category>,
-          Stream<List<Category>>
-        >
+    extends $FunctionalProvider<AsyncValue<List<Category>>, List<Category>, Stream<List<Category>>>
     with $FutureModifier<List<Category>>, $StreamProvider<List<Category>> {
   /// Categorie non cancellate (anche archiviate).
   CategoriesProvider._()
@@ -80,9 +67,7 @@ final class CategoriesProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<Category>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<List<Category>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<List<Category>> create(Ref ref) {
@@ -95,13 +80,7 @@ String _$categoriesHash() => r'521ced16a330d78b1c4bf47536d6622a3b38d6b1';
 @ProviderFor(labels)
 final labelsProvider = LabelsProvider._();
 
-final class LabelsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Label>>,
-          List<Label>,
-          Stream<List<Label>>
-        >
+final class LabelsProvider extends $FunctionalProvider<AsyncValue<List<Label>>, List<Label>, Stream<List<Label>>>
     with $FutureModifier<List<Label>>, $StreamProvider<List<Label>> {
   LabelsProvider._()
     : super(
@@ -119,9 +98,7 @@ final class LabelsProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<Label>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<List<Label>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<List<Label>> create(Ref ref) {

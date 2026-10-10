@@ -3,6 +3,7 @@
 
 import 'package:drift/drift.dart';
 
+import '../../domain/models/attachment.dart';
 import '../../domain/models/category.dart';
 import '../../domain/models/label.dart';
 import '../../domain/models/transaction.dart';
@@ -86,4 +87,23 @@ TransactionsCompanion transactionToCompanion(Transaction tx) => TransactionsComp
   note: Value(tx.note),
   recurrenceId: Value(tx.recurrenceId),
   occurrenceDate: Value(tx.occurrenceDate),
+);
+
+Attachment attachmentFromRow(AttachmentRow row) => Attachment(
+  id: row.id,
+  transactionId: row.transactionId,
+  localPath: row.localPath,
+  mimeType: row.mimeType,
+  sizeBytes: row.sizeBytes,
+  sha256: row.sha256,
+  remoteUrl: row.remoteUrl,
+);
+
+AttachmentsCompanion attachmentToCompanion(Attachment attachment) => AttachmentsCompanion(
+  transactionId: Value(attachment.transactionId),
+  localPath: Value(attachment.localPath),
+  mimeType: Value(attachment.mimeType),
+  sizeBytes: Value(attachment.sizeBytes),
+  sha256: Value(attachment.sha256),
+  remoteUrl: Value(attachment.remoteUrl),
 );
