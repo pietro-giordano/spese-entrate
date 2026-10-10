@@ -1,6 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
+
+import 'core/theme/app_theme.dart';
+import 'core/widgets/amount_text.dart';
+import 'core/widgets/component_catalog_screen.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -10,7 +15,9 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'Spese & Entrate',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'Manrope'),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       locale: const Locale('it', 'IT'),
       supportedLocales: const [Locale('it', 'IT')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -26,7 +33,6 @@ class FontPreviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final currency = NumberFormat.currency(locale: 'it_IT', symbol: '€');
     final today = DateFormat.yMMMMEEEEd().format(DateTime.now());
 
     return Scaffold(
@@ -47,15 +53,17 @@ class FontPreviewScreen extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 24),
-            for (final amount in [1234.56, 89.9, 11111.11])
-              Text(
-                currency.format(amount),
-                textAlign: TextAlign.right,
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+            for (final cents in [123456, 8990, 1111111])
+              AmountText(cents, textAlign: TextAlign.right, style: textTheme.titleLarge),
+            // kDebugMode è una costante: in release il compilatore elimina questo ramo.
+            if (kDebugMode) ...[
+              const SizedBox(height: 32),
+              OutlinedButton(
+                onPressed: () =>
+                    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ComponentCatalogScreen())),
+                child: const Text('Catalogo componenti'),
               ),
+            ],
           ],
         ),
       ),
