@@ -115,6 +115,15 @@ void main() {
   });
 
   group('movimenti', () {
+    // I collegamenti si creano solo verso label esistenti e non eliminate.
+    setUp(() async {
+      final labels = DriftLabelRepository(db);
+      for (final id in ['home', 'holiday', 'work']) {
+        await labels.save(Label(id: id, name: id, color: 0));
+      }
+      seededOutbox = (await db.select(db.outbox).get()).length;
+    });
+
     test('salva e rilegge le label', () async {
       final repo = DriftTransactionRepository(db);
       final tx = expense(labelIds: ['home', 'holiday']);

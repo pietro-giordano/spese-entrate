@@ -55,8 +55,10 @@ class AppListRow extends StatelessWidget {
               ),
               if (value != null) ...[
                 const SizedBox(width: 10),
-                // Il titolo ha la precedenza: il valore si accorcia con i puntini.
-                Flexible(
+                // Il titolo ha la precedenza: il valore resta accanto al chevron, al massimo 160 px,
+                // e oltre si accorcia con i puntini.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 160),
                   child: Text(
                     value!,
                     maxLines: 1,

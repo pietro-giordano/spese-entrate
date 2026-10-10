@@ -110,6 +110,8 @@ void main() {
     for (final MapEntry(key: location, value: title) in expectedTitles.entries) {
       router.go(location);
       await tester.pumpAndSettle();
+      // Le schermate lasciate chiudono i loro stream Drift con un timer a durata zero: lo si fa scattare.
+      await tester.pump(const Duration(milliseconds: 10));
       // "Portafogli" compare anche nella barra dei tab: basta che il titolo ci sia.
       expect(find.text(title), findsWidgets, reason: location);
       expect(find.textContaining('GoException'), findsNothing, reason: location);

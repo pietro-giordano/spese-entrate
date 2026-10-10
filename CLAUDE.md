@@ -36,7 +36,7 @@ Alla fine di ogni passo, sempre, in quest'ordine:
 - ID e hash: `uuid`, `crypto`.
 - Grafici: `fl_chart`.
 - File e media: `image_picker`, `file_picker`, `path_provider`, `path`.
-- Sistema: `local_auth`, `share_plus`.
+- Sistema: `local_auth`, `share_plus`, `package_info_plus` (versione e build nelle Impostazioni).
 - Formati: `intl`, `flutter_localizations` (sdk), `csv`, `collection`.
 - Lint: `flutter_lints`.
 - Solo al passo 16: `flutter_launcher_icons`, `flutter_native_splash` (dev).
@@ -95,6 +95,13 @@ La logica di dominio sta in `domain/services/` come funzioni pure, testabili sen
 - **Duplica** crea sempre un nuovo ID. Un futuro **ripristino** aggiorna i record esistenti per ID,
   non li ricrea.
 - `device_id` generato al primo avvio e salvato in `app_meta`.
+- **Lapidi definitive**: un record cancellato (`deleted_at`) non torna mai attivo con un salvataggio
+  o un collegamento (es. `save` di una label cancellata → `DeletedLabelException`; i movimenti
+  non si ricollegano a label cancellate; non si unisce verso/da record cancellati). Per riusare
+  un nome si crea un record nuovo con un nuovo ID.
+- **Operazioni composte** (unisci, elimina con collegamenti, aggiorna saldo): una sola transazione
+  Drift nel repository, outbox compreso. Se servono più repository si usa `AtomicWrites`.
+  I test di rollback simulano l'errore con un trigger SQLite `RAISE(ABORT)`.
 
 ## Schema
 
@@ -206,6 +213,14 @@ Al primo avvio, se il database è vuoto:
 - La cancellazione logica del movimento non elimina i file (servono per l'annullamento).
 - Info.plist: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSFaceIDUsageDescription`
   con testi in italiano.
+
+## Privacy
+
+- Nel selettore delle app non si vedono importi: Android 13+ `setRecentsScreenshotEnabled(false)`,
+  prima di Android 13 `FLAG_SECURE` (blocca anche gli screenshot); iOS vista di copertura nativa
+  su `UIScene.willDeactivateNotification` in `AppDelegate` (non si sovrascrivono i metodi di
+  `FlutterSceneDelegate`); in Flutter un velo in `AppLockGate` quando lo stato non è `resumed`.
+- Il velo è indipendente dal blocco con biometria: non cambia né il timer né lo sblocco.
 
 ## Export
 

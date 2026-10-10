@@ -8,14 +8,17 @@ part of 'transaction_list_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
+/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri.
+/// Parte dalla "vista predefinita" delle impostazioni (di base il mese) che contiene oggi.
 
 @ProviderFor(SelectedPeriod)
 final selectedPeriodProvider = SelectedPeriodProvider._();
 
-/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
+/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri.
+/// Parte dalla "vista predefinita" delle impostazioni (di base il mese) che contiene oggi.
 final class SelectedPeriodProvider extends $NotifierProvider<SelectedPeriod, Period> {
-  /// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
+  /// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri.
+  /// Parte dalla "vista predefinita" delle impostazioni (di base il mese) che contiene oggi.
   SelectedPeriodProvider._()
     : super(
         from: null,
@@ -40,9 +43,10 @@ final class SelectedPeriodProvider extends $NotifierProvider<SelectedPeriod, Per
   }
 }
 
-String _$selectedPeriodHash() => r'd124384ea45f0cb11778323e430c4f8da2563ae5';
+String _$selectedPeriodHash() => r'7a8d984d98e6573e17324fc604abaddf93ebf48e';
 
-/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
+/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri.
+/// Parte dalla "vista predefinita" delle impostazioni (di base il mese) che contiene oggi.
 
 abstract class _$SelectedPeriod extends $Notifier<Period> {
   Period build();

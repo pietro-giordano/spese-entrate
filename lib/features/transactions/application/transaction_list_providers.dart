@@ -2,11 +2,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/clock.dart';
 import '../../../core/dates.dart';
+import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/statistics.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/transaction_filters.dart';
 import '../../../domain/services/statistics.dart';
 import '../../../domain/services/transaction_list.dart';
+import '../../settings/application/settings_providers.dart';
 import 'transaction_providers.dart';
 
 part 'transaction_list_providers.g.dart';
@@ -20,11 +22,16 @@ Period changePeriodType(Period current, PeriodType type, {required LocalDate tod
   return Period.containing(type, anchor, weekStart: weekStart);
 }
 
-/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
+/// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri.
+/// Parte dalla "vista predefinita" delle impostazioni (di base il mese) che contiene oggi.
 @Riverpod(keepAlive: true)
 class SelectedPeriod extends _$SelectedPeriod {
   @override
-  Period build() => Period.containing(PeriodType.month, ref.read(todayProvider));
+  Period build() {
+    final settings = ref.read(appSettingsProvider).value ?? const AppSettings();
+    final type = settings.defaultPeriod == PeriodType.custom ? PeriodType.month : settings.defaultPeriod;
+    return Period.containing(type, ref.read(todayProvider), weekStart: settings.weekStart);
+  }
 
   void set(Period period) => state = period;
 

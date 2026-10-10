@@ -232,3 +232,45 @@ final class AtomicWritesProvider extends $FunctionalProvider<AtomicWrites, Atomi
 }
 
 String _$atomicWritesHash() => r'bc323f91d74bab0a194d1cbd108f6ee9d66d9ea4';
+
+/// Preferenze solo locali (tema, blocco, profilo) in `app_meta`.
+
+@ProviderFor(localPreferencesRepository)
+final localPreferencesRepositoryProvider = LocalPreferencesRepositoryProvider._();
+
+/// Preferenze solo locali (tema, blocco, profilo) in `app_meta`.
+
+final class LocalPreferencesRepositoryProvider
+    extends $FunctionalProvider<LocalPreferencesRepository, LocalPreferencesRepository, LocalPreferencesRepository>
+    with $Provider<LocalPreferencesRepository> {
+  /// Preferenze solo locali (tema, blocco, profilo) in `app_meta`.
+  LocalPreferencesRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'localPreferencesRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$localPreferencesRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LocalPreferencesRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  LocalPreferencesRepository create(Ref ref) {
+    return localPreferencesRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LocalPreferencesRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<LocalPreferencesRepository>(value));
+  }
+}
+
+String _$localPreferencesRepositoryHash() => r'4fdb201dc92912060d6887cd2699671277606e2d';

@@ -107,3 +107,114 @@ final class LabelsProvider extends $FunctionalProvider<AsyncValue<List<Label>>, 
 }
 
 String _$labelsHash() => r'481e6a3374e8111eb9294f28bcb29a491527f090';
+
+/// Preferenze solo di questo dispositivo (tema, blocco con biometria, profilo).
+
+@ProviderFor(localPreferences)
+final localPreferencesProvider = LocalPreferencesProvider._();
+
+/// Preferenze solo di questo dispositivo (tema, blocco con biometria, profilo).
+
+final class LocalPreferencesProvider
+    extends $FunctionalProvider<AsyncValue<LocalPreferences>, LocalPreferences, Stream<LocalPreferences>>
+    with $FutureModifier<LocalPreferences>, $StreamProvider<LocalPreferences> {
+  /// Preferenze solo di questo dispositivo (tema, blocco con biometria, profilo).
+  LocalPreferencesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'localPreferencesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$localPreferencesHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<LocalPreferences> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<LocalPreferences> create(Ref ref) {
+    return localPreferences(ref);
+  }
+}
+
+String _$localPreferencesHash() => r'8437930005ea53a15993b4f9c84c10dbbf19a561';
+
+/// Quanti movimenti usano ogni categoria (per "48 movimenti" nella gestione categorie).
+
+@ProviderFor(categoryUsage)
+final categoryUsageProvider = CategoryUsageProvider._();
+
+/// Quanti movimenti usano ogni categoria (per "48 movimenti" nella gestione categorie).
+
+final class CategoryUsageProvider
+    extends $FunctionalProvider<AsyncValue<Map<String, int>>, Map<String, int>, FutureOr<Map<String, int>>>
+    with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
+  /// Quanti movimenti usano ogni categoria (per "48 movimenti" nella gestione categorie).
+  CategoryUsageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'categoryUsageProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$categoryUsageHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, int>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, int>> create(Ref ref) {
+    return categoryUsage(ref);
+  }
+}
+
+String _$categoryUsageHash() => r'41a94a7e1e877e28492081ea7863b4b939e52d89';
+
+/// Quanti movimenti usano ogni label.
+
+@ProviderFor(labelUsage)
+final labelUsageProvider = LabelUsageProvider._();
+
+/// Quanti movimenti usano ogni label.
+
+final class LabelUsageProvider
+    extends $FunctionalProvider<AsyncValue<Map<String, int>>, Map<String, int>, FutureOr<Map<String, int>>>
+    with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
+  /// Quanti movimenti usano ogni label.
+  LabelUsageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'labelUsageProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$labelUsageHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, int>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, int>> create(Ref ref) {
+    return labelUsage(ref);
+  }
+}
+
+String _$labelUsageHash() => r'465859388391375e9375f2db8bc65ce8a506ce57';

@@ -9,6 +9,7 @@ import 'package:spese_entrate/data/db/app_database.dart';
 import 'package:spese_entrate/data/db/database_provider.dart';
 import 'package:spese_entrate/data/repositories/repository_providers.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
+import 'package:spese_entrate/domain/models/label.dart';
 import 'package:spese_entrate/domain/models/wallet.dart';
 import 'package:spese_entrate/features/transactions/application/transaction_form_controller.dart';
 import 'package:spese_entrate/features/transactions/presentation/widgets/date_picker_sheet.dart';
@@ -78,7 +79,7 @@ void main() {
     late ProviderContainer container;
     final provider = transactionFormControllerProvider(TransactionFormSeed.create(TransactionType.expense));
 
-    setUp(() {
+    setUp(() async {
       final db = AppDatabase(NativeDatabase.memory(), now: () => DateTime.utc(2026, 10, 10, 8));
       container = ProviderContainer(
         overrides: [
@@ -88,6 +89,10 @@ void main() {
       );
       // Il controller si auto-elimina: un ascoltatore lo tiene in vita durante il test.
       container.listen(provider, (_, _) {});
+      // Le label usate nei test devono esistere: le eliminate o inesistenti non si collegano.
+      for (final id in ['home', 'holiday']) {
+        await container.read(labelRepositoryProvider).save(Label(id: id, name: id, color: 0));
+      }
       addTearDown(() async {
         container.dispose();
         await db.close();

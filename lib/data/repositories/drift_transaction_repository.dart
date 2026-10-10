@@ -106,8 +106,18 @@ class DriftTransactionRepository implements TransactionRepository {
       _db.transactionLabels,
     )..where((l) => l.transactionId.equals(transactionId))).get();
     final byLabel = {for (final link in existing) link.labelId: link};
+    // Le label eliminate (o mai esistite) non si ricollegano: un movimento aperto prima
+    // dell'eliminazione non deve farle ricomparire.
+    final activeLabelIds = {
+      for (final row
+          in await (_db.select(_db.labels)
+                ..whereNotDeleted()
+                ..where((l) => l.id.isIn(labelIds)))
+              .get())
+        row.id,
+    };
 
-    for (final labelId in labelIds) {
+    for (final labelId in labelIds.where(activeLabelIds.contains)) {
       final link = byLabel[labelId];
       if (link != null && link.deletedAt == null) continue;
       await _db.upsertSynced(

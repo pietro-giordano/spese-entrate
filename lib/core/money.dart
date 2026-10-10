@@ -81,3 +81,11 @@ int? parseCents(String input) {
   if (cents > maxAbsCents) return null;
   return negative ? -cents : cents;
 }
+
+/// Formato per i fogli di calcolo: virgola decimale, niente simbolo né separatore delle migliaia,
+/// trattino come segno meno (es. `1234,56`, `-15,50`). Excel in italiano lo legge come numero.
+String formatCentsForSpreadsheet(int cents) {
+  final abs = cents.abs();
+  final text = '${abs ~/ 100},${(abs % 100).toString().padLeft(2, '0')}';
+  return cents < 0 ? '-$text' : text;
+}
