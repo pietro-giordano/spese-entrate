@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Movimenti ricorrenti</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden; background: #F7F7F5; font-family: Manrope, 'Helvetica Neue', sans-serif; color: #16181D; font-variant-numeric: tabular-nums">
+  <div style="display: flex; flex-direction: column; gap: 14px; padding: 14px 20px 10px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="07-impostazioni.html" aria-label="Indietro" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 14px; border: 1px solid #E4E4DF; background: #FFFFFF; color: #16181D; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+      </a>
+      <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Movimenti ricorrenti</h1>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; font-weight: 600; color: #5B5F66">Uscite fisse / mese</span>
+        <span style="font-size: 18px; font-weight: 800; color: #C2410C">{{fixedOut}}</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; font-weight: 600; color: #5B5F66">Entrate fisse / mese</span>
+        <span style="font-size: 18px; font-weight: 800; color: #1D4ED8">{{fixedIn}}</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex: 1; overflow-y: auto; padding: 4px 20px 20px; display: flex; flex-direction: column; gap: 16px">
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="font-size: 12px; font-weight: 700; color: #5B5F66; text-transform: uppercase; letter-spacing: 0.06em">{{g.title}}</div>
+        <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 18px; overflow: hidden">
+          <sc-for list="{{g.items}}" as="r" hint-placeholder-count="4">
+            <a href="14-dettaglio-ricorrenza.html" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: {{r.border}}; text-decoration: none; color: #16181D; opacity: {{r.opacity}}">
+              <div style="width: 40px; height: 40px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: {{r.tileBg}}; color: {{r.tileFg}}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.icon}}"></path></svg>
+              </div>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                <div style="font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</div>
+                <div style="font-size: 12px; font-weight: 600; color: #5B5F66">{{r.rule}}</div>
+                <div style="display: flex; gap: 6px; align-items: center">
+                  <span style="height: 20px; padding: 0 7px; border-radius: 10px; font-size: 11px; font-weight: 800; display: flex; align-items: center; {{r.badgeStyle}}">{{r.badge}}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #5B5F66">{{r.next}}</span>
+                </div>
+              </div>
+              <div style="font-size: 15px; font-weight: 800; color: {{r.amountColor}}">{{r.amount}}</div>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <a href="02-inserimento-rapido.html" style="height: 52px; border-radius: 16px; border: 1px dashed #A3A6AC; color: #16181D; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 15px; font-weight: 800">+ Nuova ricorrenza</a>
+    <div style="font-size: 12px; font-weight: 600; color: #5B5F66; line-height: 1.45">Le ricorrenze si creano anche dall'inserimento rapido, con "Ripeti" nel pannello della data.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const REP = 'M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3';
+    const TRA = 'M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7';
+    const AUTO = 'background:#F1F1EE;color:#3D4148';
+    const CONF = 'background:#FCE9DF;color:#9A3412';
+    const mk = (name, rule, next, amount, kind, mode) => ({
+      name, rule, next, amount,
+      amountColor: kind === 'inc' ? '#1D4ED8' : kind === 'tra' ? '#5B5F66' : '#16181D',
+      icon: kind === 'tra' ? TRA : REP,
+      tileBg: kind === 'inc' ? '#DCE5FB' : kind === 'tra' ? '#E9E9E4' : '#FCE9DF',
+      tileFg: kind === 'inc' ? '#1E3A8A' : kind === 'tra' ? '#3D4148' : '#9A3412',
+      badge: mode === 'auto' ? 'Automatico' : mode === 'confirm' ? 'Da confermare' : 'In pausa',
+      badgeStyle: mode === 'confirm' ? CONF : AUTO,
+      opacity: mode === 'pause' ? '0.7' : '1'
+    });
+    const raw = [
+      { title: 'Attive', items: [
+        mk('Bolletta luce', 'Ogni 2 mesi, il 5 · Casa', 'Prossima: 5 ott', '~ € 64,00', 'exp', 'confirm'),
+        mk('Spotify', 'Ogni mese, il 7 · Abbonamenti', 'Prossima: 7 ott', '− € 10,99', 'exp', 'auto'),
+        mk('Affitto', 'Ogni mese, il 1° · Casa', 'Prossima: 1 nov', '− € 750,00', 'exp', 'auto'),
+        mk('PAC ETF', 'Ogni mese, il 1° · Conto corrente → ETF', 'Prossima: 1 nov', '€ 500,00', 'tra', 'auto'),
+        mk('Stipendio', 'Ogni mese, il 2 · Stipendio', 'Prossima: 2 nov', '+ € 2.400,00', 'inc', 'confirm'),
+        mk('Netflix', 'Ogni mese, il 2 · Abbonamenti', 'Prossima: 2 nov', '− € 13,99', 'exp', 'auto'),
+        mk('Assicurazione auto', 'Ogni anno, il 15 marzo · Trasporti', 'Prossima: 15 mar 2027', '− € 480,00', 'exp', 'auto')
+      ] },
+      { title: 'In pausa', items: [
+        mk('Palestra', 'Ogni mese, il 10 · Svago', 'In pausa dal 1 set', '− € 39,00', 'exp', 'pause')
+      ] }
+    ];
+    const groups = raw.map((g) => ({ ...g, items: g.items.map((r, i) => ({ ...r, border: i === 0 ? '0' : '1px solid #EFEFEA' })) }));
+    return { groups, fixedOut: '€ 846,98', fixedIn: '€ 2.400,00' };
+  }
+}
+</script>
+</body>
+</html>

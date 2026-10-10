@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Confronto periodi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden; background: #F7F7F5; font-family: Manrope, 'Helvetica Neue', sans-serif; color: #16181D; font-variant-numeric: tabular-nums">
+
+  <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px 20px 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em">Confronta</h1>
+      <a href="03-filtri.html" aria-label="Filtri" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 14px; border: 1px solid #E4E4DF; background: #FFFFFF; color: #16181D; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+      </a>
+    </div>
+
+    <div style="display: flex; gap: 6px; overflow-x: auto">
+      <button style="flex: none; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid #16181D; background: #16181D; color: #FFFFFF; font-size: 12px; font-weight: 700">Ultimi 3 mesi</button>
+      <button style="flex: none; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid #DCDCD6; background: #FFFFFF; color: #16181D; font-size: 12px; font-weight: 700">Mese vs anno prec.</button>
+      <button style="flex: none; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid #DCDCD6; background: #FFFFFF; color: #16181D; font-size: 12px; font-weight: 700">Anno vs anno</button>
+      <button style="flex: none; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid #DCDCD6; background: #FFFFFF; color: #16181D; font-size: 12px; font-weight: 700">Personalizzato</button>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 6px">
+      <sc-for list="{{periods}}" as="p" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 4px 0 10px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E4E4DF">
+          <span style="width: 10px; height: 10px; border-radius: 3px; background: {{p.color}}"></span>
+          <span style="font-size: 13px; font-weight: 700">{{p.name}}</span>
+          <button aria-label="Rimuovi periodo" style="width: 28px; height: 28px; border: 0; background: transparent; color: #5B5F66; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+      </sc-for>
+      <button style="height: 36px; padding: 0 10px; border-radius: 10px; border: 1px dashed #A3A6AC; background: transparent; color: #3D4148; font-size: 13px; font-weight: 700">+ Periodo</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; padding: 4px; background: #E9E9E4; border-radius: 12px">
+        <button style="height: 34px; border: 0; border-radius: 9px; background: #FFFFFF; color: #16181D; font-size: 12px; font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,.10)">Spese</button>
+        <button style="height: 34px; border: 0; border-radius: 9px; background: transparent; color: #4B4F56; font-size: 12px; font-weight: 700">Entr.</button>
+        <button style="height: 34px; border: 0; border-radius: 9px; background: transparent; color: #4B4F56; font-size: 12px; font-weight: 700">Saldo</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 4px; background: #E9E9E4; border-radius: 12px">
+        <button onClick="{{setBars}}" style="height: 34px; border: 0; border-radius: 9px; font-size: 12px; font-weight: 800; {{barsStyle}}">Barre</button>
+        <button onClick="{{setLines}}" style="height: 34px; border: 0; border-radius: 9px; font-size: 12px; font-weight: 800; {{linesStyle}}">Linee</button>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 20px; padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 10px">
+      <div style="font-size: 13px; font-weight: 700; color: #5B5F66">{{chartTitle}}</div>
+
+      <sc-if value="{{isBars}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; align-items: end; height: 170px; border-bottom: 1px solid #DCDCD6">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+            <div style="display: flex; justify-content: center; align-items: flex-end; gap: 2px; height: 170px">
+              <sc-for list="{{g.bars}}" as="b" hint-placeholder-count="3">
+                <div style="width: 11px; height: {{b.h}}px; background: {{b.color}}; border-radius: 3px 3px 0 0"></div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+            <div style="font-size: 11px; font-weight: 700; color: #4B4F56; text-align: center">{{g.name}}</div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isLines}}" hint-placeholder-val="{{ false }}">
+        <svg width="100%" viewBox="0 0 330 196" role="img" aria-label="Spesa cumulata giorno per giorno nei periodi selezionati">
+          <line x1="34" y1="8" x2="330" y2="8" stroke="#EFEFEA"></line>
+          <line x1="34" y1="64.7" x2="330" y2="64.7" stroke="#EFEFEA"></line>
+          <line x1="34" y1="121.3" x2="330" y2="121.3" stroke="#EFEFEA"></line>
+          <line x1="34" y1="178" x2="330" y2="178" stroke="#DCDCD6"></line>
+          <text x="0" y="12" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">1,8k</text>
+          <text x="0" y="68" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">1,2k</text>
+          <text x="0" y="125" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">600</text>
+          <text x="0" y="182" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">0</text>
+          <text x="34" y="194" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">1</text>
+          <text x="174" y="194" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">15</text>
+          <text x="316" y="194" font-size="10" font-weight="700" fill="#5B5F66" font-family="Manrope, sans-serif">31</text>
+          <polyline points="{{lineC}}" fill="none" stroke="#0F5F58" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+          <polyline points="{{lineB}}" fill="none" stroke="#F08A4B" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+          <polyline points="{{lineA}}" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline>
+        </svg>
+      </sc-if>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 18px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.9fr; gap: 6px; padding: 10px 14px; font-size: 11px; font-weight: 800; color: #5B5F66; text-transform: uppercase; letter-spacing: 0.05em; background: #FAFAF8">
+        <span>Categoria</span><span style="text-align: right">Set</span><span style="text-align: right">Ago</span><span style="text-align: right">Δ</span>
+      </div>
+      <sc-for list="{{table}}" as="r" hint-placeholder-count="7">
+        <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 0.9fr; gap: 6px; padding: 10px 14px; border-top: 1px solid #EFEFEA; font-size: 13px; font-weight: {{r.weight}}">
+          <span>{{r.name}}</span>
+          <span style="text-align: right">{{r.a}}</span>
+          <span style="text-align: right">{{r.b}}</span>
+          <span style="text-align: right; font-weight: 800; color: {{r.deltaColor}}">{{r.delta}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <nav style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #FFFFFF; border-top: 1px solid #E4E4DF; padding: 4px 8px 14px">
+    <a href="01-movimenti.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Movimenti
+    </a>
+    <a href="10-portafogli.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path><path d="M16 14h.01"></path></svg>Portafogli
+    </a>
+    <a href="04-grafici.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15.9A10 10 0 1 1 8 2.8"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>Grafici
+    </a>
+    <a href="05-confronta.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #16181D; font-size: 12px; font-weight: 800">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 16v-5M12 16V7M17 16v-3"></path></svg>Confronta
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { chart: 'bars' };
+  }
+  renderVals() {
+    const isBars = this.state.chart === 'bars';
+    const P = [
+      { name: 'Settembre 2026', color: '#1D4ED8', days: 30, total: 1458, ph: 0.3 },
+      { name: 'Agosto 2026', color: '#F08A4B', days: 31, total: 1703, ph: 1.7 },
+      { name: 'Luglio 2026', color: '#0F5F58', days: 31, total: 1369, ph: 3.1 }
+    ];
+    const cats = [
+      ['Casa', 750, 750, 750],
+      ['Spesa', 342, 298, 365],
+      ['Trasp.', 128, 215, 96],
+      ['Ristor.', 146, 232, 88],
+      ['Svago', 64, 180, 42],
+      ['Abbon.', 28, 28, 28]
+    ];
+    const H = 160;
+    const groups = cats.map((c) => ({
+      name: c[0],
+      bars: [0, 1, 2].map((i) => ({ h: Math.max(3, Math.round((c[i + 1] / 750) * H)), color: P[i].color }))
+    }));
+    const X0 = 34, W = 296, Y0 = 178, YH = 170, MAX = 1800;
+    const line = (p) => {
+      const pts = [X0 + ',' + Y0];
+      for (let d = 1; d <= p.days; d++) {
+        const t = d / p.days;
+        const v = 750 + (p.total - 750) * t + 45 * Math.sin(d * 0.7 + p.ph) * Math.sin(Math.PI * t);
+        pts.push((X0 + ((d - 1) / 30) * W).toFixed(1) + ',' + (Y0 - (v / MAX) * YH).toFixed(1));
+      }
+      return pts.join(' ');
+    };
+    const eur = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const delta = (a, b) => {
+      const d = ((a - b) / b) * 100;
+      const txt = (d > 0.05 ? '+' : d < -0.05 ? '−' : '') + Math.abs(d).toFixed(1).replace('.', ',') + '%';
+      return { delta: txt, deltaColor: d > 0.05 ? '#B4410C' : d < -0.05 ? '#1D4ED8' : '#5B5F66' };
+    };
+    const full = ['Casa', 'Spesa alimentare', 'Trasporti', 'Ristoranti', 'Svago', 'Abbonamenti'];
+    const table = cats.map((c, i) => ({ name: full[i], a: eur(c[1]), b: eur(c[2]), weight: 600, ...delta(c[1], c[2]) }));
+    table.push({ name: 'Totale', a: eur(1458), b: eur(1703), weight: 800, ...delta(1458, 1703) });
+    const on = 'background:#FFFFFF;color:#16181D;box-shadow:0 1px 2px rgba(0,0,0,.10)';
+    const off = 'background:transparent;color:#4B4F56';
+    return {
+      periods: P,
+      groups,
+      isBars,
+      isLines: !isBars,
+      chartTitle: isBars ? 'Spese per categoria (€)' : 'Spesa cumulata, giorno per giorno (€)',
+      lineA: line(P[0]),
+      lineB: line(P[1]),
+      lineC: line(P[2]),
+      table,
+      barsStyle: isBars ? on : off,
+      linesStyle: !isBars ? on : off,
+      setBars: () => this.setState({ chart: 'bars' }),
+      setLines: () => this.setState({ chart: 'lines' })
+    };
+  }
+}
+</script>
+</body>
+</html>

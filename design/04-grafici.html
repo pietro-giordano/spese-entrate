@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Grafici a torta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16181D}a:hover{color:#000000}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden; background: #F7F7F5; font-family: Manrope, 'Helvetica Neue', sans-serif; color: #16181D; font-variant-numeric: tabular-nums">
+
+  <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px 20px 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em">Grafici</h1>
+      <a href="03-filtri.html" aria-label="Filtri" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 14px; border: 1px solid #E4E4DF; background: #FFFFFF; color: #16181D; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+      </a>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 14px; padding: 0 4px">
+      <button aria-label="Mese precedente" style="width: 44px; height: 44px; border: 0; background: transparent; color: #16181D; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+      <div style="font-size: 15px; font-weight: 800">Settembre 2026</div>
+      <button aria-label="Mese successivo" style="width: 44px; height: 44px; border: 0; background: transparent; color: #16181D; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 4px; background: #E9E9E4; border-radius: 12px">
+        <button onClick="{{setSpese}}" style="height: 36px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 800; {{speseStyle}}">Spese</button>
+        <button onClick="{{setEntrate}}" style="height: 36px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 800; {{entrateStyle}}">Entrate</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 4px; background: #E9E9E4; border-radius: 12px">
+        <button onClick="{{setCat}}" style="height: 36px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 800; {{catStyle}}">Categoria</button>
+        <button onClick="{{setLabel}}" style="height: 36px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 800; {{labelStyle}}">Label</button>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 16px">
+      <div style="width: 208px; height: 208px; border-radius: 104px; background: {{gradient}}; display: flex; align-items: center; justify-content: center">
+        <div style="width: 136px; height: 136px; border-radius: 68px; background: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+          <div style="font-size: 12px; font-weight: 700; color: #5B5F66">{{centerLabel}}</div>
+          <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.02em">{{total}}</div>
+        </div>
+      </div>
+      <sc-if value="{{isLabel}}" hint-placeholder-val="{{ false }}">
+        <div style="font-size: 12px; font-weight: 600; color: #4B4F56; text-align: center; line-height: 1.45">Un movimento con più label conta in ognuna: le percentuali sono calcolate sulla somma delle label.</div>
+      </sc-if>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4E4DF; border-radius: 18px; overflow: hidden">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <a href="01-movimenti.html" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-top: {{r.border}}; text-decoration: none; color: #16181D">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="width: 12px; height: 12px; flex: none; border-radius: 4px; background: {{r.color}}"></span>
+            <span style="flex: 1; font-size: 14px; font-weight: 700">{{r.name}}</span>
+            <span style="font-size: 13px; font-weight: 700; color: #5B5F66">{{r.pct}}</span>
+            <span style="width: 92px; text-align: right; font-size: 14px; font-weight: 800">{{r.amount}}</span>
+          </div>
+          <div style="height: 4px; border-radius: 2px; background: #EFEFEA"><div style="height: 4px; border-radius: 2px; width: {{r.width}}; background: {{r.color}}"></div></div>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+
+  <nav style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #FFFFFF; border-top: 1px solid #E4E4DF; padding: 4px 8px 14px">
+    <a href="01-movimenti.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>Movimenti
+    </a>
+    <a href="10-portafogli.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path><path d="M16 14h.01"></path></svg>Portafogli
+    </a>
+    <a href="04-grafici.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #16181D; font-size: 12px; font-weight: 800">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.2 15.9A10 10 0 1 1 8 2.8"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>Grafici
+    </a>
+    <a href="05-confronta.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; text-decoration: none; color: #5B5F66; font-size: 12px; font-weight: 600">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 16v-5M12 16V7M17 16v-3"></path></svg>Confronta
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { type: 'spese', group: 'cat' };
+  }
+  renderVals() {
+    const s = this.state;
+    const COLORS = ['#1D4ED8', '#F08A4B', '#0F5F58', '#8B5CF6', '#B45309', '#94A3B8'];
+    const DATA = {
+      spese: {
+        total: 1458,
+        cat: [['Casa', 750], ['Spesa alimentare', 342], ['Ristoranti', 146], ['Trasporti', 128], ['Svago', 64], ['Abbonamenti', 28]],
+        label: [['#ricorrente', 778], ['#casa', 342], ['#auto', 128], ['#lavoro', 96], ['#condivisa', 92], ['Senza label', 210]]
+      },
+      entrate: {
+        total: 3135,
+        cat: [['Stipendio', 2400], ['Freelance', 650], ['Rimborsi', 85]],
+        label: [['#lavoro', 3050], ['#rimborso', 85]]
+      }
+    };
+    const eur = (n) => '€ ' + Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + String(Math.round((n % 1) * 100)).padStart(2, '0');
+    const d = DATA[s.type];
+    const list = d[s.group];
+    const sum = list.reduce((a, r) => a + r[1], 0);
+    let acc = 0;
+    const stops = [];
+    const rows = list.map((r, i) => {
+      const p = (r[1] / sum) * 100;
+      const color = COLORS[i % COLORS.length];
+      stops.push(color + ' ' + acc.toFixed(2) + '% ' + (acc + p).toFixed(2) + '%');
+      acc += p;
+      return {
+        name: r[0],
+        color,
+        pct: p.toFixed(1).replace('.', ',') + '%',
+        amount: eur(r[1]),
+        width: ((r[1] / list[0][1]) * 100).toFixed(1) + '%',
+        border: i === 0 ? '0' : '1px solid #EFEFEA'
+      };
+    });
+    const on = 'background:#FFFFFF;color:#16181D;box-shadow:0 1px 2px rgba(0,0,0,.10)';
+    const off = 'background:transparent;color:#4B4F56';
+    return {
+      gradient: 'conic-gradient(' + stops.join(', ') + ')',
+      total: eur(d.total),
+      centerLabel: s.type === 'spese' ? 'Totale spese' : 'Totale entrate',
+      rows,
+      isLabel: s.group === 'label',
+      speseStyle: s.type === 'spese' ? on : off,
+      entrateStyle: s.type === 'entrate' ? on : off,
+      catStyle: s.group === 'cat' ? on : off,
+      labelStyle: s.group === 'label' ? on : off,
+      setSpese: () => this.setState({ type: 'spese' }),
+      setEntrate: () => this.setState({ type: 'entrate' }),
+      setCat: () => this.setState({ group: 'cat' }),
+      setLabel: () => this.setState({ group: 'label' })
+    };
+  }
+}
+</script>
+</body>
+</html>
