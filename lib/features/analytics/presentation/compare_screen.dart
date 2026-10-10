@@ -236,6 +236,7 @@ class CompareScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            _CaveatsNote(caveats: comparisonCaveats(state.periods, today), today: today),
             const SizedBox(height: 14),
             if (rows.isNotEmpty)
               CompareTable(
@@ -349,6 +350,44 @@ class _AddPeriodBodyState extends State<_AddPeriodBody> {
         const SizedBox(height: AppSpacing.lg),
         FilledButton(onPressed: () => Navigator.pop(context, _period), child: const Text('Aggiungi')),
       ],
+    );
+  }
+}
+
+/// Avviso discreto quando i periodi non sono omogenei (durate diverse o non ancora finiti).
+class _CaveatsNote extends StatelessWidget {
+  const _CaveatsNote({required this.caveats, required this.today});
+
+  final ComparisonCaveats caveats;
+  final LocalDate today;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!caveats.any) return const SizedBox.shrink();
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+
+    final inProgress = [for (final period in caveats.inProgress) periodTitle(period, today)];
+    final parts = [
+      if (inProgress.length == 1) '${inProgress.single} non è ancora concluso.',
+      if (inProgress.length > 1) '${inProgress.join(' e ')} non sono ancora conclusi.',
+      if (caveats.differentLengths) 'I periodi hanno durate diverse.',
+      'Il confronto usa importi assoluti, senza normalizzare per giorno.',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(Icons.info_outline_rounded, size: 16, color: colors.textMuted),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(parts.join(' '), style: textTheme.bodySmall?.copyWith(height: 1.45))),
+        ],
+      ),
     );
   }
 }

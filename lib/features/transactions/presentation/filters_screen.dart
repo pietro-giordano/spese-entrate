@@ -216,23 +216,35 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                   ] else
                     categoryChips(_filters.type == TypeFilter.expense ? expenseCategories : incomeCategories),
                   const SizedBox(height: 22),
-                  SectionLabel('Label', trailing: _selectedLabel(_filters.labelIds.length, feminine: true)),
+                  SectionLabel(
+                    'Label',
+                    trailing: _selectedLabel(
+                      _filters.labelIds.length + (_filters.withoutLabels ? 1 : 0),
+                      feminine: true,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      for (final label in labels)
+                        AppChip(
+                          label: '#${label.name}',
+                          shape: AppChipShape.label,
+                          selected: _filters.labelIds.contains(label.id),
+                          onTap: () => _toggleLabel(label.id),
+                        ),
+                      AppChip(
+                        label: 'Senza label',
+                        shape: AppChipShape.label,
+                        selected: _filters.withoutLabels,
+                        onTap: _toggleWithoutLabels,
+                      ),
+                    ],
+                  ),
                   if (labels.isEmpty)
                     Text('Non hai ancora creato label.', style: textTheme.bodySmall)
                   else ...[
-                    Wrap(
-                      spacing: 6,
-                      children: [
-                        for (final label in labels)
-                          AppChip(
-                            label: '#${label.name}',
-                            shape: AppChipShape.label,
-                            selected: _filters.labelIds.contains(label.id),
-                            onTap: () => _update(_filters.copyWith(labelIds: _toggle(_filters.labelIds, label.id))),
-                          ),
-                      ],
-                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       'Con più label selezionate, mostra i movimenti che hanno:',
@@ -245,8 +257,12 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                         AppSegment(value: LabelMatch.all, label: 'Tutte'),
                       ],
                       selected: _filters.labelMatch,
-                      onChanged: (match) => _update(_filters.copyWith(labelMatch: match)),
+                      onChanged: _setLabelMatch,
                     ),
+                    if (_filters.labelMatch == LabelMatch.all) ...[
+                      const SizedBox(height: 6),
+                      Text('Con «Tutte», «Senza label» non si combina con altre label.', style: textTheme.bodySmall),
+                    ],
                   ],
                 ],
               ),
@@ -255,6 +271,27 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
         ),
       ),
     );
+  }
+
+  // Con «Almeno una» label e «Senza label» si sommano (OR). Con «Tutte» un movimento non può
+  // avere tutte le label scelte e insieme nessuna: le due scelte diventano esclusive.
+
+  void _toggleLabel(String id) {
+    final labelIds = _toggle(_filters.labelIds, id);
+    final exclusive = _filters.labelMatch == LabelMatch.all && labelIds.isNotEmpty;
+    _update(_filters.copyWith(labelIds: labelIds, withoutLabels: exclusive ? false : _filters.withoutLabels));
+  }
+
+  void _toggleWithoutLabels() {
+    final withoutLabels = !_filters.withoutLabels;
+    final exclusive = _filters.labelMatch == LabelMatch.all && withoutLabels;
+    _update(_filters.copyWith(withoutLabels: withoutLabels, labelIds: exclusive ? const {} : _filters.labelIds));
+  }
+
+  /// Passando a «Tutte» con entrambe le scelte si tengono le label, più specifiche.
+  void _setLabelMatch(LabelMatch match) {
+    final conflict = match == LabelMatch.all && _filters.withoutLabels && _filters.labelIds.isNotEmpty;
+    _update(_filters.copyWith(labelMatch: match, withoutLabels: conflict ? false : _filters.withoutLabels));
   }
 
   /// "1 selezionato", "2 selezionate"… null se non c'è selezione.

@@ -71,3 +71,28 @@ double? percentChange(int current, int previous) {
   if (previous == 0) return null;
   return (current - previous) / previous.abs();
 }
+
+/// Situazioni in cui il confronto tra importi assoluti va letto con cautela.
+class ComparisonCaveats {
+  const ComparisonCaveats({required this.differentLengths, required this.inProgress});
+
+  /// I periodi non hanno tutti lo stesso numero di giorni (es. 31 e 30).
+  final bool differentLengths;
+
+  /// Periodi non ancora finiti: contengono oggi o sono nel futuro.
+  final List<Period> inProgress;
+
+  bool get any => differentLengths || inProgress.isNotEmpty;
+}
+
+/// Controlla i periodi confrontati. Non cambia i calcoli: serve solo a mostrare un avviso.
+ComparisonCaveats comparisonCaveats(List<Period> periods, LocalDate today) {
+  final lengths = {for (final period in periods) period.range.dayCount};
+  return ComparisonCaveats(
+    differentLengths: lengths.length > 1,
+    inProgress: [
+      for (final period in periods)
+        if (!period.end.isBefore(today)) period,
+    ],
+  );
+}

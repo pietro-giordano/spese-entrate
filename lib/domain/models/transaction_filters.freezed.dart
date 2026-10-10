@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TransactionFilters {
 
- TypeFilter get type; Set<String> get walletIds; Set<String> get categoryIds; Set<String> get labelIds; LabelMatch get labelMatch; bool get showTransfers;
+ TypeFilter get type; Set<String> get walletIds; Set<String> get categoryIds; Set<String> get labelIds;/// Movimenti senza nessuna label ("Senza label"). È una condizione del filtro,
+/// non una label nel database; si combina con [labelIds] secondo [labelMatch].
+ bool get withoutLabels; LabelMatch get labelMatch; bool get showTransfers;
 /// Create a copy of TransactionFilters
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +29,20 @@ $TransactionFiltersCopyWith<TransactionFilters> get copyWith => _$TransactionFil
 @override
 bool operator ==(Object other) {
   final _this = this as TransactionFilters;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionFilters&&(identical(other.type, _this.type) || other.type == _this.type)&&const DeepCollectionEquality().equals(other.walletIds, _this.walletIds)&&const DeepCollectionEquality().equals(other.categoryIds, _this.categoryIds)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.labelMatch, _this.labelMatch) || other.labelMatch == _this.labelMatch)&&(identical(other.showTransfers, _this.showTransfers) || other.showTransfers == _this.showTransfers));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionFilters&&(identical(other.type, _this.type) || other.type == _this.type)&&const DeepCollectionEquality().equals(other.walletIds, _this.walletIds)&&const DeepCollectionEquality().equals(other.categoryIds, _this.categoryIds)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.withoutLabels, _this.withoutLabels) || other.withoutLabels == _this.withoutLabels)&&(identical(other.labelMatch, _this.labelMatch) || other.labelMatch == _this.labelMatch)&&(identical(other.showTransfers, _this.showTransfers) || other.showTransfers == _this.showTransfers));
 }
 
 
 @override
 int get hashCode {
   final _this = this as TransactionFilters;
-  return Object.hash(runtimeType,_this.type,const DeepCollectionEquality().hash(_this.walletIds),const DeepCollectionEquality().hash(_this.categoryIds),const DeepCollectionEquality().hash(_this.labelIds),_this.labelMatch,_this.showTransfers);
+  return Object.hash(runtimeType,_this.type,const DeepCollectionEquality().hash(_this.walletIds),const DeepCollectionEquality().hash(_this.categoryIds),const DeepCollectionEquality().hash(_this.labelIds),_this.withoutLabels,_this.labelMatch,_this.showTransfers);
 }
 
 @override
 String toString() {
   final _this = this as TransactionFilters;
-  return 'TransactionFilters(type: ${_this.type}, walletIds: ${_this.walletIds}, categoryIds: ${_this.categoryIds}, labelIds: ${_this.labelIds}, labelMatch: ${_this.labelMatch}, showTransfers: ${_this.showTransfers})';
+  return 'TransactionFilters(type: ${_this.type}, walletIds: ${_this.walletIds}, categoryIds: ${_this.categoryIds}, labelIds: ${_this.labelIds}, withoutLabels: ${_this.withoutLabels}, labelMatch: ${_this.labelMatch}, showTransfers: ${_this.showTransfers})';
 }
 
 
@@ -51,7 +53,7 @@ abstract mixin class $TransactionFiltersCopyWith<$Res>  {
   factory $TransactionFiltersCopyWith(TransactionFilters value, $Res Function(TransactionFilters) _then) = _$TransactionFiltersCopyWithImpl;
 @useResult
 $Res call({
- TypeFilter type, Set<String> walletIds, Set<String> categoryIds, Set<String> labelIds, LabelMatch labelMatch, bool showTransfers
+ TypeFilter type, Set<String> walletIds, Set<String> categoryIds, Set<String> labelIds, bool withoutLabels, LabelMatch labelMatch, bool showTransfers
 });
 
 
@@ -68,13 +70,14 @@ class _$TransactionFiltersCopyWithImpl<$Res>
 
 /// Create a copy of TransactionFilters
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? walletIds = null,Object? categoryIds = null,Object? labelIds = null,Object? labelMatch = null,Object? showTransfers = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? walletIds = null,Object? categoryIds = null,Object? labelIds = null,Object? withoutLabels = null,Object? labelMatch = null,Object? showTransfers = null,}) {
   return _then(TransactionFilters(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TypeFilter,walletIds: null == walletIds ? _self.walletIds : walletIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,categoryIds: null == categoryIds ? _self.categoryIds : categoryIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,labelIds: null == labelIds ? _self.labelIds : labelIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,labelMatch: null == labelMatch ? _self.labelMatch : labelMatch // ignore: cast_nullable_to_non_nullable
+as Set<String>,withoutLabels: null == withoutLabels ? _self.withoutLabels : withoutLabels // ignore: cast_nullable_to_non_nullable
+as bool,labelMatch: null == labelMatch ? _self.labelMatch : labelMatch // ignore: cast_nullable_to_non_nullable
 as LabelMatch,showTransfers: null == showTransfers ? _self.showTransfers : showTransfers // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -161,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  LabelMatch labelMatch,  bool showTransfers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  bool withoutLabels,  LabelMatch labelMatch,  bool showTransfers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransactionFilters() when $default != null:
-return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.labelMatch,_that.showTransfers);case _:
+return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.withoutLabels,_that.labelMatch,_that.showTransfers);case _:
   return orElse();
 
 }
@@ -182,10 +185,10 @@ return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  LabelMatch labelMatch,  bool showTransfers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  bool withoutLabels,  LabelMatch labelMatch,  bool showTransfers)  $default,) {final _that = this;
 switch (_that) {
 case _TransactionFilters():
-return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.labelMatch,_that.showTransfers);case _:
+return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.withoutLabels,_that.labelMatch,_that.showTransfers);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +205,10 @@ return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  LabelMatch labelMatch,  bool showTransfers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TypeFilter type,  Set<String> walletIds,  Set<String> categoryIds,  Set<String> labelIds,  bool withoutLabels,  LabelMatch labelMatch,  bool showTransfers)?  $default,) {final _that = this;
 switch (_that) {
 case _TransactionFilters() when $default != null:
-return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.labelMatch,_that.showTransfers);case _:
+return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_that.withoutLabels,_that.labelMatch,_that.showTransfers);case _:
   return null;
 
 }
@@ -217,7 +220,7 @@ return $default(_that.type,_that.walletIds,_that.categoryIds,_that.labelIds,_tha
 
 
 class _TransactionFilters extends TransactionFilters {
-  const _TransactionFilters({this.type = TypeFilter.all,  Set<String> walletIds = const <String>{},  Set<String> categoryIds = const <String>{},  Set<String> labelIds = const <String>{}, this.labelMatch = LabelMatch.any, this.showTransfers = true}): _walletIds = walletIds,_categoryIds = categoryIds,_labelIds = labelIds,super._();
+  const _TransactionFilters({this.type = TypeFilter.all,  Set<String> walletIds = const <String>{},  Set<String> categoryIds = const <String>{},  Set<String> labelIds = const <String>{}, this.withoutLabels = false, this.labelMatch = LabelMatch.any, this.showTransfers = true}): _walletIds = walletIds,_categoryIds = categoryIds,_labelIds = labelIds,super._();
   
 
 @override@JsonKey() final  TypeFilter type;
@@ -242,6 +245,9 @@ class _TransactionFilters extends TransactionFilters {
   return EqualUnmodifiableSetView(_labelIds);
 }
 
+/// Movimenti senza nessuna label ("Senza label"). È una condizione del filtro,
+/// non una label nel database; si combina con [labelIds] secondo [labelMatch].
+@override@JsonKey() final  bool withoutLabels;
 @override@JsonKey() final  LabelMatch labelMatch;
 @override@JsonKey() final  bool showTransfers;
 
@@ -255,18 +261,18 @@ _$TransactionFiltersCopyWith<_TransactionFilters> get copyWith => __$Transaction
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionFilters&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.walletIds, _walletIds)&&const DeepCollectionEquality().equals(other.categoryIds, _categoryIds)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.labelMatch, labelMatch) || other.labelMatch == labelMatch)&&(identical(other.showTransfers, showTransfers) || other.showTransfers == showTransfers));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionFilters&&(identical(other.type, type) || other.type == type)&&const DeepCollectionEquality().equals(other.walletIds, _walletIds)&&const DeepCollectionEquality().equals(other.categoryIds, _categoryIds)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.withoutLabels, withoutLabels) || other.withoutLabels == withoutLabels)&&(identical(other.labelMatch, labelMatch) || other.labelMatch == labelMatch)&&(identical(other.showTransfers, showTransfers) || other.showTransfers == showTransfers));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,type,const DeepCollectionEquality().hash(_walletIds),const DeepCollectionEquality().hash(_categoryIds),const DeepCollectionEquality().hash(_labelIds),labelMatch,showTransfers);
+    return Object.hash(runtimeType,type,const DeepCollectionEquality().hash(_walletIds),const DeepCollectionEquality().hash(_categoryIds),const DeepCollectionEquality().hash(_labelIds),withoutLabels,labelMatch,showTransfers);
 }
 
 @override
 String toString() {
-    return 'TransactionFilters(type: $type, walletIds: $walletIds, categoryIds: $categoryIds, labelIds: $labelIds, labelMatch: $labelMatch, showTransfers: $showTransfers)';
+    return 'TransactionFilters(type: $type, walletIds: $walletIds, categoryIds: $categoryIds, labelIds: $labelIds, withoutLabels: $withoutLabels, labelMatch: $labelMatch, showTransfers: $showTransfers)';
 }
 
 
@@ -277,7 +283,7 @@ abstract mixin class _$TransactionFiltersCopyWith<$Res> implements $TransactionF
   factory _$TransactionFiltersCopyWith(_TransactionFilters value, $Res Function(_TransactionFilters) _then) = __$TransactionFiltersCopyWithImpl;
 @override @useResult
 $Res call({
- TypeFilter type, Set<String> walletIds, Set<String> categoryIds, Set<String> labelIds, LabelMatch labelMatch, bool showTransfers
+ TypeFilter type, Set<String> walletIds, Set<String> categoryIds, Set<String> labelIds, bool withoutLabels, LabelMatch labelMatch, bool showTransfers
 });
 
 
@@ -294,13 +300,14 @@ class __$TransactionFiltersCopyWithImpl<$Res>
 
 /// Create a copy of TransactionFilters
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? walletIds = null,Object? categoryIds = null,Object? labelIds = null,Object? labelMatch = null,Object? showTransfers = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? walletIds = null,Object? categoryIds = null,Object? labelIds = null,Object? withoutLabels = null,Object? labelMatch = null,Object? showTransfers = null,}) {
   return _then(_TransactionFilters(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TypeFilter,walletIds: null == walletIds ? _self._walletIds : walletIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,categoryIds: null == categoryIds ? _self._categoryIds : categoryIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,labelIds: null == labelIds ? _self._labelIds : labelIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,labelMatch: null == labelMatch ? _self.labelMatch : labelMatch // ignore: cast_nullable_to_non_nullable
+as Set<String>,withoutLabels: null == withoutLabels ? _self.withoutLabels : withoutLabels // ignore: cast_nullable_to_non_nullable
+as bool,labelMatch: null == labelMatch ? _self.labelMatch : labelMatch // ignore: cast_nullable_to_non_nullable
 as LabelMatch,showTransfers: null == showTransfers ? _self.showTransfers : showTransfers // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

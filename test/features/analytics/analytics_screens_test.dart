@@ -18,9 +18,11 @@ import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/domain/models/label.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
 import 'package:spese_entrate/domain/models/transaction_filters.dart';
+import 'package:spese_entrate/features/analytics/application/compare_providers.dart';
 import 'package:spese_entrate/features/analytics/presentation/compare_screen.dart';
 import 'package:spese_entrate/features/analytics/presentation/widgets/compare_charts.dart';
 import 'package:spese_entrate/features/transactions/application/transaction_list_providers.dart';
+import 'package:spese_entrate/features/transactions/presentation/filters_screen.dart';
 import 'package:spese_entrate/features/transactions/presentation/transactions_screen.dart';
 
 void main() {
@@ -147,6 +149,54 @@ void main() {
     });
   });
 
+  group('Senza label', () {
+    testWidgets('dalla legenda dei Grafici: lista dei soli movimenti senza label', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      await tester.tap(find.text('Label'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Senza label'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TransactionsScreen), findsOneWidget);
+      expect(container.read(activeFiltersProvider).withoutLabels, isTrue);
+      expect(container.read(activeFiltersProvider).labelIds, isEmpty);
+      expect(find.text('Ristoranti'), findsOneWidget);
+      expect(find.text('Spesa alimentare'), findsNothing, reason: 'ha la label #casa');
+      expect(find.text('Stipendio'), findsNothing, reason: 'il grafico era sulle spese');
+    });
+
+    testWidgets('nei Filtri: con «Tutte» la scelta è esclusiva', (tester) async {
+      // Come nell'app: i Filtri si aprono sopra la lista (push), così "Applica" può tornare indietro.
+      await pumpTab(tester, AppRoutes.transactions);
+      container.read(appRouterProvider).push(AppRoutes.filters);
+      await tester.pumpAndSettle();
+      expect(find.byType(FiltersScreen), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Senza label'), 200, scrollable: find.byType(Scrollable).first);
+
+      // «Almeno una»: si possono scegliere entrambe.
+      await tester.tap(find.text('#casa'));
+      await tester.tap(find.text('Senza label'));
+      await tester.pump();
+      expect(find.text('2 selezionate'), findsOneWidget);
+
+      // Passando a «Tutte» restano le label, più specifiche.
+      await tester.tap(find.text('Tutte'));
+      await tester.pump();
+      expect(find.text('1 selezionata'), findsOneWidget);
+      expect(find.textContaining('non si combina con altre label'), findsOneWidget);
+
+      // Scegliere «Senza label» toglie #casa.
+      await tester.tap(find.text('Senza label'));
+      await tester.pump();
+      await tester.tap(find.text('Applica filtri'));
+      await tester.pumpAndSettle();
+      final filters = container.read(activeFiltersProvider);
+      expect(filters.withoutLabels, isTrue);
+      expect(filters.labelIds, isEmpty);
+      expect(filters.labelMatch, LabelMatch.all);
+    });
+  });
+
   group('Confronta', () {
     testWidgets('ultimi 3 mesi: periodi, barre e tabella delle variazioni', (tester) async {
       await pumpTab(tester, AppRoutes.compare);
@@ -163,6 +213,32 @@ void main() {
       expect(find.text('−91,4%'), findsOneWidget);
       expect(find.text('Casa'), findsWidgets, reason: 'categoria presente solo a settembre (tabella e barre)');
       expect(find.text('—'), findsWidgets, reason: 'Ristoranti: nessun riferimento a settembre');
+    });
+
+    testWidgets('avviso: periodo non concluso e durate diverse, importi assoluti', (tester) async {
+      await pumpTab(tester, AppRoutes.compare);
+      expect(
+        find.text(
+          'Ottobre 2026 non è ancora concluso. I periodi hanno durate diverse. '
+          'Il confronto usa importi assoluti, senza normalizzare per giorno.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('nessun avviso con periodi conclusi della stessa durata', (tester) async {
+      await pumpTab(tester, AppRoutes.compare);
+      final controller = container.read(compareControllerProvider.notifier);
+      for (final period in [...container.read(compareControllerProvider).periods]) {
+        controller.removePeriod(period);
+      }
+      // Resta un solo periodo (ottobre, in corso): lo si sostituisce con agosto e agosto 2025.
+      controller
+        ..addPeriod(Period.containing(PeriodType.month, LocalDate(2026, 8, 1)))
+        ..addPeriod(Period.containing(PeriodType.month, LocalDate(2025, 8, 1)))
+        ..removePeriod(container.read(compareControllerProvider).periods.first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('importi assoluti'), findsNothing);
     });
 
     testWidgets('saldo e linee cumulate', (tester) async {

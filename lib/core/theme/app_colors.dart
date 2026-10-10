@@ -56,7 +56,10 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.textMuted,
     required this.danger,
     required this.switchTrackOff,
+    required this.switchThumb,
+    required this.switchThumbShadow,
     required this.scrim,
+    required this.chartSeries,
     required this.expense,
     required this.income,
     required this.neutral,
@@ -83,8 +86,15 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color danger;
   final Color switchTrackOff;
 
+  /// Pallino dell'interruttore (bianco in entrambi i temi) e la sua ombra.
+  final Color switchThumb;
+  final List<BoxShadow> switchThumbShadow;
+
   /// Velo dietro i pannelli dal basso.
   final Color scrim;
+
+  /// Colori delle serie nei grafici di confronto, nell'ordine dei periodi (blu, arancio, verde acqua).
+  final List<Color> chartSeries;
 
   // Dominio
   final ColorTone expense;
@@ -111,7 +121,10 @@ class AppColors extends ThemeExtension<AppColors> {
     textMuted: Color(0xFF5B5F66),
     danger: Color(0xFFB4410C),
     switchTrackOff: Color(0xFFC9CBC4),
+    switchThumb: Color(0xFFFFFFFF),
+    switchThumbShadow: [BoxShadow(color: Color(0x40000000), offset: Offset(0, 1), blurRadius: 2)],
     scrim: Color(0x73111316),
+    chartSeries: [Color(0xFF1D4ED8), Color(0xFFF08A4B), Color(0xFF0F5F58)],
     expense: ColorTone(
       fill: Color(0xFFC2410C),
       onFill: Color(0xFFFFFFFF),
@@ -169,7 +182,10 @@ class AppColors extends ThemeExtension<AppColors> {
     textMuted: Color(0xFFA3A8B0),
     danger: Color(0xFFF28C55),
     switchTrackOff: Color(0xFF4A4F58),
+    switchThumb: Color(0xFFFFFFFF),
+    switchThumbShadow: [BoxShadow(color: Color(0x66000000), offset: Offset(0, 1), blurRadius: 2)],
     scrim: Color(0x99000000),
+    chartSeries: [Color(0xFF7DA0F7), Color(0xFFF08A4B), Color(0xFF4FB3A8)],
     expense: ColorTone(
       fill: Color(0xFFC2410C),
       onFill: Color(0xFFFFFFFF),
@@ -228,7 +244,10 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? textMuted,
     Color? danger,
     Color? switchTrackOff,
+    Color? switchThumb,
+    List<BoxShadow>? switchThumbShadow,
     Color? scrim,
+    List<Color>? chartSeries,
     ColorTone? expense,
     ColorTone? income,
     ColorTone? neutral,
@@ -249,7 +268,10 @@ class AppColors extends ThemeExtension<AppColors> {
       textMuted: textMuted ?? this.textMuted,
       danger: danger ?? this.danger,
       switchTrackOff: switchTrackOff ?? this.switchTrackOff,
+      switchThumb: switchThumb ?? this.switchThumb,
+      switchThumbShadow: switchThumbShadow ?? this.switchThumbShadow,
       scrim: scrim ?? this.scrim,
+      chartSeries: chartSeries ?? this.chartSeries,
       expense: expense ?? this.expense,
       income: income ?? this.income,
       neutral: neutral ?? this.neutral,
@@ -275,7 +297,10 @@ class AppColors extends ThemeExtension<AppColors> {
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
       switchTrackOff: Color.lerp(switchTrackOff, other.switchTrackOff, t)!,
+      switchThumb: Color.lerp(switchThumb, other.switchThumb, t)!,
+      switchThumbShadow: BoxShadow.lerpList(switchThumbShadow, other.switchThumbShadow, t)!,
       scrim: Color.lerp(scrim, other.scrim, t)!,
+      chartSeries: [for (var i = 0; i < chartSeries.length; i++) Color.lerp(chartSeries[i], other.chartSeries[i], t)!],
       expense: ColorTone.lerp(expense, other.expense, t),
       income: ColorTone.lerp(income, other.income, t),
       neutral: ColorTone.lerp(neutral, other.neutral, t),

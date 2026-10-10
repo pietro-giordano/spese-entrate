@@ -38,7 +38,8 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
   var _grouping = _Grouping.category;
 
   /// Apre la lista Movimenti sul periodo del grafico, filtrata sulla voce toccata.
-  void _openFilteredList(String id) {
+  /// [id] null è la voce "Senza label".
+  void _openFilteredList(String? id) {
     final period = ref.read(chartsPeriodProvider);
     ref.read(selectedPeriodProvider.notifier).set(period);
     ref
@@ -46,8 +47,9 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
         .apply(
           TransactionFilters(
             type: _kind == CategoryKind.expense ? TypeFilter.expense : TypeFilter.income,
-            categoryIds: _grouping == _Grouping.category ? {id} : const {},
-            labelIds: _grouping == _Grouping.label ? {id} : const {},
+            categoryIds: _grouping == _Grouping.category && id != null ? {id} : const {},
+            labelIds: _grouping == _Grouping.label && id != null ? {id} : const {},
+            withoutLabels: _grouping == _Grouping.label && id == null,
           ),
         );
     context.go(AppRoutes.transactions);
@@ -76,10 +78,11 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
           name: _grouping == _Grouping.category
               ? (categories[item.id]?.name ?? 'Senza categoria')
               : (item.id == null ? 'Senza label' : '#${labels[item.id]?.name ?? '?'}'),
+          // Il colore viene dalla categoria o dalla label; se manca (o è "Senza label"), grigio del tema.
           color: switch (_grouping) {
             _ when item.id == null => colors.textMuted,
-            _Grouping.category => Color(categories[item.id]?.color ?? 0xFF57534E),
-            _Grouping.label => Color(labels[item.id]?.color ?? 0xFF57534E),
+            _Grouping.category => categories[item.id] == null ? colors.textMuted : Color(categories[item.id]!.color),
+            _Grouping.label => labels[item.id] == null ? colors.textMuted : Color(labels[item.id]!.color),
           },
         ),
     ];
@@ -162,8 +165,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
                       share: e.item.share,
                       cents: e.item.totalCents,
                       relativeWidth: e.item.totalCents / entries.first.item.totalCents,
-                      // "Senza label" non ha un filtro corrispondente nella lista.
-                      onTap: e.item.id == null ? null : () => _openFilteredList(e.item.id!),
+                      onTap: () => _openFilteredList(e.item.id),
                     ),
                 ],
               ),

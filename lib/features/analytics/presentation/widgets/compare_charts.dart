@@ -9,14 +9,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../domain/services/comparison.dart';
 
-/// Colore di ciascun periodo confrontato (i tre del mockup: blu, arancio, verde acqua).
+/// Colore di ciascun periodo confrontato (token `chartSeries`: blu, arancio, verde acqua).
 Color seriesColor(BuildContext context, int index) {
-  final colors = context.colors;
-  return switch (index) {
-    0 => colors.income.text,
-    1 => const Color(0xFFF08A4B),
-    _ => colors.savings.text,
-  };
+  final series = context.colors.chartSeries;
+  return series[index % series.length];
 }
 
 /// Una riga del confronto: un valore per ogni periodo, nello stesso ordine.
@@ -307,12 +303,14 @@ class CompareTable extends StatelessWidget {
                 ),
                 for (final value in data.values)
                   cell(
-                    Text(
-                      _wholeEuros(value),
-                      textAlign: TextAlign.right,
-                      style: textTheme.labelMedium?.copyWith(
-                        fontWeight: data.isTotal ? FontWeight.w800 : FontWeight.w600,
-                        fontFeatures: tabular,
+                    _OneLine(
+                      Text(
+                        _wholeEuros(value),
+                        maxLines: 1,
+                        style: textTheme.labelMedium?.copyWith(
+                          fontWeight: data.isTotal ? FontWeight.w800 : FontWeight.w600,
+                          fontFeatures: tabular,
+                        ),
                       ),
                     ),
                   ),
@@ -348,11 +346,30 @@ class _Delta extends StatelessWidget {
       final good = (change > 0) == row.higherIsBetter;
       color = good ? colors.income.text : colors.danger;
     }
-    return Text(
-      text,
-      textAlign: TextAlign.right,
-      style: Theme.of(context).textTheme.labelMedium
-          ?.copyWith(fontWeight: FontWeight.w800, color: color, fontFeatures: const [FontFeature.tabularFigures()]),
+    // Su una riga sola: se non ci sta (es. "−100,0%") il testo si rimpicciolisce invece di andare a capo.
+    return _OneLine(
+      Text(
+        text,
+        maxLines: 1,
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(fontWeight: FontWeight.w800, color: color, fontFeatures: const [FontFeature.tabularFigures()]),
+      ),
+    );
+  }
+}
+
+/// Testo allineato a destra su una sola riga, rimpicciolito se la colonna è stretta.
+class _OneLine extends StatelessWidget {
+  const _OneLine(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    // Lo spazio a sinistra separa le colonne quando un valore occupa tutta la cella.
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: child),
     );
   }
 }

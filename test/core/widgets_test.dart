@@ -35,6 +35,21 @@ void main() {
     });
   });
 
+  group('token colore', () {
+    test('serie dei grafici: blu, arancio #F08A4B, verde acqua, in entrambi i temi', () {
+      expect(AppColors.light.chartSeries, hasLength(3));
+      expect(AppColors.dark.chartSeries, hasLength(3));
+      expect(AppColors.light.chartSeries[1], const Color(0xFFF08A4B));
+      expect(AppColors.dark.chartSeries[1], const Color(0xFFF08A4B));
+    });
+
+    test('lerp interpola anche le serie e il pallino dell\'interruttore', () {
+      final mid = AppColors.light.lerp(AppColors.dark, 0.5);
+      expect(mid.chartSeries[0], Color.lerp(AppColors.light.chartSeries[0], AppColors.dark.chartSeries[0], 0.5));
+      expect(mid.switchThumb, AppColors.light.switchThumb);
+    });
+  });
+
   group('AmountText', () {
     testWidgets('spesa con segno meno e colore spesa', (tester) async {
       await pumpInApp(tester, const AmountText(6420, kind: AmountKind.expense));

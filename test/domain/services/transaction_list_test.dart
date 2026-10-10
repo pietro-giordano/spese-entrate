@@ -61,6 +61,40 @@ void main() {
       expect(filter(const TransactionFilters(labelIds: {'home', 'work'}, labelMatch: LabelMatch.all)), [expense]);
     });
 
+    group('Senza label', () {
+      final home = tx(TransactionType.expense, categoryId: 'food', labelIds: ['home']);
+      final both = tx(TransactionType.expense, categoryId: 'food', labelIds: ['home', 'work']);
+      final none = tx(TransactionType.expense, categoryId: 'food');
+      final list = [home, both, none, transfer, adjustment];
+      List<Transaction> pick(TransactionFilters f) => list.where((t) => matchesFilters(t, f)).toList();
+
+      test('da solo: i movimenti senza label, in entrambe le modalità', () {
+        expect(pick(const TransactionFilters(withoutLabels: true)), [none]);
+        expect(pick(const TransactionFilters(withoutLabels: true, labelMatch: LabelMatch.all)), [none]);
+      });
+
+      test('«Almeno una»: label scelte oppure nessuna label', () {
+        expect(pick(const TransactionFilters(withoutLabels: true, labelIds: {'work'})), [both, none]);
+      });
+
+      test('«Tutte» con altre label: nessun movimento può soddisfarlo', () {
+        expect(
+          pick(const TransactionFilters(withoutLabels: true, labelIds: {'home'}, labelMatch: LabelMatch.all)),
+          isEmpty,
+        );
+      });
+
+      test('trasferimenti e rettifiche restano esclusi: le label non si applicano', () {
+        expect(pick(const TransactionFilters(withoutLabels: true)), isNot(contains(transfer)));
+        expect(pick(const TransactionFilters(withoutLabels: true)), isNot(contains(adjustment)));
+      });
+
+      test('conta come un solo filtro, anche insieme ad altre label', () {
+        expect(const TransactionFilters(withoutLabels: true).activeCount, 1);
+        expect(const TransactionFilters(withoutLabels: true, labelIds: {'home'}).activeCount, 1);
+      });
+    });
+
     test('activeCount conta i filtri diversi dal predefinito', () {
       expect(const TransactionFilters().activeCount, 0);
       expect(const TransactionFilters(type: TypeFilter.income, walletIds: {'cc'}, showTransfers: false).activeCount, 3);

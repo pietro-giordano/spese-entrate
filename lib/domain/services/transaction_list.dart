@@ -12,7 +12,8 @@ import 'statistics.dart';
 /// - Portafogli: conta il portafoglio del movimento e, per i trasferimenti, anche la destinazione.
 /// - Spese ed entrate seguono il filtro per tipo.
 /// - I trasferimenti dipendono dall'interruttore; le rettifiche compaiono solo con tipo "Tutti".
-///   Entrambi non hanno categoria né label, quindi spariscono se quei filtri sono attivi.
+///   Entrambi non hanno categoria né label, quindi spariscono se quei filtri sono attivi
+///   (anche con "Senza label": per loro le label non si applicano).
 bool matchesFilters(Transaction tx, TransactionFilters filters) {
   if (filters.walletIds.isNotEmpty &&
       !filters.walletIds.contains(tx.walletId) &&
@@ -20,7 +21,7 @@ bool matchesFilters(Transaction tx, TransactionFilters filters) {
     return false;
   }
 
-  final hasCategoryOrLabelFilter = filters.categoryIds.isNotEmpty || filters.labelIds.isNotEmpty;
+  final hasCategoryOrLabelFilter = filters.categoryIds.isNotEmpty || filters.hasLabelFilter;
   switch (tx.type) {
     case TransactionType.transfer:
       return filters.showTransfers && !hasCategoryOrLabelFilter;
@@ -36,14 +37,23 @@ bool matchesFilters(Transaction tx, TransactionFilters filters) {
 
   if (filters.categoryIds.isNotEmpty && !filters.categoryIds.contains(tx.categoryId)) return false;
 
-  if (filters.labelIds.isNotEmpty) {
-    final labels = tx.labelIds.toSet();
-    return switch (filters.labelMatch) {
-      LabelMatch.any => labels.any(filters.labelIds.contains),
-      LabelMatch.all => labels.containsAll(filters.labelIds),
-    };
-  }
+  if (filters.hasLabelFilter) return matchesLabelFilter(tx.labelIds.toSet(), filters);
   return true;
+}
+
+/// Condizione sulle label di un movimento.
+///
+/// - "Almeno una": il movimento ha una delle label scelte, oppure non ne ha nessuna se è
+///   selezionato "Senza label".
+/// - "Tutte": il movimento ha tutte le label scelte. "Senza label" da solo vuol dire nessuna label;
+///   insieme ad altre label nessun movimento può soddisfarlo (la schermata Filtri lo evita).
+bool matchesLabelFilter(Set<String> labels, TransactionFilters filters) {
+  final selected = filters.labelIds;
+  return switch (filters.labelMatch) {
+    LabelMatch.any => labels.any(selected.contains) || (filters.withoutLabels && labels.isEmpty),
+    LabelMatch.all when filters.withoutLabels => selected.isEmpty && labels.isEmpty,
+    LabelMatch.all => labels.containsAll(selected),
+  };
 }
 
 /// Movimenti di una giornata con il loro totale (entrate − spese confermate).
