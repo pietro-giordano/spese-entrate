@@ -374,6 +374,7 @@ class _AttachmentsCountButton extends StatelessWidget {
     final borderRadius = BorderRadius.circular(10);
 
     return Semantics(
+      container: true,
       button: true,
       label: count == 1 ? '1 allegato, apri' : '$count allegati, apri',
       excludeSemantics: true,
@@ -433,6 +434,7 @@ class _HeaderChip extends StatelessWidget {
     final borderRadius = BorderRadius.circular(14);
 
     return Semantics(
+      container: true,
       button: true,
       label: semanticLabel,
       excludeSemantics: true,

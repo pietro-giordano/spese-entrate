@@ -13,6 +13,7 @@ class AppIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.round = false,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -22,12 +23,15 @@ class AppIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool round;
 
+  /// Numero mostrato nell'angolo (es. filtri attivi). 0 = nessun badge.
+  final int badgeCount;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final borderRadius = BorderRadius.circular(round ? AppSizes.minTouchTarget / 2 : 14);
 
-    return Tooltip(
+    final button = Tooltip(
       message: tooltip,
       child: Material(
         color: round ? colors.liquidity.tint : colors.surface,
@@ -48,6 +52,36 @@ class AppIconButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (badgeCount == 0) return button;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          top: -5,
+          right: -5,
+          child: IgnorePointer(
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 20),
+              height: 20,
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colors.income.fill,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.background, width: 2),
+              ),
+              child: Text(
+                '$badgeCount',
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: colors.income.onFill, fontSize: 11, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

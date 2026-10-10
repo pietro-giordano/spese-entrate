@@ -94,6 +94,7 @@ class _WalletRow extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Semantics(
+      container: true,
       button: true,
       label: '${prefix == 'Da' ? 'Da' : 'A'}: $name',
       excludeSemantics: true,

@@ -15,7 +15,13 @@ final clockProvider = ClockProvider._();
 
 /// Orologio dell'app. Nei test si sostituisce con `clockProvider.overrideWithValue(() => DateTime(...))`.
 
-final class ClockProvider extends $FunctionalProvider<DateTime Function(), DateTime Function(), DateTime Function()>
+final class ClockProvider
+    extends
+        $FunctionalProvider<
+          DateTime Function(),
+          DateTime Function(),
+          DateTime Function()
+        >
     with $Provider<DateTime Function()> {
   /// Orologio dell'app. Nei test si sostituisce con `clockProvider.overrideWithValue(() => DateTime(...))`.
   ClockProvider._()
@@ -34,7 +40,9 @@ final class ClockProvider extends $FunctionalProvider<DateTime Function(), DateT
 
   @$internal
   @override
-  $ProviderElement<DateTime Function()> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<DateTime Function()> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   DateTime Function() create(Ref ref) {
@@ -43,7 +51,10 @@ final class ClockProvider extends $FunctionalProvider<DateTime Function(), DateT
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(DateTime Function() value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<DateTime Function()>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DateTime Function()>(value),
+    );
   }
 }
 
@@ -56,7 +67,9 @@ final todayProvider = TodayProvider._();
 
 /// Data di calendario di oggi secondo [clockProvider].
 
-final class TodayProvider extends $FunctionalProvider<LocalDate, LocalDate, LocalDate> with $Provider<LocalDate> {
+final class TodayProvider
+    extends $FunctionalProvider<LocalDate, LocalDate, LocalDate>
+    with $Provider<LocalDate> {
   /// Data di calendario di oggi secondo [clockProvider].
   TodayProvider._()
     : super(
@@ -74,7 +87,8 @@ final class TodayProvider extends $FunctionalProvider<LocalDate, LocalDate, Loca
 
   @$internal
   @override
-  $ProviderElement<LocalDate> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<LocalDate> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   LocalDate create(Ref ref) {
@@ -83,7 +97,10 @@ final class TodayProvider extends $FunctionalProvider<LocalDate, LocalDate, Loca
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(LocalDate value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<LocalDate>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LocalDate>(value),
+    );
   }
 }
 

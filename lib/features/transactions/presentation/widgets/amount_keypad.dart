@@ -49,6 +49,7 @@ class _KeypadKey extends StatelessWidget {
     final borderRadius = BorderRadius.circular(14);
 
     return Semantics(
+      container: true,
       button: true,
       label: isBackspace ? 'Cancella' : keyValue,
       excludeSemantics: true,

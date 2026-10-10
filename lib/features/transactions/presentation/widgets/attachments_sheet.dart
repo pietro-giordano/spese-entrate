@@ -163,6 +163,7 @@ class _Thumbnail extends StatelessWidget {
             width: AppSizes.minTouchTarget,
             height: AppSizes.minTouchTarget,
             child: Semantics(
+              container: true,
               button: true,
               label: 'Rimuovi ${file.name}',
               excludeSemantics: true,

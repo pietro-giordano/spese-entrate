@@ -47,6 +47,7 @@ class AppChip extends StatelessWidget {
     final radius = isPill ? 18.0 : AppRadius.labelChip;
 
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       child: GestureDetector(

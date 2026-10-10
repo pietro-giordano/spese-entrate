@@ -74,6 +74,7 @@ class _TabItem extends StatelessWidget {
     final color = selected ? colors.text : colors.textMuted;
 
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       child: InkWell(

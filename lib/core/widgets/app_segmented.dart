@@ -102,6 +102,7 @@ class _SegmentButton extends StatelessWidget {
     }
 
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       inMutuallyExclusiveGroup: true,

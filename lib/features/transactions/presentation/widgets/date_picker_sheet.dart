@@ -160,6 +160,7 @@ class _DayCell extends StatelessWidget {
     final label = DateFormat.yMMMMd('it_IT').format(date.toDateTime());
 
     return Semantics(
+      container: true,
       button: true,
       selected: selected,
       label: isToday ? '$label, oggi' : label,

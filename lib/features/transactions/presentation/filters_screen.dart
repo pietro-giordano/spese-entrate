@@ -1,16 +1,394 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-import '../../../core/widgets/screen_placeholder.dart';
+import '../../../core/clock.dart';
+import '../../../core/dates.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_segmented.dart';
+import '../../../core/widgets/app_switch.dart';
+import '../../../core/widgets/section_label.dart';
+import '../../../domain/models/app_settings.dart';
+import '../../../domain/models/category.dart';
+import '../../../domain/models/enums.dart';
+import '../../../domain/models/transaction_filters.dart';
+import '../../settings/application/settings_providers.dart';
+import '../../wallets/application/wallet_providers.dart';
+import '../application/transaction_list_providers.dart';
+import 'widgets/date_picker_sheet.dart';
+import 'widgets/period_selector.dart';
 
-class FiltersScreen extends StatelessWidget {
+/// Filtri della lista movimenti. Le modifiche restano in una bozza finché non si tocca
+/// "Applica filtri"; chiudere con la ✕ le scarta.
+class FiltersScreen extends ConsumerStatefulWidget {
   const FiltersScreen({super.key});
 
   @override
+  ConsumerState<FiltersScreen> createState() => _FiltersScreenState();
+}
+
+class _FiltersScreenState extends ConsumerState<FiltersScreen> {
+  late TransactionFilters _filters = ref.read(activeFiltersProvider);
+  late Period _period = ref.read(selectedPeriodProvider);
+
+  void _update(TransactionFilters filters) => setState(() => _filters = filters);
+
+  Set<String> _toggle(Set<String> set, String id) => set.contains(id) ? ({...set}..remove(id)) : {...set, id};
+
+  void _reset(LocalDate today) {
+    setState(() {
+      _filters = const TransactionFilters();
+      _period = Period.containing(PeriodType.month, today);
+    });
+  }
+
+  void _apply() {
+    ref.read(activeFiltersProvider.notifier).apply(_filters);
+    ref.read(selectedPeriodProvider.notifier).set(_period);
+    context.pop();
+  }
+
+  /// Cambiando tipo si tolgono le categorie dell'altro tipo, che non avrebbero effetto.
+  void _setType(TypeFilter type, List<Category> categories) {
+    final allowed = {
+      for (final c in categories)
+        if (type == TypeFilter.all || c.kind.name == type.name) c.id,
+    };
+    _update(_filters.copyWith(type: type, categoryIds: _filters.categoryIds.intersection(allowed)));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const ScreenPlaceholder(
-      title: 'Filtri',
-      leading: PlaceholderLeading.close,
-      description: 'Tipo, periodo, portafogli, categorie e label.',
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    final today = ref.watch(todayProvider);
+    final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
+    final wallets = (ref.watch(walletsProvider).value ?? const []).where((w) => !w.isArchived).toList();
+    final categories = (ref.watch(categoriesProvider).value ?? const <Category>[]).where((c) => !c.isArchived).toList();
+    final labels = ref.watch(labelsProvider).value ?? const [];
+
+    final expenseCategories = categories.where((c) => c.kind == CategoryKind.expense).toList();
+    final incomeCategories = categories.where((c) => c.kind == CategoryKind.income).toList();
+
+    Widget categoryChips(List<Category> list) => Wrap(
+      spacing: 6,
+      children: [
+        for (final category in list)
+          AppChip(
+            label: category.name,
+            showCheck: true,
+            selected: _filters.categoryIds.contains(category.id),
+            onTap: () => _update(_filters.copyWith(categoryIds: _toggle(_filters.categoryIds, category.id))),
+          ),
+      ],
+    );
+
+    return Scaffold(
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border(top: BorderSide(color: colors.border)),
+        ),
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: AppSpacing.xl),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md, AppSpacing.screen, 0),
+            child: FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+              onPressed: _apply,
+              child: const Text('Applica filtri'),
+            ),
+          ),
+        ),
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 14, AppSpacing.screen, 10),
+              child: Row(
+                children: [
+                  AppIconButton(icon: Icons.close_rounded, tooltip: 'Chiudi', onPressed: () => context.pop()),
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text('Filtri', textAlign: TextAlign.center, style: textTheme.titleLarge),
+                    ),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: colors.expense.text),
+                    onPressed: () => _reset(today),
+                    child: const Text('Azzera'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 6, AppSpacing.screen, AppSpacing.xl),
+                children: [
+                  const SectionLabel('Tipo'),
+                  const SizedBox(height: 10),
+                  AppSegmented<TypeFilter>(
+                    segments: const [
+                      AppSegment(value: TypeFilter.all, label: 'Tutti'),
+                      AppSegment(value: TypeFilter.expense, label: 'Spese'),
+                      AppSegment(value: TypeFilter.income, label: 'Entrate'),
+                    ],
+                    selected: _filters.type,
+                    onChanged: (type) => _setType(type, categories),
+                  ),
+                  const SizedBox(height: 22),
+                  const SectionLabel('Periodo'),
+                  const SizedBox(height: 10),
+                  PeriodTypeSelector(
+                    selected: _period.type,
+                    onChanged: (type) => setState(
+                      () => _period = changePeriodType(_period, type, today: today, weekStart: settings.weekStart),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_period.type == PeriodType.custom)
+                    _CustomPeriodFields(
+                      period: _period,
+                      today: today,
+                      weekStart: settings.weekStart,
+                      onChanged: (period) => setState(() => _period = period),
+                    )
+                  else
+                    PeriodNavigator(
+                      period: _period,
+                      today: today,
+                      onShift: (steps) => setState(() => _period = _period.shift(steps)),
+                    ),
+                  const SizedBox(height: 22),
+                  SectionLabel('Portafogli', trailing: _selectedLabel(_filters.walletIds.length, feminine: false)),
+                  const SizedBox(height: AppSpacing.xs),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      for (final wallet in wallets)
+                        AppChip(
+                          label: wallet.name,
+                          showCheck: true,
+                          selected: _filters.walletIds.contains(wallet.id),
+                          onTap: () => _update(_filters.copyWith(walletIds: _toggle(_filters.walletIds, wallet.id))),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  MergeSemantics(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Mostra anche i trasferimenti tra portafogli',
+                            style: textTheme.labelMedium?.copyWith(
+                              color: colors.neutral.onTint,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        AppSwitch(
+                          value: _filters.showTransfers,
+                          onChanged: (value) => _update(_filters.copyWith(showTransfers: value)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  SectionLabel('Categorie', trailing: _selectedLabel(_filters.categoryIds.length, feminine: true)),
+                  const SizedBox(height: AppSpacing.xs),
+                  if (_filters.type == TypeFilter.all) ...[
+                    Text('Spese', style: textTheme.labelSmall?.copyWith(color: colors.textMuted)),
+                    categoryChips(expenseCategories),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text('Entrate', style: textTheme.labelSmall?.copyWith(color: colors.textMuted)),
+                    categoryChips(incomeCategories),
+                  ] else
+                    categoryChips(_filters.type == TypeFilter.expense ? expenseCategories : incomeCategories),
+                  const SizedBox(height: 22),
+                  SectionLabel('Label', trailing: _selectedLabel(_filters.labelIds.length, feminine: true)),
+                  const SizedBox(height: AppSpacing.xs),
+                  if (labels.isEmpty)
+                    Text('Non hai ancora creato label.', style: textTheme.bodySmall)
+                  else ...[
+                    Wrap(
+                      spacing: 6,
+                      children: [
+                        for (final label in labels)
+                          AppChip(
+                            label: '#${label.name}',
+                            shape: AppChipShape.label,
+                            selected: _filters.labelIds.contains(label.id),
+                            onTap: () => _update(_filters.copyWith(labelIds: _toggle(_filters.labelIds, label.id))),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'Con più label selezionate, mostra i movimenti che hanno:',
+                      style: textTheme.labelMedium?.copyWith(color: colors.neutral.onTint, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    AppSegmented<LabelMatch>(
+                      segments: const [
+                        AppSegment(value: LabelMatch.any, label: 'Almeno una'),
+                        AppSegment(value: LabelMatch.all, label: 'Tutte'),
+                      ],
+                      selected: _filters.labelMatch,
+                      onChanged: (match) => _update(_filters.copyWith(labelMatch: match)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "1 selezionato", "2 selezionate"… null se non c'è selezione.
+  String? _selectedLabel(int count, {required bool feminine}) {
+    if (count == 0) return null;
+    final ending = feminine ? (count == 1 ? 'a' : 'e') : (count == 1 ? 'o' : 'i');
+    return '$count selezionat$ending';
+  }
+}
+
+/// Date "Dal"/"Al" e scorciatoie del periodo personalizzato.
+class _CustomPeriodFields extends StatelessWidget {
+  const _CustomPeriodFields({
+    required this.period,
+    required this.today,
+    required this.weekStart,
+    required this.onChanged,
+  });
+
+  final Period period;
+  final LocalDate today;
+  final int weekStart;
+  final ValueChanged<Period> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final presets = {
+      'Ultimi 30 gg': Period.custom(today.addDays(-29), today),
+      'Ultimi 3 mesi': Period.custom(today.addMonths(-3).addDays(1), today),
+      'Da inizio anno': Period.custom(LocalDate(today.year, 1, 1), today),
+    };
+
+    Future<void> pick({required bool start}) async {
+      final picked = await showDatePickerSheet(
+        context,
+        selected: start ? period.start : period.end,
+        today: today,
+        weekStart: weekStart,
+      );
+      if (picked == null) return;
+      // Se le date si incrociano, l'altra si allinea a quella scelta.
+      if (start) {
+        onChanged(Period.custom(picked, picked.isAfter(period.end) ? picked : period.end));
+      } else {
+        onChanged(Period.custom(picked.isBefore(period.start) ? picked : period.start, picked));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _DateField(label: 'Dal', date: period.start, onTap: () => pick(start: true)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _DateField(label: 'Al', date: period.end, onTap: () => pick(start: false)),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final MapEntry(key: label, value: preset) in presets.entries)
+              AppChip(
+                label: label,
+                shape: AppChipShape.label,
+                selected: preset == period,
+                onTap: () => onChanged(preset),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({required this.label, required this.date, required this.onTap});
+
+  final String label;
+  final LocalDate date;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    final value = DateFormat('dd/MM/yyyy', 'it_IT').format(date.toDateTime());
+    final borderRadius = BorderRadius.circular(AppRadius.field);
+
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$label $value',
+      excludeSemantics: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: textTheme.labelSmall?.copyWith(color: colors.textMuted)),
+          const SizedBox(height: AppSpacing.xs),
+          Material(
+            color: colors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: borderRadius,
+              side: BorderSide(color: colors.borderStrong),
+            ),
+            child: InkWell(
+              borderRadius: borderRadius,
+              onTap: onTap,
+              child: SizedBox(
+                height: 46,
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
