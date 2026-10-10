@@ -62,6 +62,12 @@ class DriftTransactionRepository implements TransactionRepository {
   }
 
   @override
+  Future<Set<String>> attachmentPathsOnRecord() async {
+    final query = _db.selectOnly(_db.attachments)..addColumns([_db.attachments.localPath]);
+    return {for (final row in await query.get()) row.read(_db.attachments.localPath)!};
+  }
+
+  @override
   Future<void> delete(String id) => _db.softDelete(_db.transactions, id);
 
   @override

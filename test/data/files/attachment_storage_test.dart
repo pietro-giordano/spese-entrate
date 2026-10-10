@@ -40,6 +40,40 @@ void main() {
     await storage.delete([attachment]);
   });
 
+  test('copia interrotta a metà: nessun file parziale resta su disco', () async {
+    final broken = PickedAttachment(
+      name: 'foto.jpg',
+      mimeType: 'image/jpeg',
+      openRead: () async* {
+        yield utf8.encode('inizio');
+        throw const FileSystemException('lettura interrotta');
+      },
+    );
+    await expectLater(storage.store('tx-1', broken), throwsA(isA<FileSystemException>()));
+    expect(await storage.listFiles(), isEmpty);
+  });
+
+  test('check: ok, mancante, danneggiato (dimensione o contenuto diversi)', () async {
+    final attachment = await storage.store('tx-1', bytesFile('doc.pdf', '%PDF-1.4'));
+    expect(await storage.check(attachment), AttachmentFileStatus.ok);
+
+    final file = await storage.fileFor(attachment);
+    await file.writeAsString('%PDF-1.5'); // stessa lunghezza, contenuto diverso
+    expect(await storage.check(attachment), AttachmentFileStatus.corrupted);
+    await file.writeAsString('troncato');
+    expect(await storage.check(attachment), AttachmentFileStatus.corrupted);
+
+    await file.delete();
+    expect(await storage.check(attachment), AttachmentFileStatus.missing);
+  });
+
+  test('listFiles: percorsi relativi con /, anche senza cartella', () async {
+    expect(await storage.listFiles(), isEmpty);
+    final a = await storage.store('tx-1', bytesFile('a.jpg', 'a'));
+    final b = await storage.store('tx-2', bytesFile('b.pdf', 'b'));
+    expect((await storage.listFiles()).map((f) => f.localPath), unorderedEquals([a.localPath, b.localPath]));
+  });
+
   test('mimeTypeForName', () {
     expect(mimeTypeForName('a.jpeg'), 'image/jpeg');
     expect(mimeTypeForName('a.PNG'), 'image/png');

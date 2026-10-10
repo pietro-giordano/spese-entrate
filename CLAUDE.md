@@ -35,7 +35,7 @@ Alla fine di ogni passo, sempre, in quest'ordine:
 - Modelli: `freezed`, `freezed_annotation`, `json_annotation`, `json_serializable` (dev).
 - ID e hash: `uuid`, `crypto`.
 - Grafici: `fl_chart`.
-- File e media: `image_picker`, `file_picker`, `path_provider`, `path`.
+- File e media: `image_picker`, `file_picker`, `path_provider`, `path`, `open_filex` (PDF con un'app esterna).
 - Sistema: `local_auth`, `share_plus`, `package_info_plus` (versione e build nelle Impostazioni).
 - Formati: `intl`, `flutter_localizations` (sdk), `csv`, `collection`.
 - Lint: `flutter_lints`.
@@ -243,6 +243,26 @@ Al primo avvio, se il database è vuoto:
 - Foto: `imageQuality: 75`, `maxWidth/maxHeight: 2048`. PDF via `file_picker`.
 - Massimo 5 allegati per movimento. Calcola `sha256` e `size_bytes` al salvataggio.
 - La cancellazione logica del movimento non elimina i file (servono per l'annullamento).
+
+Ciclo di vita:
+
+- **Salvataggio**: i file si copiano prima della transazione; se la copia o la scrittura nel
+  database fallisce, le copie (anche quelle a metà) si eliminano subito. Nessun file orfano.
+- **Rimozione** di un allegato (Modifica movimento): sparisce dal form, al salvataggio il record
+  si cancella logicamente con `delete` nell'outbox. Il file resta su disco.
+- **Eliminazione del movimento**: solo il movimento è cancellato logicamente; allegati e file
+  restano invariati, e "Annulla" li rende di nuovo disponibili.
+- **Nessuna cancellazione fisica automatica** dei file di record cancellati logicamente finché non
+  esiste la sincronizzazione (serviranno per annullare e per sincronizzare).
+- **Orfani** = file senza alcun record in `attachments`, nemmeno cancellato. `OrphanAttachmentCleaner`
+  li trova (solo se più vecchi di un giorno, per non toccare salvataggi in corso) ma l'app non
+  lo chiama mai da sola per ora.
+- **Apertura**: prima si controlla il file (esiste, dimensione e SHA-256): mancante o danneggiato →
+  messaggio. Immagini nel visualizzatore a schermo intero (scorrimento, pinch-to-zoom, doppio tocco
+  per tornare normale); PDF con un'app esterna (`open_filex`: su Android URI del FileProvider con
+  permesso di lettura temporaneo, su iOS Quick Look) oppure "Condividi" (`share_plus`).
+- Android: i permessi `READ_EXTERNAL_STORAGE` / `READ_MEDIA_*` dichiarati da `open_filex` sono rimossi
+  dal manifest (`tools:node="remove"`): i file sono nella cartella privata e non servono.
 - Info.plist: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSFaceIDUsageDescription`
   con testi in italiano.
 

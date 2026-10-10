@@ -26,6 +26,11 @@ abstract interface class TransactionRepository {
   /// Allegati non cancellati del movimento, dal primo aggiunto.
   Future<List<Attachment>> getAttachments(String transactionId);
 
+  /// Percorsi (`local_path`) di tutti gli allegati registrati, **compresi** quelli cancellati
+  /// logicamente: i loro file servono per annullare e per la futura sincronizzazione.
+  /// Un file fuori da questo insieme è orfano.
+  Future<Set<String>> attachmentPathsOnRecord();
+
   /// Cancellazione logica. Label e allegati restano, per poter annullare.
   Future<void> delete(String id);
 

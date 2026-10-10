@@ -30,6 +30,7 @@ import 'widgets/attachments_grid.dart';
 import 'widgets/attachments_sheet.dart';
 import 'widgets/date_picker_sheet.dart';
 import 'widgets/delete_transaction_dialog.dart';
+import 'widgets/open_attachment.dart';
 import 'widgets/transaction_form.dart';
 
 /// Modifica movimento: carica il movimento e mostra il form.
@@ -248,6 +249,7 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
                           name: attachment.localPath.split('/').last,
                           mimeType: attachment.mimeType,
                           onRemove: () => controller.removeSavedAttachment(attachment),
+                          onOpen: () => openAttachment(context, ref, attachment, state.savedAttachments),
                         ),
                       for (final file in state.newAttachments)
                         AttachmentGridItem(

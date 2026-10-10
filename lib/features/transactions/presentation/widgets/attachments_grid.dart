@@ -7,11 +7,14 @@ import '../../../../core/widgets/dashed_border.dart';
 
 /// Un riquadro della griglia allegati (salvato o appena aggiunto).
 class AttachmentGridItem {
-  const AttachmentGridItem({required this.name, required this.mimeType, required this.onRemove});
+  const AttachmentGridItem({required this.name, required this.mimeType, required this.onRemove, this.onOpen});
 
   final String name;
   final String mimeType;
   final VoidCallback onRemove;
+
+  /// Apre l'allegato (solo per quelli già salvati); null = riquadro non toccabile.
+  final VoidCallback? onOpen;
 }
 
 /// Griglia 4 colonne di allegati con rimozione e un riquadro "+" per aggiungerne.
@@ -65,22 +68,37 @@ class _Tile extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
+          child: Semantics(
+            container: true,
+            button: item.onOpen != null,
+            label: item.onOpen != null ? 'Apri ${item.name}' : item.name,
+            excludeSemantics: true,
+            child: Material(
               color: colors.track,
-              borderRadius: BorderRadius.circular(AppRadius.field),
-              border: Border.all(color: colors.borderStrong),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(isPdf ? Icons.description_outlined : Icons.image_outlined, size: 24, color: colors.neutral.onTint),
-                const SizedBox(height: 4),
-                Text(
-                  extension.isEmpty ? 'FILE' : extension,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: colors.neutral.onTint),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.field),
+                side: BorderSide(color: colors.borderStrong),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.field),
+                onTap: item.onOpen,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isPdf ? Icons.description_outlined : Icons.image_outlined,
+                      size: 24,
+                      color: colors.neutral.onTint,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      extension.isEmpty ? 'FILE' : extension,
+                      style: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(fontSize: 10, color: colors.neutral.onTint),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
