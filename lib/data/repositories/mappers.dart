@@ -6,6 +6,8 @@ import 'package:drift/drift.dart';
 import '../../domain/models/attachment.dart';
 import '../../domain/models/category.dart';
 import '../../domain/models/label.dart';
+import '../../domain/models/recurrence_exception.dart';
+import '../../domain/models/recurrence_rule.dart';
 import '../../domain/models/transaction.dart';
 import '../../domain/models/wallet.dart';
 import '../db/app_database.dart';
@@ -109,3 +111,51 @@ AttachmentsCompanion attachmentToCompanion(Attachment attachment) => Attachments
   sha256: Value(attachment.sha256),
   remoteUrl: Value(attachment.remoteUrl),
 );
+
+RecurrenceRule recurrenceRuleFromRow(RecurrenceRuleRow row) => RecurrenceRule(
+  id: row.id,
+  name: row.name,
+  type: row.type,
+  amountCents: row.amountCents,
+  currency: row.currency,
+  walletId: row.walletId,
+  toWalletId: row.toWalletId,
+  categoryId: row.categoryId,
+  note: row.note,
+  labelIds: row.labelIds,
+  frequency: row.frequency,
+  interval: row.interval,
+  byWeekday: row.byWeekday,
+  byMonthDay: row.byMonthDay,
+  byMonth: row.byMonth,
+  startDate: row.startDate,
+  endDate: row.endDate,
+  maxCount: row.maxCount,
+  mode: row.mode,
+  pausedAt: _fromMs(row.pausedAt),
+);
+
+RecurrenceRulesCompanion recurrenceRuleToCompanion(RecurrenceRule rule) => RecurrenceRulesCompanion(
+  name: Value(rule.name),
+  type: Value(rule.type),
+  amountCents: Value(rule.amountCents),
+  currency: Value(rule.currency),
+  walletId: Value(rule.walletId),
+  toWalletId: Value(rule.toWalletId),
+  categoryId: Value(rule.categoryId),
+  note: Value(rule.note),
+  labelIds: Value(rule.labelIds),
+  frequency: Value(rule.frequency),
+  interval: Value(rule.interval),
+  byWeekday: Value(rule.byWeekday),
+  byMonthDay: Value(rule.byMonthDay),
+  byMonth: Value(rule.byMonth),
+  startDate: Value(rule.startDate),
+  endDate: Value(rule.endDate),
+  maxCount: Value(rule.maxCount),
+  mode: Value(rule.mode),
+  pausedAt: Value(_toMs(rule.pausedAt)),
+);
+
+RecurrenceException recurrenceExceptionFromRow(RecurrenceExceptionRow row) =>
+    RecurrenceException(id: row.id, ruleId: row.ruleId, occurrenceDate: row.occurrenceDate, kind: row.kind);

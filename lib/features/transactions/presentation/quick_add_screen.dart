@@ -3,37 +3,114 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/clock.dart';
+import '../../../core/dates.dart';
 import '../../../core/money.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_segmented.dart';
+import '../../../core/widgets/choice_sheet.dart';
+import '../../../core/widgets/screen_placeholder.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/transaction.dart';
+import '../../recurring/presentation/recurrence_text.dart';
 import '../../settings/application/settings_providers.dart';
+import '../application/transaction_detail_providers.dart';
 import '../application/transaction_form_controller.dart';
 import 'widgets/amount_keypad.dart';
 import 'widgets/attachments_sheet.dart';
 import 'widgets/date_picker_sheet.dart';
+import 'widgets/date_repeat_sheet.dart';
 import 'widgets/transaction_form.dart';
 
 /// Inserimento rapido di una spesa, un'entrata o un trasferimento, aperto a schermo intero dal basso.
-class QuickAddScreen extends ConsumerStatefulWidget {
-  const QuickAddScreen({super.key, required this.type});
+class QuickAddScreen extends StatelessWidget {
+  const QuickAddScreen({super.key, required this.type, this.openRepeat = false});
 
   /// Tipo iniziale, scelto dal pulsante che ha aperto la schermata.
   final TransactionType type;
 
+  /// Apre subito "Data e ripetizione" con "Ogni mese" (da "Nuova ricorrenza").
+  final bool openRepeat;
+
   @override
-  ConsumerState<QuickAddScreen> createState() => _QuickAddScreenState();
+  Widget build(BuildContext context) => _QuickAddForm(seed: TransactionFormSeed.create(type), openRepeat: openRepeat);
 }
 
-class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
-  final _noteController = TextEditingController();
+/// Conferma di un movimento `pending` (sezione "In arrivo"): Inserimento rapido già compilato.
+class ConfirmTransactionScreen extends ConsumerWidget {
+  const ConfirmTransactionScreen({super.key, required this.transactionId});
 
-  TransactionFormSeed get _seed => TransactionFormSeed.create(widget.type);
+  final String transactionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return switch (ref.watch(transactionDetailProvider(transactionId))) {
+      AsyncValue(value: final detail?) when !detail.transaction.isConfirmed => _QuickAddForm(
+        seed: TransactionFormSeed.confirm(detail.transaction),
+      ),
+      AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
+      _ => const ScreenPlaceholder(
+        title: 'Conferma',
+        description: 'Questo movimento è già stato confermato o non esiste più.',
+      ),
+    };
+  }
+}
+
+class _QuickAddForm extends ConsumerStatefulWidget {
+  const _QuickAddForm({required this.seed, this.openRepeat = false});
+
+  final TransactionFormSeed seed;
+  final bool openRepeat;
+
+  @override
+  ConsumerState<_QuickAddForm> createState() => _QuickAddFormState();
+}
+
+class _QuickAddFormState extends ConsumerState<_QuickAddForm> {
+  late final _noteController = TextEditingController(text: ref.read(_provider).note);
+
+  TransactionFormSeed get _seed => widget.seed;
   TransactionFormControllerProvider get _provider => transactionFormControllerProvider(_seed);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.openRepeat) {
+      // Dopo il primo fotogramma: durante la costruzione non si può modificare lo stato del form.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(_provider.notifier).setRepeat(const RepeatSettings(frequency: RecurrenceFrequency.monthly));
+        _pickDate();
+      });
+    }
+  }
+
+  /// Pannello della data: con la ripetizione per un movimento nuovo, solo la data in conferma.
+  Future<void> _pickDate() async {
+    final state = ref.read(_provider);
+    final controller = ref.read(_provider.notifier);
+    final today = ref.read(todayProvider);
+    final weekStart = (ref.read(appSettingsProvider).value ?? const AppSettings()).weekStart;
+    if (state.confirming) {
+      final picked = await showDatePickerSheet(context, selected: state.date, today: today, weekStart: weekStart);
+      if (picked != null) controller.setDate(picked);
+      return;
+    }
+    final choice = await showDateRepeatSheet(
+      context,
+      selected: state.date,
+      repeat: state.repeat,
+      today: today,
+      weekStart: weekStart,
+    );
+    if (choice == null) return;
+    controller
+      ..setDate(choice.date)
+      ..setRepeat(choice.repeat);
+  }
 
   @override
   void dispose() {
@@ -51,8 +128,8 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
     final isIncome = state.type == TransactionType.income;
     final tone = formTone(context, state.type);
     final today = ref.watch(todayProvider);
-    final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
     final dateLabel = dateChipLabel(state.date, today);
+    final repeats = state.repeat != null || (state.confirming && state.original?.recurrenceId != null);
 
     // Con la tastiera di sistema aperta (nota) il tastierino numerico si nasconde.
     final systemKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
@@ -97,20 +174,16 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   _HeaderChip(
-                    semanticLabel: 'Data del movimento: $dateLabel',
-                    onTap: () async {
-                      final picked = await showDatePickerSheet(
-                        context,
-                        selected: state.date,
-                        today: today,
-                        weekStart: settings.weekStart,
-                      );
-                      if (picked != null) controller.setDate(picked);
-                    },
+                    semanticLabel: 'Data del movimento: $dateLabel${repeats ? ', si ripete' : ''}',
+                    onTap: _pickDate,
                     children: [
                       Icon(Icons.calendar_today_outlined, size: 16, color: colors.text),
                       const SizedBox(width: 6),
                       Text(dateLabel, style: textTheme.labelMedium),
+                      if (repeats) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.repeat_rounded, size: 14, color: colors.text),
+                      ],
                     ],
                   ),
                 ],
@@ -179,11 +252,13 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                     ? null
                     : () =>
                           state.isTransfer ? _save(wallets.fromId, toWalletId: wallets.toId) : _save(wallets.walletId),
-                child: Text(switch (state.type) {
-                  TransactionType.income => 'Salva entrata',
-                  TransactionType.transfer => 'Salva trasferimento',
-                  _ => 'Salva spesa',
-                }),
+                child: Text(
+                  '${state.confirming ? 'Conferma' : 'Salva'} ${switch (state.type) {
+                    TransactionType.income => 'entrata',
+                    TransactionType.transfer => 'trasferimento',
+                    _ => 'spesa',
+                  }}',
+                ),
               ),
             ],
           ),
@@ -199,9 +274,20 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
       return;
     }
 
+    // Ripetizione che parte nel passato: gli arretrati si registrano solo se l'utente lo conferma.
+    final backlog = ref.read(_provider).backlogDates(ref.read(todayProvider));
+    var skippedBacklog = const <LocalDate>[];
+    if (backlog.isNotEmpty) {
+      final registerBacklog = await _askBacklog(backlog);
+      if (registerBacklog == null || !mounted) return;
+      if (!registerBacklog) skippedBacklog = backlog;
+    }
+
     final Transaction? saved;
     try {
-      saved = await ref.read(_provider.notifier).save(walletId: walletId, toWalletId: toWalletId);
+      saved = await ref
+          .read(_provider.notifier)
+          .save(walletId: walletId, toWalletId: toWalletId, skippedBacklog: skippedBacklog);
     } catch (_) {
       messenger.showSnackBar(const SnackBar(content: Text('Salvataggio non riuscito. Riprova.')));
       return;
@@ -210,13 +296,38 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
 
     context.pop();
     final amount = formatCents(saved.amountCents);
+    final verb = ref.read(_provider).confirming ? 'confermat' : 'salvat';
     final message = switch (saved.type) {
-      TransactionType.income => 'Entrata di $amount salvata',
-      TransactionType.transfer => 'Trasferimento di $amount salvato',
-      _ => 'Spesa di $amount salvata',
+      TransactionType.income => 'Entrata di $amount ${verb}a',
+      TransactionType.transfer => 'Trasferimento di $amount ${verb}o',
+      _ => 'Spesa di $amount ${verb}a',
     };
     // Il messenger è quello dell'app: la SnackBar resta visibile sulla schermata sotto.
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Chiede se registrare le occorrenze passate: true sì, false solo da oggi, null annulla.
+  Future<bool?> _askBacklog(List<LocalDate> backlog) {
+    final today = ref.read(todayProvider);
+    final mode = ref.read(_provider).repeat?.mode;
+    final count = backlog.length;
+    final range = count == 1
+        ? 'il ${shortDate(backlog.single, today)}'
+        : 'dal ${shortDate(backlog.first, today)} al ${shortDate(backlog.last, today)}';
+    return showChoiceSheet<bool>(
+      context,
+      title: 'Occorrenze passate',
+      selected: null,
+      choices: [
+        Choice(
+          value: true,
+          label: count == 1 ? 'Registra anche quella passata' : 'Registra anche le $count passate',
+          subtitle: mode == RecurrenceMode.confirm ? '$range, da confermare in "In arrivo"' : range,
+        ),
+        const Choice(value: false, label: 'Solo da oggi in poi', subtitle: 'Le occorrenze passate restano saltate'),
+      ],
+      hint: 'La ripetizione parte da una data passata. Questo movimento si salva in ogni caso.',
+    );
   }
 }
 

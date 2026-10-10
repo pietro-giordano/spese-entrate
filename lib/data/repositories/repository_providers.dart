@@ -4,6 +4,7 @@ import '../../domain/repositories/atomic_writes.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/label_repository.dart';
 import '../../domain/repositories/local_preferences_repository.dart';
+import '../../domain/repositories/recurrence_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/wallet_repository.dart';
@@ -12,6 +13,7 @@ import 'drift_atomic_writes.dart';
 import 'drift_category_repository.dart';
 import 'drift_label_repository.dart';
 import 'drift_local_preferences_repository.dart';
+import 'drift_recurrence_repository.dart';
 import 'drift_settings_repository.dart';
 import 'drift_transaction_repository.dart';
 import 'drift_wallet_repository.dart';
@@ -32,6 +34,9 @@ LabelRepository labelRepository(Ref ref) => DriftLabelRepository(ref.watch(appDa
 
 @Riverpod(keepAlive: true)
 TransactionRepository transactionRepository(Ref ref) => DriftTransactionRepository(ref.watch(appDatabaseProvider));
+
+@Riverpod(keepAlive: true)
+RecurrenceRepository recurrenceRepository(Ref ref) => DriftRecurrenceRepository(ref.watch(appDatabaseProvider));
 
 @Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) => DriftSettingsRepository(ref.watch(appDatabaseProvider));

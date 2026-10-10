@@ -18,9 +18,17 @@ abstract final class AppRoutes {
   static const componentCatalog = '/debug/catalog';
 
   /// Inserimento rapido; [type] è `expense`, `income` o `transfer`.
-  static String add(String type) => Uri(path: '/add', queryParameters: {'type': type}).toString();
+  /// Con [repeat] si apre subito il pannello "Data e ripetizione" (Nuova ricorrenza).
+  static String add(String type, {bool repeat = false}) =>
+      Uri(path: '/add', queryParameters: {'type': type, if (repeat) 'repeat': '1'}).toString();
+
+  /// Inserimento rapido già compilato con il movimento da confermare [id].
+  static String confirm(String id) => Uri(path: '/add', queryParameters: {'confirm': id}).toString();
 
   static String transaction(String id) => '/transactions/$id';
+
+  /// Modifica movimento che al salvataggio applica "questa e le successive".
+  static String transactionFollowing(String id) => '/transactions/$id?scope=following';
   static String wallet(String id) => '/wallets/$id';
   static String editWallet(String id) => '/wallets/$id/edit';
   static String recurrence(String id) => '/settings/recurring/$id';

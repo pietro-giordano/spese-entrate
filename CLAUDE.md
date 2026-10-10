@@ -202,8 +202,32 @@ Al primo avvio, se il database è vuoto:
 - Il calcolo delle occorrenze è una **funzione pura** in `domain/services/` con test dedicati.
 - Creare una ricorrenza da "Ripeti" salva la regola e il movimento corrente come prima occorrenza
   (`recurrence_id` + `occurrence_date` = data scelta).
-- Modifica "solo questa": si modifica il movimento. "Questa e le successive": la regola esistente
-  termina il giorno prima e se ne crea una nuova dalla data dell'occorrenza.
+- Modifica "solo questa": si modifica il movimento (`occurrence_date` resta quella originale).
+  "Questa e le successive": la regola esistente termina il giorno prima della data **originale**
+  dell'occorrenza (o della nuova data, se è precedente) e se ne crea una nuova dalla data scelta nel form,
+  con giorno fisso ricavato da quella data e `max_count` ridotto delle occorrenze già passate.
+  La nuova data deve venire dopo l'occorrenza precedente (`SplitDateException`), così le regole
+  non si sovrappongono. Tutto in una transazione con il salvataggio del movimento (`AtomicWrites`).
+- **Storico intoccabile**: dividere una regola non modifica i movimenti successivi già confermati
+  (né quelli eliminati o le date saltate). La n-esima occorrenza dopo il confine corrisponde
+  alla n-esima della regola nuova, che viene saltata; i soli `pending` successivi si cancellano
+  e si rigenerano con i valori nuovi.
+- **Arretrati**: se una regola nuova parte nel passato, l'inserimento rapido chiede se registrare
+  le occorrenze passate; se no, diventano eccezioni `skip`. Ogni movimento generato ha la data
+  dell'occorrenza, mai quella del giorno in cui gira il generatore.
+- **Pausa**: `paused_at` ferma il generatore e nasconde i `pending` da "In arrivo". Alla ripresa
+  le occorrenze dal giorno della pausa a ieri diventano eccezioni `skip` (i `pending` di quelle date
+  si cancellano, i confermati restano): non si recuperano, anche dopo un riavvio.
+- **Salta**: eccezione `skip` + cancellazione logica del `pending` di quella data.
+  **Elimina regola**: regola e `pending` cancellati, i confermati restano.
+- Un'occorrenza futura modificata prima del tempo si crea come `pending` con l'ID deterministico;
+  per le regole `auto` il generatore la conferma quando arriva la data (un confermato con data
+  futura entrerebbe subito nei saldi).
+- Nome della regola: la nota, altrimenti la categoria, altrimenti "Trasferimento".
+- **Totali fissi** (Movimenti ricorrenti): l'effettivo del mese (importi registrati o della regola,
+  senza saltate e pause) e, se ci sono regole non mensili, la "Media mensile prevista"
+  (settimanali × 52 / 12, giornaliere × 365 / 12, annuali / 12, sempre diviso l'intervallo).
+- "In arrivo" mostra solo i `pending` fino a oggi + 7 (compresi gli scaduti), non le prossime automatiche.
 
 ## Allegati
 

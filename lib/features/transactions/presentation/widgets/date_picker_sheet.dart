@@ -43,36 +43,90 @@ class _DatePickerBody extends StatefulWidget {
 class _DatePickerBodyState extends State<_DatePickerBody> {
   late LocalDate _selected = widget.initial;
 
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TodayYesterdayChips(selected: _selected, today: widget.today, onPick: (d) => setState(() => _selected = d)),
+        const SizedBox(height: AppSpacing.sm),
+        MonthCalendar(
+          selected: _selected,
+          today: widget.today,
+          weekStart: widget.weekStart,
+          onPick: (d) => setState(() => _selected = d),
+        ),
+        const SizedBox(height: 14),
+        FilledButton(onPressed: () => Navigator.pop(context, _selected), child: const Text('Conferma')),
+      ],
+    );
+  }
+}
+
+/// Scorciatoie "Oggi" e "Ieri" sopra il calendario.
+class TodayYesterdayChips extends StatelessWidget {
+  const TodayYesterdayChips({super.key, required this.selected, required this.today, required this.onPick});
+
+  final LocalDate selected;
+  final LocalDate today;
+  final ValueChanged<LocalDate> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final yesterday = today.addDays(-1);
+    return Wrap(
+      spacing: 6,
+      children: [
+        AppChip(label: 'Oggi', selected: selected == today, onTap: () => onPick(today)),
+        AppChip(label: 'Ieri', selected: selected == yesterday, onTap: () => onPick(yesterday)),
+      ],
+    );
+  }
+}
+
+/// Calendario di un mese con frecce: mostra il mese di [selected] e lo segue quando cambia.
+class MonthCalendar extends StatefulWidget {
+  const MonthCalendar({
+    super.key,
+    required this.selected,
+    required this.today,
+    required this.onPick,
+    this.weekStart = DateTime.monday,
+  });
+
+  final LocalDate selected;
+  final LocalDate today;
+  final int weekStart;
+  final ValueChanged<LocalDate> onPick;
+
+  @override
+  State<MonthCalendar> createState() => _MonthCalendarState();
+}
+
+class _MonthCalendarState extends State<MonthCalendar> {
   /// Primo giorno del mese mostrato.
-  late LocalDate _month = LocalDate(widget.initial.year, widget.initial.month, 1);
+  late LocalDate _month = _monthOf(widget.selected);
 
   static const _weekdayInitials = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
 
-  void _pick(LocalDate date) {
-    setState(() {
-      _selected = date;
-      _month = LocalDate(date.year, date.month, 1);
-    });
+  static LocalDate _monthOf(LocalDate date) => LocalDate(date.year, date.month, 1);
+
+  @override
+  void didUpdateWidget(MonthCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // "Oggi" o "Ieri" possono portare a un altro mese.
+    if (widget.selected != oldWidget.selected) _month = _monthOf(widget.selected);
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    final yesterday = widget.today.addDays(-1);
     final monthTitle = DateFormat.yMMMM('it_IT').format(_month.toDateTime());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
-          spacing: 6,
-          children: [
-            AppChip(label: 'Oggi', selected: _selected == widget.today, onTap: () => _pick(widget.today)),
-            AppChip(label: 'Ieri', selected: _selected == yesterday, onTap: () => _pick(yesterday)),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
             IconButton(
@@ -117,16 +171,14 @@ class _DatePickerBodyState extends State<_DatePickerBody> {
                       ? const SizedBox(height: 44)
                       : _DayCell(
                           date: day,
-                          selected: day == _selected,
+                          selected: day == widget.selected,
                           isToday: day == widget.today,
-                          onTap: () => _pick(day),
+                          onTap: () => widget.onPick(day),
                         ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
-        FilledButton(onPressed: () => Navigator.pop(context, _selected), child: const Text('Conferma')),
       ],
     );
   }

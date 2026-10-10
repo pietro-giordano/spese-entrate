@@ -10,9 +10,12 @@ import '../../../data/files/attachment_storage.dart';
 import '../../../data/repositories/repository_providers.dart';
 import '../../../domain/models/attachment.dart';
 import '../../../domain/models/enums.dart';
+import '../../../domain/models/recurrence_rule.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/wallet.dart';
+import '../../../domain/services/recurrence.dart';
+import '../../recurring/application/recurring_providers.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../wallets/application/wallet_providers.dart';
 
@@ -59,11 +62,35 @@ String? resolveWalletId({required String? chosenId, required String? defaultId, 
 }
 
 /// Punto di partenza del form: un nuovo movimento di un certo tipo,
-/// oppure un movimento esistente con i suoi allegati (Modifica movimento).
+/// un movimento esistente con i suoi allegati (Modifica movimento),
+/// oppure un movimento `pending` da confermare (Conferma da "In arrivo").
 @freezed
 sealed class TransactionFormSeed with _$TransactionFormSeed {
   const factory TransactionFormSeed.create(TransactionType type) = CreateTransactionSeed;
   const factory TransactionFormSeed.edit(Transaction original, List<Attachment> attachments) = EditTransactionSeed;
+  const factory TransactionFormSeed.confirm(Transaction pending) = ConfirmTransactionSeed;
+}
+
+/// Ripetizione scelta in Inserimento rapido ("Ripeti" nel pannello della data).
+/// I giorni fissi (del mese, della settimana) si ricavano dalla data del movimento.
+@freezed
+abstract class RepeatSettings with _$RepeatSettings {
+  const factory RepeatSettings({
+    required RecurrenceFrequency frequency,
+    @Default(1) int interval,
+    LocalDate? endDate,
+    int? maxCount,
+    @Default(RecurrenceMode.auto) RecurrenceMode mode,
+  }) = _RepeatSettings;
+}
+
+/// Portata di una modifica a un movimento ricorrente.
+enum EditScope {
+  /// Solo questo movimento; la regola non cambia.
+  single,
+
+  /// Questo movimento e i successivi: la regola si divide.
+  following,
 }
 
 @freezed
@@ -96,6 +123,15 @@ abstract class TransactionFormState with _$TransactionFormState {
     /// Movimento di partenza in modifica; null per un movimento nuovo.
     Transaction? original,
 
+    /// Ripetizione del movimento nuovo (null = non si ripete).
+    RepeatSettings? repeat,
+
+    /// True quando si conferma un `pending`: il salvataggio lo porta a `confirmed`.
+    @Default(false) bool confirming,
+
+    /// True finché l'importo è quello proposto (conferma): il primo tasto lo sostituisce.
+    @Default(false) bool amountIsSuggestion,
+
     /// Diventa true al primo tentativo di salvataggio: da lì si mostrano gli errori.
     @Default(false) bool showErrors,
     @Default(false) bool saving,
@@ -103,7 +139,7 @@ abstract class TransactionFormState with _$TransactionFormState {
 
   const TransactionFormState._();
 
-  bool get isEditing => original != null;
+  bool get isEditing => original != null && !confirming;
   bool get isTransfer => type == TransactionType.transfer;
 
   /// Portafoglio scelto a mano per spese ed entrate (null = usa il predefinito).
@@ -118,6 +154,34 @@ abstract class TransactionFormState with _$TransactionFormState {
 
   int get attachmentCount => savedAttachments.length + newAttachments.length;
   bool get canAddAttachment => attachmentCount < maxAttachments;
+
+  /// Regola che si creerebbe con la ripetizione scelta: servono solo le date.
+  RecurrenceRule? get draftRule => switch (repeat) {
+    final repeat? when original == null => anchorRuleAt(
+      RecurrenceRule(
+        id: '',
+        name: '',
+        type: type,
+        amountCents: 1,
+        walletId: '',
+        frequency: repeat.frequency,
+        interval: repeat.interval,
+        startDate: date,
+        endDate: repeat.endDate,
+        maxCount: repeat.maxCount,
+        mode: repeat.mode,
+      ),
+      date,
+    ),
+    _ => null,
+  };
+
+  /// Occorrenze arretrate di una ripetizione che parte nel passato: dopo la prima (questo
+  /// movimento) e prima di [today]. Vanno confermate dall'utente prima di registrarle.
+  List<LocalDate> backlogDates(LocalDate today) => switch (draftRule) {
+    final rule? => occurrencesBetween(rule, date.addDays(1), today.addDays(-1)),
+    null => const [],
+  };
 }
 
 /// Stato del form di un movimento, condiviso da Inserimento rapido e Modifica movimento.
@@ -131,7 +195,17 @@ class TransactionFormController extends _$TransactionFormController {
   TransactionFormState build(TransactionFormSeed seed) {
     _initial = switch (seed) {
       CreateTransactionSeed(:final type) => TransactionFormState(type: type, date: ref.read(todayProvider)),
-      EditTransactionSeed(:final original, :final attachments) => TransactionFormState(
+      EditTransactionSeed(:final original, :final attachments) => _fromTransaction(original, attachments),
+      ConfirmTransactionSeed(:final pending) => _fromTransaction(
+        pending,
+        const [],
+      ).copyWith(confirming: true, amountIsSuggestion: true),
+    };
+    return _initial;
+  }
+
+  static TransactionFormState _fromTransaction(Transaction original, List<Attachment> attachments) =>
+      TransactionFormState(
         type: original.type,
         date: original.date,
         amountCents: original.amountCents,
@@ -144,10 +218,7 @@ class TransactionFormController extends _$TransactionFormController {
         note: original.note ?? '',
         savedAttachments: attachments,
         original: original,
-      ),
-    };
-    return _initial;
-  }
+      );
 
   /// True se qualche campo è diverso da quello di partenza (abilita "Salva" in modifica).
   bool get isDirty => !_sameValues(state, _initial);
@@ -174,9 +245,15 @@ class TransactionFormController extends _$TransactionFormController {
     state = state.copyWith(type: type, categoryId: null);
   }
 
-  void pressKey(String key) => state = state.copyWith(amountCents: applyKeypadKey(state.amountCents, key));
+  /// Con un importo proposto (conferma) il primo tasto riparte da zero: si scrive l'importo vero.
+  void pressKey(String key) => state = state.copyWith(
+    amountCents: applyKeypadKey(state.amountIsSuggestion ? 0 : state.amountCents, key),
+    amountIsSuggestion: false,
+  );
 
-  void clearAmount() => state = state.copyWith(amountCents: 0);
+  void clearAmount() => state = state.copyWith(amountCents: 0, amountIsSuggestion: false);
+
+  void setRepeat(RepeatSettings? repeat) => state = state.copyWith(repeat: repeat);
 
   /// Importo scritto a mano (Modifica movimento); 0 se il testo non è valido.
   void setAmount(int cents) => state = state.copyWith(amountCents: cents);
@@ -236,9 +313,20 @@ class TransactionFormController extends _$TransactionFormController {
   /// [walletId] è il portafoglio (l'origine per i trasferimenti) e [toWalletId] la destinazione,
   /// già risolti dalla schermata. Restituisce il movimento salvato, o null se i dati non sono validi.
   ///
-  /// I file nuovi vengono copiati prima di scrivere nel database; se la scrittura fallisce
-  /// le copie vengono eliminate e l'errore viene rilanciato.
-  Future<Transaction?> save({required String? walletId, String? toWalletId}) async {
+  /// - Con una ripetizione crea anche la regola, con questo movimento come prima occorrenza;
+  ///   [skippedBacklog] sono le occorrenze arretrate che l'utente non vuole registrare.
+  /// - In conferma il movimento diventa `confirmed`.
+  /// - Con [EditScope.following] la regola si divide dalla data originale dell'occorrenza
+  ///   (vedi `RecurrenceRepository.split`); può lanciare `SplitDateException`.
+  ///
+  /// Tutte le scritture sono un'unica transazione. I file nuovi vengono copiati prima;
+  /// se la scrittura fallisce le copie vengono eliminate e l'errore viene rilanciato.
+  Future<Transaction?> save({
+    required String? walletId,
+    String? toWalletId,
+    EditScope scope = EditScope.single,
+    List<LocalDate> skippedBacklog = const [],
+  }) async {
     if (state.saving) return null;
     final walletsInvalid = walletId == null || (state.isTransfer && (toWalletId == null || toWalletId == walletId));
     if (state.isAmountMissing || state.isCategoryMissing || walletsInvalid) {
@@ -252,7 +340,8 @@ class TransactionFormController extends _$TransactionFormController {
     final base =
         state.original ??
         Transaction(id: newId(), type: state.type, amountCents: 0, date: state.date, walletId: walletId);
-    final transaction = base.copyWith(
+    var transaction = base.copyWith(
+      status: state.confirming ? TransactionStatus.confirmed : base.status,
       type: state.type,
       amountCents: state.amountCents,
       date: state.date,
@@ -267,17 +356,31 @@ class TransactionFormController extends _$TransactionFormController {
     state = state.copyWith(saving: true);
     final storage = ref.read(attachmentStorageProvider);
     final stored = <Attachment>[];
+    final recurrences = ref.read(recurrenceRepositoryProvider);
+    final generator = ref.read(recurrenceGeneratorProvider);
+    final draftRule = state.draftRule;
+    final ruleName = _ruleName(transaction);
     try {
       for (final file in state.newAttachments) {
         stored.add(await storage.store(transaction.id, file));
       }
-      await ref
-          .read(transactionRepositoryProvider)
-          .save(
-            transaction,
-            attachments: stored,
-            removedAttachmentIds: [for (final attachment in state.removedAttachments) attachment.id],
-          );
+      await ref.read(atomicWritesProvider).run(() async {
+        if (draftRule != null) {
+          final rule = _ruleFrom(draftRule.copyWith(id: newId(), name: ruleName), transaction);
+          await recurrences.save(rule, skippedDates: skippedBacklog);
+          transaction = transaction.copyWith(recurrenceId: rule.id, occurrenceDate: rule.startDate);
+        }
+        if (scope == EditScope.following) transaction = await _splitRule(transaction);
+        await ref
+            .read(transactionRepositoryProvider)
+            .save(
+              transaction,
+              attachments: stored,
+              removedAttachmentIds: [for (final attachment in state.removedAttachments) attachment.id],
+            );
+      });
+      // Le occorrenze successive (o arretrate accettate) della regola nuova.
+      if (draftRule != null || scope == EditScope.following) await generator.run();
       return transaction;
     } catch (_) {
       await storage.delete(stored);
@@ -285,6 +388,41 @@ class TransactionFormController extends _$TransactionFormController {
     } finally {
       if (ref.mounted) state = state.copyWith(saving: false);
     }
+  }
+
+  /// Nome della regola: la nota, altrimenti la categoria, altrimenti il tipo.
+  String _ruleName(Transaction tx) {
+    final category = ref.read(categoriesProvider).value?.firstWhereOrNull((c) => c.id == tx.categoryId);
+    return tx.note ?? category?.name ?? (tx.type == TransactionType.transfer ? 'Trasferimento' : 'Ricorrenza');
+  }
+
+  /// [rule] con i valori del movimento (importo, portafogli, categoria, label, nota),
+  /// che parte dalla data del movimento.
+  RecurrenceRule _ruleFrom(RecurrenceRule rule, Transaction tx) => anchorRuleAt(
+    rule.copyWith(
+      type: tx.type,
+      amountCents: tx.amountCents,
+      currency: tx.currency,
+      walletId: tx.walletId,
+      toWalletId: tx.toWalletId,
+      categoryId: tx.categoryId,
+      labelIds: tx.labelIds,
+      note: tx.note,
+    ),
+    tx.date,
+  );
+
+  /// "Questa e le successive": la regola di [tx] finisce prima della sua data originale
+  /// e ne nasce una nuova dalla data del form. Restituisce [tx] spostato sulla regola nuova.
+  Future<Transaction> _splitRule(Transaction tx) async {
+    final ruleId = tx.recurrenceId;
+    final boundary = state.original?.occurrenceDate;
+    final repository = ref.read(recurrenceRepositoryProvider);
+    final old = ruleId == null ? null : await repository.getById(ruleId);
+    if (old == null || boundary == null) throw StateError('Il movimento non fa parte di una ricorrenza attiva');
+    final next = _ruleFrom(old.copyWith(id: newId()), tx);
+    final saved = await repository.split(old.id, boundary: boundary, next: next);
+    return tx.copyWith(recurrenceId: saved.id, occurrenceDate: saved.startDate);
   }
 }
 

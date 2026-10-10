@@ -125,8 +125,13 @@ void main() {
     expect(find.text('Hai speso il 34% delle entrate'), findsOneWidget);
     expect(find.text('Tutti i portafogli'), findsOneWidget);
 
+    // Il pending (non ricorrente) è in "In arrivo", non nella lista.
+    expect(find.text('IN ARRIVO · PROSSIMI 7 GIORNI'), findsOneWidget);
+    expect(find.text('Conferma'), findsOneWidget);
+
     expect(find.text('OGGI · SAB 3 OTTOBRE'), findsOneWidget);
     expect(find.text('$minusSign € 68,70'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('IERI · VEN 2 OTTOBRE'), 200);
     expect(find.text('IERI · VEN 2 OTTOBRE'), findsOneWidget);
     expect(find.text('+ € 2.400,00'), findsNWidgets(2), reason: 'totale del giorno e riga');
 
@@ -174,6 +179,7 @@ void main() {
     await tester.pump();
     await applyFilters(tester);
     expect(find.byTooltip('Filtri'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Stipendio'), 200);
     expect(find.text('Stipendio'), findsOneWidget);
   });
 

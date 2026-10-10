@@ -17,6 +17,7 @@ import '../../../domain/models/label.dart';
 import '../../../domain/models/statistics.dart';
 import '../../../domain/services/statistics.dart';
 import '../../../domain/services/transaction_list.dart';
+import '../../recurring/presentation/widgets/upcoming_section.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../wallets/application/wallet_providers.dart';
 import '../application/transaction_list_providers.dart';
@@ -115,6 +116,7 @@ class TransactionsScreen extends ConsumerWidget {
                     onTapWallets: () => context.push(AppRoutes.filters),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  const UpcomingSection(),
                   ...switch (groupsAsync) {
                     AsyncValue(value: final groups?) when groups.isEmpty => [
                       _EmptyState(

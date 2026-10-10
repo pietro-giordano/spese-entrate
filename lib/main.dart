@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'app.dart';
 import 'data/db/database_provider.dart';
+import 'features/recurring/application/recurring_providers.dart';
 import 'features/settings/application/settings_providers.dart';
 
 Future<void> main() async {
@@ -26,6 +27,16 @@ Future<void> main() async {
     ..listen(localPreferencesProvider, (_, _) {});
   await container.read(appSettingsProvider.future);
   await container.read(localPreferencesProvider.future);
+
+  // Ricorrenze: le occorrenze mancate si creano all'avvio e a ogni ritorno in primo piano.
+  // Un errore qui non deve impedire di aprire l'app: si riprova al prossimo ritorno.
+  final generator = container.read(recurrenceGeneratorProvider);
+  try {
+    await generator.run();
+  } catch (error) {
+    debugPrint('Generazione delle ricorrenze non riuscita: $error');
+  }
+  AppLifecycleListener(onResume: () => generator.run().ignore());
 
   runApp(UncontrolledProviderScope(container: container, child: const App()));
 }

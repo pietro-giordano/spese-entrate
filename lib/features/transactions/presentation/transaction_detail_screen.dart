@@ -10,6 +10,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/choice_sheet.dart';
 import '../../../core/widgets/screen_placeholder.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../data/files/attachment_picker.dart';
@@ -17,7 +18,11 @@ import '../../../data/repositories/repository_providers.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
+import '../../../domain/models/recurrence_rule.dart';
+import '../../../domain/services/recurrence.dart';
 import '../../../domain/models/transaction.dart';
+import '../../recurring/application/recurring_providers.dart';
+import '../../recurring/presentation/recurrence_text.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/transaction_detail_providers.dart';
 import '../application/transaction_form_controller.dart';
@@ -29,14 +34,17 @@ import 'widgets/transaction_form.dart';
 
 /// Modifica movimento: carica il movimento e mostra il form.
 class TransactionDetailScreen extends ConsumerWidget {
-  const TransactionDetailScreen({super.key, required this.transactionId});
+  const TransactionDetailScreen({super.key, required this.transactionId, this.scope});
 
   final String transactionId;
+
+  /// Portata già scelta (dal dettaglio della ricorrenza); null = si chiede al salvataggio.
+  final EditScope? scope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return switch (ref.watch(transactionDetailProvider(transactionId))) {
-      AsyncValue(value: final detail?) => _EditTransactionForm(detail: detail),
+      AsyncValue(value: final detail?) => _EditTransactionForm(detail: detail, scope: scope),
       AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
       _ => const ScreenPlaceholder(
         title: 'Movimento',
@@ -47,9 +55,10 @@ class TransactionDetailScreen extends ConsumerWidget {
 }
 
 class _EditTransactionForm extends ConsumerStatefulWidget {
-  const _EditTransactionForm({required this.detail});
+  const _EditTransactionForm({required this.detail, this.scope});
 
   final TransactionDetail detail;
+  final EditScope? scope;
 
   @override
   ConsumerState<_EditTransactionForm> createState() => _EditTransactionFormState();
@@ -84,6 +93,7 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
     final today = ref.watch(todayProvider);
     final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
     final timestamp = DateFormat('d MMM y, HH:mm', 'it_IT');
+    final rule = _rule;
 
     return Scaffold(
       bottomNavigationBar: DecoratedBox(
@@ -163,6 +173,15 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.lg),
                 children: [
+                  if (rule != null) ...[
+                    _RecurrenceBanner(
+                      rule: rule,
+                      pending: !_original.isConfirmed,
+                      following: widget.scope == EditScope.following,
+                      onTap: () => context.push(AppRoutes.recurrence(rule.id)),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
                   TransactionTypeSelector(seed: _seed),
                   const SizedBox(height: 18),
                   _LabeledField(
@@ -260,19 +279,58 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
     return text[0].toUpperCase() + text.substring(1);
   }
 
+  /// Regola attiva del movimento, se è un'occorrenza di una ricorrenza non eliminata (in build).
+  RecurrenceRule? get _rule => switch (_original.recurrenceId) {
+    final id? => ref.watch(recurrenceRuleProvider(id)).value,
+    null => null,
+  };
+
   Future<void> _save(String? walletId, {String? toWalletId}) async {
     final messenger = ScaffoldMessenger.of(context);
+    // Movimento ricorrente: solo questo, o anche i successivi (la regola si divide)?
+    var scope = EditScope.single;
+    final ruleId = _original.recurrenceId;
+    if (ruleId != null && ref.read(recurrenceRuleProvider(ruleId)).value != null) {
+      final chosen = widget.scope ?? await _askScope();
+      if (chosen == null || !mounted) return;
+      scope = chosen;
+    }
+
     final Transaction? saved;
     try {
-      saved = await ref.read(_provider.notifier).save(walletId: walletId, toWalletId: toWalletId);
+      saved = await ref.read(_provider.notifier).save(walletId: walletId, toWalletId: toWalletId, scope: scope);
+    } on SplitDateException catch (error) {
+      final previous = DateFormat('d MMMM', 'it_IT').format(error.previousOccurrence.toDateTime());
+      messenger.showSnackBar(
+        SnackBar(content: Text('Per questa e le successive scegli una data dopo il $previous (occorrenza precedente)')),
+      );
+      return;
     } catch (_) {
       messenger.showSnackBar(const SnackBar(content: Text('Salvataggio non riuscito. Riprova.')));
       return;
     }
     if (saved == null || !mounted) return;
     context.pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Modifiche salvate')));
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(scope == EditScope.following ? 'Modifiche salvate anche per le successive' : 'Modifiche salvate'),
+      ),
+    );
   }
+
+  Future<EditScope?> _askScope() => showChoiceSheet<EditScope>(
+    context,
+    title: 'Movimento ricorrente',
+    selected: null,
+    choices: const [
+      Choice(value: EditScope.single, label: 'Solo questo', subtitle: 'La ricorrenza resta com\'è'),
+      Choice(
+        value: EditScope.following,
+        label: 'Questo e i successivi',
+        subtitle: 'Quelli già registrati non cambiano',
+      ),
+    ],
+  );
 
   /// Crea subito una copia del movimento salvato: nuovo ID, data di oggi, senza allegati.
   Future<void> _duplicate() async {
@@ -328,6 +386,62 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
       _ => formatCents(tx.amountCents),
     };
     return '$title · $amount';
+  }
+}
+
+/// Banner in cima al form: il movimento fa parte di una ricorrenza (tocca per aprirla).
+class _RecurrenceBanner extends StatelessWidget {
+  const _RecurrenceBanner({required this.rule, required this.pending, required this.following, required this.onTap});
+
+  final RecurrenceRule rule;
+  final bool pending;
+  final bool following;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    final borderRadius = BorderRadius.circular(14);
+    final title = rule.name;
+    final subtitle = following
+        ? 'Le modifiche varranno anche per le occorrenze successive'
+        : ['Si ripete', describeSchedule(rule), if (pending) 'da confermare'].join(' · ');
+
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$title. $subtitle. Apri la ricorrenza',
+      excludeSemantics: true,
+      child: Material(
+        color: colors.neutral.tint,
+        borderRadius: borderRadius,
+        child: InkWell(
+          borderRadius: borderRadius,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.repeat_rounded, size: 20, color: colors.neutral.onTint),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: textTheme.titleSmall?.copyWith(color: colors.text)),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: textTheme.bodySmall?.copyWith(color: colors.neutral.onTint)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 20, color: colors.neutral.onTint),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

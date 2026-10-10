@@ -155,6 +155,43 @@ final class TransactionRepositoryProvider
 
 String _$transactionRepositoryHash() => r'78244cdf1f73d1d9dd6d0020e29608852925355e';
 
+@ProviderFor(recurrenceRepository)
+final recurrenceRepositoryProvider = RecurrenceRepositoryProvider._();
+
+final class RecurrenceRepositoryProvider
+    extends $FunctionalProvider<RecurrenceRepository, RecurrenceRepository, RecurrenceRepository>
+    with $Provider<RecurrenceRepository> {
+  RecurrenceRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recurrenceRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recurrenceRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RecurrenceRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  RecurrenceRepository create(Ref ref) {
+    return recurrenceRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RecurrenceRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<RecurrenceRepository>(value));
+  }
+}
+
+String _$recurrenceRepositoryHash() => r'7d05d4d1b8ef01b2b29040729d844d6e5115c70f';
+
 @ProviderFor(settingsRepository)
 final settingsRepositoryProvider = SettingsRepositoryProvider._();
 

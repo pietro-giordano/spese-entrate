@@ -12,6 +12,7 @@ import '../../features/settings/presentation/backup_screen.dart';
 import '../../features/settings/presentation/categories_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/transactions/presentation/filters_screen.dart';
+import '../../features/transactions/application/transaction_form_controller.dart' show EditScope;
 import '../../features/transactions/presentation/quick_add_screen.dart';
 import '../../features/transactions/presentation/transaction_detail_screen.dart';
 import '../../features/transactions/presentation/transactions_screen.dart';
@@ -79,20 +80,25 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: '/add',
-        pageBuilder: (context, state) => _slideUpPage(
-          state,
-          QuickAddScreen(
+        pageBuilder: (context, state) => _slideUpPage(state, switch (state.uri.queryParameters['confirm']) {
+          final pendingId? => ConfirmTransactionScreen(transactionId: pendingId),
+          null => QuickAddScreen(
             type: switch (state.uri.queryParameters['type']) {
               'income' => TransactionType.income,
               'transfer' => TransactionType.transfer,
               _ => TransactionType.expense,
             },
+            openRepeat: state.uri.queryParameters['repeat'] == '1',
           ),
-        ),
+        }),
       ),
       GoRoute(
         path: '/transactions/:id',
-        builder: (context, state) => TransactionDetailScreen(transactionId: state.pathParameters['id']!),
+        builder: (context, state) => TransactionDetailScreen(
+          transactionId: state.pathParameters['id']!,
+          // Da "Modifica questa e le successive" nel dettaglio della ricorrenza.
+          scope: state.uri.queryParameters['scope'] == 'following' ? EditScope.following : null,
+        ),
       ),
       GoRoute(path: AppRoutes.filters, builder: (context, state) => const FiltersScreen()),
       GoRoute(
