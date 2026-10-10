@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,13 +7,26 @@ import 'package:go_router/go_router.dart';
 import 'package:spese_entrate/app.dart';
 import 'package:spese_entrate/core/router/app_router.dart';
 import 'package:spese_entrate/core/router/app_routes.dart';
+import 'package:spese_entrate/data/db/app_database.dart';
+import 'package:spese_entrate/data/db/database_provider.dart';
+import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/features/transactions/presentation/quick_add_screen.dart';
 import 'package:spese_entrate/features/transactions/presentation/transactions_screen.dart';
 
-/// Avvia l'app e restituisce il router, per poter navigare direttamente negli indirizzi.
+/// Avvia l'app su uno schermo da telefono con un database in memoria
+/// e restituisce il router, per poter navigare direttamente negli indirizzi.
 Future<GoRouter> pumpApp(WidgetTester tester) async {
-  final container = ProviderContainer();
-  addTearDown(container.dispose);
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  tester.view.physicalSize = const Size(390, 844);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final db = AppDatabase(NativeDatabase.memory());
+  final container = ProviderContainer(overrides: [appDatabaseProvider.overrideWithValue(db)]);
+  addTearDown(() async {
+    container.dispose();
+    await db.close();
+  });
   await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const App()));
   await tester.pumpAndSettle();
   return container.read(appRouterProvider);
@@ -60,7 +75,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final quickAdd = tester.widget<QuickAddScreen>(find.byType(QuickAddScreen));
-    expect(quickAdd.type, 'expense');
+    expect(quickAdd.type, TransactionType.expense);
     final route = ModalRoute.of(tester.element(find.byType(QuickAddScreen)))!;
     expect(route is PageRoute && route.fullscreenDialog, isTrue);
     // Copre anche la barra dei tab.
@@ -78,7 +93,7 @@ void main() {
       AppRoutes.wallets: 'Portafogli',
       AppRoutes.charts: 'Grafici',
       AppRoutes.compare: 'Confronta',
-      AppRoutes.add('transfer'): 'Nuovo movimento',
+      AppRoutes.add('income'): 'Salva entrata',
       AppRoutes.transaction('t1'): 'Modifica movimento',
       AppRoutes.filters: 'Filtri',
       AppRoutes.newWallet: 'Nuovo portafoglio',

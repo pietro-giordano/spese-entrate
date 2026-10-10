@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../domain/models/enums.dart';
 import '../../features/analytics/presentation/charts_screen.dart';
 import '../../features/analytics/presentation/compare_screen.dart';
 import '../../features/recurring/presentation/recurrence_detail_screen.dart';
@@ -78,8 +79,13 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: '/add',
-        pageBuilder: (context, state) =>
-            _slideUpPage(state, QuickAddScreen(type: state.uri.queryParameters['type'] ?? 'expense')),
+        pageBuilder: (context, state) => _slideUpPage(
+          state,
+          QuickAddScreen(
+            // Per ora solo spese ed entrate: il trasferimento arriverà in un passo successivo.
+            type: state.uri.queryParameters['type'] == 'income' ? TransactionType.income : TransactionType.expense,
+          ),
+        ),
       ),
       GoRoute(
         path: '/transactions/:id',

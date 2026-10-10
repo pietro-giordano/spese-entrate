@@ -94,6 +94,14 @@ abstract final class AppTheme {
           textStyle: const TextStyle(fontFamily: fontFamily, fontSize: 14, fontWeight: FontWeight.w800),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: c.neutral.fill,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(color: c.neutral.onFill),
+        actionTextColor: c.neutral.onFill,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.field)),
+      ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: c.surface,
         surfaceTintColor: Colors.transparent,

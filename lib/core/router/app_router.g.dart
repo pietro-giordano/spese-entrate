@@ -17,7 +17,9 @@ final appRouterProvider = AppRouterProvider._();
 /// Router dell'app. È un provider così in futuro potrà leggere altro stato
 /// (es. il blocco biometrico) per i redirect, e ogni test ne ottiene uno nuovo.
 
-final class AppRouterProvider extends $FunctionalProvider<GoRouter, GoRouter, GoRouter> with $Provider<GoRouter> {
+final class AppRouterProvider
+    extends $FunctionalProvider<GoRouter, GoRouter, GoRouter>
+    with $Provider<GoRouter> {
   /// Router dell'app. È un provider così in futuro potrà leggere altro stato
   /// (es. il blocco biometrico) per i redirect, e ogni test ne ottiene uno nuovo.
   AppRouterProvider._()
@@ -36,7 +38,8 @@ final class AppRouterProvider extends $FunctionalProvider<GoRouter, GoRouter, Go
 
   @$internal
   @override
-  $ProviderElement<GoRouter> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+  $ProviderElement<GoRouter> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
   GoRouter create(Ref ref) {
@@ -45,8 +48,11 @@ final class AppRouterProvider extends $FunctionalProvider<GoRouter, GoRouter, Go
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(GoRouter value) {
-    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<GoRouter>(value));
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GoRouter>(value),
+    );
   }
 }
 
-String _$appRouterHash() => r'88671a1e92496c34d1bc0672f7bf3d63dfba49a4';
+String _$appRouterHash() => r'603eb0683bec4fa297960adb2efa0c3581f7f7dd';

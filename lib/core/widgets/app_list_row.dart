@@ -55,7 +55,15 @@ class AppListRow extends StatelessWidget {
               ),
               if (value != null) ...[
                 const SizedBox(width: 10),
-                Text(value!, style: textTheme.bodyMedium?.copyWith(color: colors.textMuted)),
+                // Il titolo ha la precedenza: il valore si accorcia con i puntini.
+                Flexible(
+                  child: Text(
+                    value!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(color: colors.textMuted),
+                  ),
+                ),
               ],
               if (trailing != null) ...[
                 const SizedBox(width: AppSpacing.md),
