@@ -232,12 +232,21 @@ Formati: locale `it_IT`, importi `€ 1.234,56`, settimana da lunedì.
 | textMuted | #5B5F66 | #A3A8B0 |
 | expense (sfondo pieno) | #C2410C | #C2410C |
 | expense (testo) | #C2410C | #F28C55 |
+| expense (tinta / testo su tinta) | #FCE9DF / #9A3412 | #3A2219 / #F28C55 |
 | income (sfondo pieno) | #1D4ED8 | #1D4ED8 |
 | income (testo) | #1D4ED8 | #7DA0F7 |
+| income (tinta / testo su tinta) | #DCE5FB / #1E3A8A | #1E2A4D / #7DA0F7 |
+| neutral (trasferimenti, azioni neutre) | pieno #16181D, tinta #F1F1EE / #3D4148 | pieno #EDEEF0, tinta #23272D / #A3A8B0 |
 | danger (testo) | #B4410C | #F28C55 |
+| switchTrackOff (interruttore spento) | #C9CBC4 | #4A4F58 |
+| switchThumb (pallino interruttore) | #FFFFFF + ombra | #FFFFFF + ombra |
+| scrim (velo dietro i pannelli) | #111316 al 45% | #000000 al 60% |
+| chartSeries (periodi di Confronta, in ordine) | #1D4ED8, #F08A4B, #0F5F58 | #7DA0F7, #F08A4B, #4FB3A8 |
 | gruppo Liquidità | #1D4ED8 / tinta #DCE5FB | tinta #1E2A4D |
 | gruppo Risparmi | #0F5F58 / tinta #D5ECE9 | #4FB3A8 / tinta #163A36 |
 | gruppo Investimenti | #7C3AED / tinta #EAE2FB | #A78BFA / tinta #2E2448 |
+
+I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano colori scritti a mano.
 
 - Raggi: card 18–20, campi e pulsanti 12–16, chip 8 (label) o pillola (categorie).
 - Spaziatura base 4; margini laterali schermata 20.
