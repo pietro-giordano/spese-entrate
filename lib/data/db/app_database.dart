@@ -78,10 +78,11 @@ class AppDatabase extends _$AppDatabase {
     return deviceId;
   }
 
+  String? _deviceId;
+
   /// ID di questo dispositivo, da scrivere in `device_id` di ogni record.
   Future<String> deviceId() async {
-    final row = await (select(appMeta)..where((t) => t.key.equals(AppMetaKeys.deviceId))).getSingle();
-    return row.value;
+    return _deviceId ??= (await (select(appMeta)..where((t) => t.key.equals(AppMetaKeys.deviceId))).getSingle()).value;
   }
 
   /// Aggiunge una riga alla coda di sincronizzazione.
@@ -91,12 +92,37 @@ class AppDatabase extends _$AppDatabase {
         .insert(OutboxCompanion.insert(entity: entity, entityId: entityId, op: op, changedAt: changedAt));
   }
 
-  /// Cancellazione logica: imposta `deleted_at` e `updated_at` e accoda un `delete` nell'outbox,
-  /// tutto in una transazione. Restituisce false se il record non esiste o era già cancellato.
+  /// Crea o aggiorna il record [id] di una tabella sincronizzabile.
+  ///
+  /// [values] è un Companion con i soli campi propri della tabella. Qui si impostano
+  /// `updated_at` e `device_id`, si conserva `created_at` (o lo si imposta alla creazione)
+  /// e si azzera `deleted_at`: salvare un record cancellato lo ripristina.
+  /// Accoda un `upsert` nell'outbox. Tutto in una transazione.
+  Future<void> upsertSynced<T extends Table, D>(TableInfo<T, D> table, String id, Insertable<D> values) {
+    _requireSyncTable(table);
+    return transaction(() async {
+      final now = nowMs();
+      final columns = {
+        ...values.toColumns(false),
+        'id': Variable<String>(id),
+        'updated_at': Variable<int>(now),
+        'device_id': Variable<String>(await deviceId()),
+        'deleted_at': const Variable<int>(null),
+      };
+      final updated = await (update(
+        table,
+      )..where((t) => (t as SyncColumns).id.equals(id))).write(RawValuesInsertable<D>(columns));
+      if (updated == 0) {
+        await into(table).insert(RawValuesInsertable<D>({...columns, 'created_at': Variable<int>(now)}));
+      }
+      await enqueueChange(table.actualTableName, id, OutboxOp.upsert, now);
+    });
+  }
+
+  /// Cancellazione logica: imposta `deleted_at`, `updated_at` e `device_id` e accoda un `delete`
+  /// nell'outbox, tutto in una transazione. Restituisce false se il record non esiste o era già cancellato.
   Future<bool> softDelete<T extends Table, D>(TableInfo<T, D> table, String id) {
-    if (table is! SyncColumns) {
-      throw ArgumentError('${table.actualTableName} non è una tabella sincronizzabile');
-    }
+    _requireSyncTable(table);
     return transaction(() async {
       final now = nowMs();
       final query = update(table)
@@ -105,13 +131,32 @@ class AppDatabase extends _$AppDatabase {
           return columns.id.equals(id) & columns.deletedAt.isNull();
         });
       final changed = await query.write(
-        RawValuesInsertable<D>({'deleted_at': Variable<int>(now), 'updated_at': Variable<int>(now)}),
+        RawValuesInsertable<D>({
+          'deleted_at': Variable<int>(now),
+          'updated_at': Variable<int>(now),
+          'device_id': Variable<String>(await deviceId()),
+        }),
       );
       if (changed == 0) return false;
       await enqueueChange(table.actualTableName, id, OutboxOp.delete, now);
       return true;
     });
   }
+
+  void _requireSyncTable(TableInfo<Table, dynamic> table) {
+    if (table is! SyncColumns) {
+      throw ArgumentError('${table.actualTableName} non è una tabella sincronizzabile');
+    }
+  }
+}
+
+/// Chiavi della tabella `settings`.
+abstract final class SettingKeys {
+  static const defaultExpenseWalletId = 'default_expense_wallet_id';
+  static const defaultIncomeWalletId = 'default_income_wallet_id';
+  static const weekStart = 'week_start';
+  static const defaultPeriod = 'default_period';
+  static const currency = 'currency';
 }
 
 /// Chiavi di `app_meta`.

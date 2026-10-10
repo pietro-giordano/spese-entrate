@@ -3,15 +3,6 @@ import '../../core/money.dart';
 import '../../domain/models/enums.dart';
 import 'app_database.dart';
 
-/// Chiavi della tabella `settings`.
-abstract final class SettingKeys {
-  static const defaultExpenseWalletId = 'default_expense_wallet_id';
-  static const defaultIncomeWalletId = 'default_income_wallet_id';
-  static const weekStart = 'week_start';
-  static const defaultPeriod = 'default_period';
-  static const currency = 'currency';
-}
-
 /// Categorie iniziali: nome → colore ARGB.
 const initialExpenseCategories = {
   'Spesa alimentare': 0xFF15803D,
