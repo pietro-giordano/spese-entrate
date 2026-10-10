@@ -1,0 +1,10 @@
+# Icona dell'app: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  # Android 8+: icona adattiva (il sistema decide la forma).
+  adaptive_icon_background: "#16181D"
+  adaptive_icon_foreground: assets/icon/icon_foreground.png
+  min_sdk_android: 21

@@ -9,6 +9,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
+import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/wallet.dart';
 import '../application/wallet_providers.dart';
 import 'widgets/net_worth_card.dart';
@@ -23,7 +24,8 @@ class WalletsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
-    final overviews = ref.watch(walletOverviewsProvider).value ?? const <WalletOverview>[];
+    final overviewsAsync = ref.watch(walletOverviewsProvider);
+    final overviews = overviewsAsync.value ?? const <WalletOverview>[];
 
     final active = overviews.where((o) => !o.wallet.isArchived).toList();
     final archived = overviews.where((o) => o.wallet.isArchived).toList();
@@ -76,20 +78,32 @@ class WalletsScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            NetWorthCard(totalCents: sum(included), groupTotals: groupTotals),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                textStyle: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+            if (overviewsAsync.hasError && overviewsAsync.value == null)
+              StateMessage.error(what: 'i portafogli', onRetry: () => ref.invalidate(walletOverviewsProvider))
+            else if (overviewsAsync.hasValue && overviews.isEmpty)
+              StateMessage(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Nessun portafoglio',
+                message: 'Aggiungi un conto, i contanti o una carta per iniziare a registrare i movimenti.',
+                actionLabel: 'Nuovo portafoglio',
+                onAction: () => context.push(AppRoutes.newWallet),
+              )
+            else ...[
+              NetWorthCard(totalCents: sum(included), groupTotals: groupTotals),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  textStyle: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                onPressed: active.length < 2 ? null : () => context.push(AppRoutes.add('transfer')),
+                icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+                label: const Text('Trasferisci tra portafogli'),
               ),
-              onPressed: active.length < 2 ? null : () => context.push(AppRoutes.add('transfer')),
-              icon: const Icon(Icons.swap_horiz_rounded, size: 20),
-              label: const Text('Trasferisci tra portafogli'),
-            ),
-            for (final MapEntry(key: group, value: list) in byGroup.entries)
-              section(walletGroupLabel(group), formatCents(groupTotals[group]!), list),
-            if (archived.isNotEmpty) section('Archiviati', null, archived),
+              for (final MapEntry(key: group, value: list) in byGroup.entries)
+                section(walletGroupLabel(group), formatCents(groupTotals[group]!), list),
+              if (archived.isNotEmpty) section('Archiviati', null, archived),
+            ],
             const SizedBox(height: AppSpacing.lg),
             Text(
               'I trasferimenti spostano denaro tra portafogli: non contano come entrate o spese nei grafici.',

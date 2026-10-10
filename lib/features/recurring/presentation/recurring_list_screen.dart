@@ -15,6 +15,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/dashed_border.dart';
 import '../../../core/widgets/section_label.dart';
+import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/recurrence_exception.dart';
@@ -38,7 +39,8 @@ class RecurringListScreen extends ConsumerWidget {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
-    final rules = ref.watch(recurrenceRulesProvider).value ?? const <RecurrenceRule>[];
+    final rulesAsync = ref.watch(recurrenceRulesProvider);
+    final rules = rulesAsync.value ?? const <RecurrenceRule>[];
     final exceptions = ref.watch(recurrenceExceptionsProvider).value ?? const <RecurrenceException>[];
     final transactions = ref.watch(allTransactionsProvider).value ?? const <Transaction>[];
     final totals = ref.watch(recurringTotalsThisMonthProvider).value;
@@ -118,7 +120,9 @@ class RecurringListScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.xxl),
                 children: [
-                  if (rules.isEmpty) ...[
+                  if (rulesAsync.hasError && rulesAsync.value == null)
+                    StateMessage.error(what: 'le ricorrenze', onRetry: () => ref.invalidate(recurrenceRulesProvider))
+                  else if (rulesAsync.hasValue && rules.isEmpty) ...[
                     Text('Nessun movimento ricorrente.', style: textTheme.titleSmall),
                     const SizedBox(height: AppSpacing.xs),
                     Text(

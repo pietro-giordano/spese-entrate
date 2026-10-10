@@ -11,6 +11,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/app_segmented.dart';
+import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/label.dart';
@@ -62,12 +63,10 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
     final today = ref.watch(todayProvider);
     final period = ref.watch(chartsPeriodProvider);
     final summary = ref.watch(periodSummaryProvider(period.range)).value;
-    final items =
-        (_grouping == _Grouping.category
-                ? ref.watch(categoryBreakdownProvider(period.range, _kind))
-                : ref.watch(labelBreakdownProvider(period.range, _kind)))
-            .value ??
-        const <BreakdownItem>[];
+    final itemsAsync = _grouping == _Grouping.category
+        ? ref.watch(categoryBreakdownProvider(period.range, _kind))
+        : ref.watch(labelBreakdownProvider(period.range, _kind));
+    final items = itemsAsync.value ?? const <BreakdownItem>[];
 
     final categories = {for (final c in ref.watch(categoriesProvider).value ?? const <Category>[]) c.id: c};
     final labels = {for (final l in ref.watch(labelsProvider).value ?? const <Label>[]) l.id: l};
@@ -144,7 +143,12 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            if (entries.isEmpty)
+            if (itemsAsync.hasError && itemsAsync.value == null)
+              StateMessage.error(
+                what: 'il grafico',
+                onRetry: () => ref.invalidate(transactionsInRangeProvider(period.range)),
+              )
+            else if (entries.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Text(

@@ -293,6 +293,7 @@ class _WalletFormState extends ConsumerState<_WalletForm> {
                             : currentDefault(settings.defaultExpenseWalletId),
                         onTap: isArchived ? null : () => setState(() => _defaultForExpenses = !_defaultForExpenses),
                         trailing: AppSwitch(
+                          semanticLabel: 'Predefinito per le spese',
                           value: _defaultForExpenses,
                           onChanged: isArchived ? null : (value) => setState(() => _defaultForExpenses = value),
                         ),
@@ -304,6 +305,7 @@ class _WalletFormState extends ConsumerState<_WalletForm> {
                             : currentDefault(settings.defaultIncomeWalletId),
                         onTap: isArchived ? null : () => setState(() => _defaultForIncome = !_defaultForIncome),
                         trailing: AppSwitch(
+                          semanticLabel: 'Predefinito per le entrate',
                           value: _defaultForIncome,
                           onChanged: isArchived ? null : (value) => setState(() => _defaultForIncome = value),
                         ),
@@ -313,6 +315,7 @@ class _WalletFormState extends ConsumerState<_WalletForm> {
                         subtitle: 'Conta nel totale della schermata Portafogli',
                         onTap: () => setState(() => _includeInTotal = !_includeInTotal),
                         trailing: AppSwitch(
+                          semanticLabel: 'Includi nel patrimonio',
                           value: _includeInTotal,
                           onChanged: (value) => setState(() => _includeInTotal = value),
                         ),
@@ -384,15 +387,23 @@ class _TypeGrid extends StatelessWidget {
           child: InkWell(
             borderRadius: borderRadius,
             onTap: () => onChanged(type),
-            child: SizedBox(
-              height: 78,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(walletTypeIcon(type), size: 22, color: color),
-                  const SizedBox(height: 6),
-                  Text(walletTypeLabel(type), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
-                ],
+            // Altezza minima: con il testo ingrandito la casella cresce invece di tagliarlo.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 78),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(walletTypeIcon(type), size: 22, color: color),
+                    const SizedBox(height: 6),
+                    Text(
+                      walletTypeLabel(type),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

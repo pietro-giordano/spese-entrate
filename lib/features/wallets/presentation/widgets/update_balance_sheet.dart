@@ -143,7 +143,10 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
                             onChanged: (_) => setState(() {}),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                             style: textTheme.titleLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                            textAlignVertical: TextAlignVertical.center,
                             decoration: const InputDecoration(
+                              // Almeno 44 px da toccare, anche se il riquadro intorno è più grande.
+                              constraints: BoxConstraints(minHeight: AppSizes.minTouchTarget),
                               filled: false,
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,

@@ -11,6 +11,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
+import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/label.dart';
@@ -21,6 +22,7 @@ import '../../recurring/presentation/widgets/upcoming_section.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../wallets/application/wallet_providers.dart';
 import '../application/transaction_list_providers.dart';
+import '../application/transaction_providers.dart';
 import 'period_labels.dart';
 import 'widgets/period_selector.dart';
 import 'widgets/summary_card.dart';
@@ -135,7 +137,10 @@ class TransactionsScreen extends ConsumerWidget {
                         ),
                     ],
                     AsyncValue(hasError: true) => [
-                      Text('Non è stato possibile caricare i movimenti.', style: textTheme.bodyMedium),
+                      StateMessage.error(
+                        what: 'i movimenti',
+                        onRetry: () => ref.invalidate(transactionsInRangeProvider(period.range)),
+                      ),
                     ],
                     _ => const <Widget>[],
                   },

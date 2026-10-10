@@ -33,9 +33,14 @@ class WalletDetailScreen extends ConsumerWidget {
     final overviewAsync = ref.watch(walletOverviewProvider(walletId));
     final overview = overviewAsync.value;
     if (overview == null) {
-      return overviewAsync.isLoading
-          ? const Scaffold(body: SizedBox.shrink())
-          : const ScreenPlaceholder(title: 'Portafoglio', description: 'Questo portafoglio non esiste più.');
+      return switch (overviewAsync) {
+        AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
+        AsyncValue(hasError: true) => const ScreenPlaceholder(
+          title: 'Portafoglio',
+          description: 'Non è stato possibile caricare il portafoglio. Torna indietro e riprova.',
+        ),
+        _ => const ScreenPlaceholder(title: 'Portafoglio', description: 'Questo portafoglio non esiste più.'),
+      };
     }
 
     final colors = context.colors;

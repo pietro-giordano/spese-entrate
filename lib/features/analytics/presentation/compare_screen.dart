@@ -9,6 +9,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_segmented.dart';
+import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/services/comparison.dart';
 import '../../settings/application/settings_providers.dart';
@@ -98,7 +99,8 @@ class CompareScreen extends ConsumerWidget {
     final today = ref.watch(todayProvider);
     final state = ref.watch(compareControllerProvider);
     final controller = ref.read(compareControllerProvider.notifier);
-    final data = ref.watch(comparisonProvider).value;
+    final dataAsync = ref.watch(comparisonProvider);
+    final data = dataAsync.value;
     final categoryNames = {for (final c in ref.watch(categoriesProvider).value ?? const <Category>[]) c.id: c.name};
 
     final rows = data == null ? const <CompareRow>[] : buildCompareRows(data, state.metric, categoryNames);
@@ -213,7 +215,9 @@ class CompareScreen extends ConsumerWidget {
                 children: [
                   Text(chartTitle, style: textTheme.labelMedium?.copyWith(color: colors.textMuted)),
                   const SizedBox(height: 10),
-                  if (data == null)
+                  if (data == null && dataAsync.hasError)
+                    StateMessage.error(what: 'il confronto', onRetry: () => ref.invalidate(comparisonProvider))
+                  else if (data == null)
                     const SizedBox(height: 190)
                   else if (chartRows.isEmpty || rows.every((r) => r.values.every((v) => v == 0)))
                     SizedBox(
@@ -271,8 +275,9 @@ class _PeriodChip extends StatelessWidget {
     return Container(
       height: AppSizes.minTouchTarget,
       padding: EdgeInsets.only(left: 10, right: onRemove == null ? 12 : 0),
-      decoration: BoxDecoration(
-        color: colors.surface,
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(AppRadius.field)),
+      // Bordo disegnato sopra, senza occupare spazio: il pulsante "Rimuovi" resta alto 44.
+      foregroundDecoration: BoxDecoration(
         border: Border.all(color: colors.border),
         borderRadius: BorderRadius.circular(AppRadius.field),
       ),
@@ -287,15 +292,14 @@ class _PeriodChip extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(name, style: Theme.of(context).textTheme.labelMedium),
           if (onRemove != null)
-            // Più stretto di un IconButton (48 px), così due periodi stanno su una riga; alto 44 per il tocco.
+            // Più stretto di un IconButton (48 px), così due periodi stanno su una riga; 44×44 per il tocco.
             Tooltip(
               message: 'Rimuovi $name',
               child: InkWell(
                 onTap: onRemove,
                 borderRadius: BorderRadius.circular(AppRadius.field),
-                child: SizedBox(
-                  width: 36,
-                  height: AppSizes.minTouchTarget,
+                child: SizedBox.square(
+                  dimension: AppSizes.minTouchTarget,
                   child: Icon(Icons.close_rounded, size: 16, color: colors.textMuted),
                 ),
               ),

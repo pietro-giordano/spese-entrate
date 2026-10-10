@@ -45,6 +45,10 @@ class RecurrenceDetailScreen extends ConsumerWidget {
     return switch (ref.watch(recurrenceRuleProvider(recurrenceId))) {
       AsyncValue(value: final rule?) => _RecurrenceDetail(rule: rule),
       AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
+      AsyncValue(hasError: true) => const ScreenPlaceholder(
+        title: 'Ricorrenza',
+        description: 'Non è stato possibile caricare la ricorrenza. Torna indietro e riprova.',
+      ),
       _ => const ScreenPlaceholder(title: 'Ricorrenza', description: 'Questa ricorrenza non esiste più.'),
     };
   }

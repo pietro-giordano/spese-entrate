@@ -100,8 +100,9 @@ class _WalletRow extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
-        child: SizedBox(
-          height: 72,
+        // Altezza minima, non fissa: con il testo ingrandito la riga cresce.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 72),
           child: Padding(
             // A destra resta lo spazio del pulsante per invertire.
             padding: const EdgeInsets.only(left: 14, right: 64),

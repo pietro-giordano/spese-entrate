@@ -321,7 +321,18 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
 - Chip selezionati: categoria = colore del tipo (spesa/entrata); label e filtri = inversione
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
-  `AppBottomSheet`, `AmountText`, `SectionLabel`.
+  `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori).
+- **Errori**: un errore di caricamento non si mostra mai come uno stato vuoto. Le schermate principali
+  usano `StateMessage.error` ("Non è stato possibile caricare …" + "Riprova"); i dettagli distinguono
+  "non esiste più" da "non è stato possibile caricare".
+- **Accessibilità** (verificata da `test/accessibility/`): ogni controllo toccabile ha un'etichetta
+  (`tooltip`, `semanticLabel` o `Semantics`); target ≥ 44×44 anche quando c'è un bordo; niente altezze
+  fisse dove c'è testo (si usa un'altezza minima), così il testo al 130% non va in overflow.
+- **Contrasti** (verificati da `test/core/theme/contrast_test.dart`): testo ≥ 4.5:1 in entrambi i temi.
+  Eccezione nota: la serie arancio dei grafici nel tema chiaro (#F08A4B) è 2,5:1 su bianco; i valori
+  sono comunque scritti in legenda e tabella.
+- **Icona e splash**: sorgenti in `assets/icon/` e `assets/splash/`, generate da `tool/generate_icon.py`;
+  configurazione in `flutter_launcher_icons.yaml` e `flutter_native_splash.yaml`.
 
 ## Navigazione
 

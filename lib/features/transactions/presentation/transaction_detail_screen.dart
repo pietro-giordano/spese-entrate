@@ -47,6 +47,10 @@ class TransactionDetailScreen extends ConsumerWidget {
     return switch (ref.watch(transactionDetailProvider(transactionId))) {
       AsyncValue(value: final detail?) => _EditTransactionForm(detail: detail, scope: scope),
       AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
+      AsyncValue(hasError: true) => const ScreenPlaceholder(
+        title: 'Movimento',
+        description: 'Non è stato possibile caricare il movimento. Torna indietro e riprova.',
+      ),
       _ => const ScreenPlaceholder(
         title: 'Movimento',
         description: 'Questo movimento non esiste più: potrebbe essere stato eliminato.',
@@ -120,7 +124,8 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
                       side: BorderSide(color: colors.danger.withValues(alpha: 0.35)),
                     ),
                     onPressed: state.saving ? null : _delete,
-                    child: const Icon(Icons.delete_outline_rounded, size: 22),
+                    // Il Tooltip esterno non dà un nome al pulsante per lo screen reader: lo dà l'icona.
+                    child: const Icon(Icons.delete_outline_rounded, size: 22, semanticLabel: 'Elimina movimento'),
                   ),
                 ),
                 const SizedBox(width: 10),
