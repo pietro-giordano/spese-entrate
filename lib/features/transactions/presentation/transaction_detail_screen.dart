@@ -319,7 +319,7 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
         categories.where((c) => c.id == tx.categoryId).map((c) => c.name).firstOrNull ??
         switch (tx.type) {
           TransactionType.transfer => 'Trasferimento',
-          TransactionType.adjustment => 'Rettifica saldo',
+          TransactionType.adjustment => 'Rettifica di valore',
           _ => 'Movimento',
         };
     final amount = switch (tx.type) {

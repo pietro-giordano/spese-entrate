@@ -18,6 +18,12 @@ class DriftSettingsRepository implements SettingsRepository {
   }
 
   @override
+  Future<AppSettings> get() async {
+    final rows = await (_db.select(_db.settings)..whereNotDeleted()).get();
+    return _fromMap({for (final row in rows) row.key: row.value});
+  }
+
+  @override
   Future<void> save(AppSettings settings) {
     return _db.transaction(() async {
       // Anche le righe cancellate: `key` è unica, quindi una chiave tornata in uso riprende il suo ID.

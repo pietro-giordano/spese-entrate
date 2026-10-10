@@ -23,3 +23,15 @@ abstract class Wallet with _$Wallet {
 
   bool get isArchived => archivedAt != null;
 }
+
+/// Gruppi della schermata Portafogli.
+enum WalletGroup { liquidity, savings, investments }
+
+extension WalletTypeGroup on WalletType {
+  /// Contanti, conto, carta e "altro" sono liquidità.
+  WalletGroup get group => switch (this) {
+    WalletType.savings => WalletGroup.savings,
+    WalletType.investment => WalletGroup.investments,
+    _ => WalletGroup.liquidity,
+  };
+}

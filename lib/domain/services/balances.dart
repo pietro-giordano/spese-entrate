@@ -82,3 +82,70 @@ LocalDate lastUpdate(Wallet wallet, Iterable<Transaction> transactions) {
 bool needsUpdate(Wallet wallet, Iterable<Transaction> transactions, LocalDate today) {
   return lastUpdate(wallet, transactions).daysUntil(today) > staleAfterDays;
 }
+
+/// Saldo a fine mese per gli ultimi [months] mesi, dal più vecchio; l'ultimo punto è il saldo
+/// di [today] (mese in corso).
+List<({LocalDate date, int balanceCents})> monthlyBalances(
+  Wallet wallet,
+  Iterable<Transaction> transactions,
+  LocalDate today, {
+  int months = 6,
+}) {
+  final currentMonth = LocalDate(today.year, today.month, 1);
+  final points = <({LocalDate date, int balanceCents})>[];
+  for (var i = months - 1; i >= 0; i--) {
+    final month = currentMonth.addMonths(-i);
+    final end = i == 0 ? today : LocalDate(month.year, month.month, LocalDate.daysInMonth(month.year, month.month));
+    points.add((date: end, balanceCents: walletBalance(wallet, transactions, upTo: end)));
+  }
+  return points;
+}
+
+/// Come registrare la differenza in "Aggiorna saldo".
+enum BalanceUpdateMode {
+  /// Rettifica di valore: cambia il saldo ma non conta come entrata o spesa.
+  adjustment,
+
+  /// Entrata (differenza positiva) o spesa (negativa) con categoria: conta nelle statistiche.
+  movement,
+}
+
+/// Movimento che porta il saldo di [wallet] a [newBalanceCents] alla data [date].
+///
+/// La differenza si calcola sul saldo a quella data. Con differenza zero si registra comunque
+/// una rettifica da € 0,00: conferma il saldo e aggiorna la data di "ultimo aggiornamento".
+/// In modalità [BalanceUpdateMode.movement] serve [categoryId] (di entrata o di spesa secondo il segno).
+Transaction balanceUpdateTransaction({
+  required String id,
+  required Wallet wallet,
+  required Iterable<Transaction> transactions,
+  required int newBalanceCents,
+  required LocalDate date,
+  required BalanceUpdateMode mode,
+  String? categoryId,
+}) {
+  final difference = newBalanceCents - walletBalance(wallet, transactions, upTo: date);
+  if (mode == BalanceUpdateMode.adjustment || difference == 0) {
+    return Transaction(
+      id: id,
+      type: TransactionType.adjustment,
+      amountCents: difference,
+      currency: wallet.currency,
+      date: date,
+      walletId: wallet.id,
+    );
+  }
+  if (categoryId == null) {
+    throw ArgumentError.notNull('categoryId');
+  }
+  return Transaction(
+    id: id,
+    type: difference > 0 ? TransactionType.income : TransactionType.expense,
+    amountCents: difference.abs(),
+    currency: wallet.currency,
+    date: date,
+    walletId: wallet.id,
+    categoryId: categoryId,
+    note: 'Aggiornamento saldo',
+  );
+}

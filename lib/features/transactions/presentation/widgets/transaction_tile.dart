@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -18,7 +19,12 @@ class TransactionTile extends StatelessWidget {
     required this.categoryNames,
     required this.labelNames,
     required this.onTap,
+    this.walletId,
   });
+
+  /// Con un portafoglio, la riga è vista "da lì" (dettaglio portafoglio): data nel sottotitolo,
+  /// trasferimenti come "da / verso" con il segno, rettifiche come aggiornamento del saldo.
+  final String? walletId;
 
   final Transaction transaction;
   final Map<String, String> walletNames;
@@ -34,12 +40,27 @@ class TransactionTile extends StatelessWidget {
     final wallet = walletNames[tx.walletId] ?? '—';
     final category = categoryNames[tx.categoryId];
 
-    final (String title, String subtitle) = switch (tx.type) {
+    final incoming = tx.toWalletId != null && tx.toWalletId == walletId;
+    final (String title, String baseSubtitle) = switch (tx.type) {
+      TransactionType.transfer when walletId != null => (
+        tx.note ?? 'Trasferimento',
+        incoming ? 'da $wallet' : 'verso ${walletNames[tx.toWalletId] ?? '—'}',
+      ),
       TransactionType.transfer => (tx.note ?? 'Trasferimento', '$wallet → ${walletNames[tx.toWalletId] ?? '—'}'),
-      TransactionType.adjustment => (tx.note ?? 'Rettifica saldo', wallet),
+      TransactionType.adjustment => (
+        tx.note ?? 'Rettifica di valore',
+        walletId != null ? 'aggiornamento saldo' : wallet,
+      ),
+      _ when walletId != null => (tx.note ?? category ?? 'Senza categoria', tx.note != null ? (category ?? '') : ''),
       _ when tx.note != null => (tx.note!, '${category ?? 'Senza categoria'} · $wallet'),
       _ => (category ?? 'Senza categoria', wallet),
     };
+    final subtitle = walletId == null
+        ? baseSubtitle
+        : [
+            DateFormat('d MMM', 'it_IT').format(tx.date.toDateTime()),
+            baseSubtitle,
+          ].where((p) => p.isNotEmpty).join(' · ');
     final tags = tx.labelIds.map((id) => labelNames[id]).nonNulls.map((name) => '#$name').join(' ');
 
     final amountStyle = textTheme.bodyLarge?.copyWith(
@@ -49,10 +70,14 @@ class TransactionTile extends StatelessWidget {
     final (String amount, Color amountColor) = switch (tx.type) {
       TransactionType.expense => ('$minusSign ${formatCents(tx.amountCents)}', colors.text),
       TransactionType.income => ('+ ${formatCents(tx.amountCents)}', colors.income.text),
+      TransactionType.transfer when walletId != null => (
+        incoming ? '+ ${formatCents(tx.amountCents)}' : '$minusSign ${formatCents(tx.amountCents)}',
+        colors.text,
+      ),
       TransactionType.transfer => (formatCents(tx.amountCents), colors.textMuted),
       TransactionType.adjustment => (
         tx.amountCents > 0 ? '+ ${formatCents(tx.amountCents)}' : formatCents(tx.amountCents),
-        colors.textMuted,
+        walletId != null ? colors.text : colors.textMuted,
       ),
     };
 

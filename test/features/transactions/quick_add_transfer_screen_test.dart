@@ -203,13 +203,13 @@ void main() {
     expect(find.text('Hai raggiunto il massimo di 5 allegati per movimento.'), findsOneWidget);
   });
 
-  testWidgets('/add?type=transfer arriva dal collegamento Trasferisci', (tester) async {
+  testWidgets('/add?type=transfer arriva dal pulsante dei Portafogli', (tester) async {
     await pumpQuickAdd(tester, AppRoutes.wallets);
     // Torna al tab Portafogli (pumpQuickAdd fa push; i tab si raggiungono con go).
     container.read(appRouterProvider).go(AppRoutes.wallets);
     await tester.pumpAndSettle();
-    expect(find.text('Trasferisci'), findsOneWidget);
-    await tester.tap(find.text('Trasferisci'));
+    expect(find.text('Trasferisci tra portafogli'), findsOneWidget);
+    await tester.tap(find.text('Trasferisci tra portafogli'));
     await tester.pumpAndSettle();
     expect(find.text('Salva trasferimento'), findsOneWidget);
     // Chiudendo si torna ai portafogli.

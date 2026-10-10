@@ -17,6 +17,9 @@ class DriftTransactionRepository implements TransactionRepository {
   Stream<List<Transaction>> watchAll() => _query().watch().map(_toTransactions);
 
   @override
+  Future<List<Transaction>> getAll() async => _toTransactions(await _query().get());
+
+  @override
   Stream<List<Transaction>> watchInRange(DateRange range) {
     // Le date 'YYYY-MM-DD' si ordinano correttamente anche come testo.
     return _query((t) => t.date.isBetweenValues(range.start.toString(), range.end.toString()))

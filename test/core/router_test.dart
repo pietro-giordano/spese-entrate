@@ -50,7 +50,7 @@ void main() {
     await tester.tap(find.text('Portafogli'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Patrimonio totale e portafogli per gruppo.'), findsOneWidget);
+    expect(find.text('Patrimonio totale'), findsOneWidget);
     // Movimenti non è distrutto, solo nascosto (offstage).
     expect(find.byType(TransactionsScreen), findsNothing);
     expect(find.byType(TransactionsScreen, skipOffstage: false), findsOneWidget);
@@ -97,8 +97,8 @@ void main() {
       AppRoutes.transaction('t1'): 'Movimento', // non esiste: pagina di movimento mancante
       AppRoutes.filters: 'Filtri',
       AppRoutes.newWallet: 'Nuovo portafoglio',
-      AppRoutes.wallet('w1'): 'Portafoglio',
-      AppRoutes.editWallet('w1'): 'Modifica portafoglio',
+      AppRoutes.wallet('w1'): 'Portafoglio', // non esiste: pagina di portafoglio mancante
+      AppRoutes.editWallet('w1'): 'Portafoglio',
       AppRoutes.settings: 'Profilo e impostazioni',
       AppRoutes.categories: 'Categorie e label',
       AppRoutes.recurring: 'Movimenti ricorrenti',

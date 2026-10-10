@@ -130,4 +130,77 @@ void main() {
       expect(needsUpdate(checking, const [], LocalDate(2026, 2, 1)), isTrue);
     });
   });
+
+  group('gruppi', () {
+    test('contanti, conto, carta e altro sono liquidità', () {
+      expect(WalletType.values.map((t) => t.group), [
+        WalletGroup.liquidity,
+        WalletGroup.liquidity,
+        WalletGroup.liquidity,
+        WalletGroup.savings,
+        WalletGroup.investments,
+        WalletGroup.liquidity,
+      ]);
+    });
+  });
+
+  group('monthlyBalances', () {
+    test('saldo a fine mese degli ultimi 6 mesi, l\'ultimo a oggi', () {
+      final points = monthlyBalances(checking, [
+        tx(TransactionType.income, 10000, date: LocalDate(2026, 6, 15)),
+        tx(TransactionType.adjustment, -500, date: LocalDate(2026, 9, 30)),
+        tx(TransactionType.expense, 2000, date: LocalDate(2026, 10, 2)),
+      ], LocalDate(2026, 10, 3));
+
+      expect(points.map((p) => p.date), [
+        LocalDate(2026, 5, 31),
+        LocalDate(2026, 6, 30),
+        LocalDate(2026, 7, 31),
+        LocalDate(2026, 8, 31),
+        LocalDate(2026, 9, 30),
+        LocalDate(2026, 10, 3),
+      ]);
+      expect(points.map((p) => p.balanceCents), [100000, 110000, 110000, 110000, 109500, 107500]);
+    });
+  });
+
+  group('balanceUpdateTransaction', () {
+    final existing = [tx(TransactionType.income, 20000, date: LocalDate(2026, 9, 1))];
+    // Saldo al 30 settembre: 1.000,00 + 200,00 = 1.200,00
+    Transaction update(int newBalance, BalanceUpdateMode mode, {String? categoryId, LocalDate? date}) =>
+        balanceUpdateTransaction(
+          id: 'u',
+          wallet: checking,
+          transactions: existing,
+          newBalanceCents: newBalance,
+          date: date ?? LocalDate(2026, 9, 30),
+          mode: mode,
+          categoryId: categoryId,
+        );
+
+    test('rettifica con la differenza e il suo segno', () {
+      final up = update(131240, BalanceUpdateMode.adjustment);
+      expect((up.type, up.amountCents, up.categoryId), (TransactionType.adjustment, 11240, null));
+      expect(update(100000, BalanceUpdateMode.adjustment).amountCents, -20000);
+    });
+
+    test('la differenza si calcola sul saldo alla data scelta', () {
+      // Al 31 agosto l'entrata del 1° settembre non c'è ancora: saldo 1.000,00.
+      expect(update(131240, BalanceUpdateMode.adjustment, date: LocalDate(2026, 8, 31)).amountCents, 31240);
+    });
+
+    test('come movimento: entrata o spesa con categoria e importo positivo', () {
+      final gain = update(130000, BalanceUpdateMode.movement, categoryId: 'gifts');
+      expect((gain.type, gain.amountCents, gain.categoryId), (TransactionType.income, 10000, 'gifts'));
+      final loss = update(110000, BalanceUpdateMode.movement, categoryId: 'other');
+      expect((loss.type, loss.amountCents), (TransactionType.expense, 10000));
+      expect(() => update(110000, BalanceUpdateMode.movement), throwsArgumentError);
+    });
+
+    test('differenza zero: rettifica da 0 che conferma il saldo', () {
+      final same = update(120000, BalanceUpdateMode.movement);
+      expect((same.type, same.amountCents), (TransactionType.adjustment, 0));
+      expect(lastUpdate(checking, [...existing, same]), LocalDate(2026, 9, 30));
+    });
+  });
 }

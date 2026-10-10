@@ -1,23 +1,103 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/clock.dart';
+import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
-import '../../../core/widgets/screen_placeholder.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/app_list_row.dart';
+import '../../../core/widgets/section_label.dart';
+import '../../../domain/models/wallet.dart';
+import '../application/wallet_providers.dart';
+import 'widgets/net_worth_card.dart';
+import 'widgets/wallet_row.dart';
+import 'widgets/wallet_visuals.dart';
 
-/// Tab Portafogli.
-class WalletsScreen extends StatelessWidget {
+/// Tab Portafogli: patrimonio per gruppo e portafogli raggruppati.
+class WalletsScreen extends ConsumerWidget {
   const WalletsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ScreenPlaceholder(
-      title: 'Portafogli',
-      leading: PlaceholderLeading.none,
-      description: 'Patrimonio totale e portafogli per gruppo.',
-      links: {
-        'Nuovo portafoglio': AppRoutes.newWallet,
-        'Portafoglio di esempio': AppRoutes.wallet('esempio'),
-        'Trasferisci': AppRoutes.add('transfer'),
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textTheme = Theme.of(context).textTheme;
+    final today = ref.watch(todayProvider);
+    final overviews = ref.watch(walletOverviewsProvider).value ?? const <WalletOverview>[];
+
+    final active = overviews.where((o) => !o.wallet.isArchived).toList();
+    final archived = overviews.where((o) => o.wallet.isArchived).toList();
+    final included = active.where((o) => o.countsInNetWorth);
+    final byGroup = {
+      for (final group in WalletGroup.values) group: active.where((o) => o.wallet.type.group == group).toList(),
+    }..removeWhere((_, list) => list.isEmpty);
+    int sum(Iterable<WalletOverview> list) => list.fold(0, (total, o) => total + o.balanceCents);
+    final groupTotals = {
+      for (final group in byGroup.keys) group: sum(included.where((o) => o.wallet.type.group == group)),
+    };
+
+    Widget section(String title, String? trailing, List<WalletOverview> list) => Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionLabel(title, trailing: trailing),
+          const SizedBox(height: AppSpacing.sm),
+          AppListGroup(
+            children: [
+              for (final overview in list)
+                WalletRow(
+                  overview: overview,
+                  today: today,
+                  onTap: () => context.push(AppRoutes.wallet(overview.wallet.id)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.xl),
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Semantics(header: true, child: Text('Portafogli', style: textTheme.headlineLarge)),
+                ),
+                AppIconButton(
+                  icon: Icons.add_rounded,
+                  tooltip: 'Nuovo portafoglio',
+                  onPressed: () => context.push(AppRoutes.newWallet),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            NetWorthCard(totalCents: sum(included), groupTotals: groupTotals),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+                textStyle: textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              onPressed: active.length < 2 ? null : () => context.push(AppRoutes.add('transfer')),
+              icon: const Icon(Icons.swap_horiz_rounded, size: 20),
+              label: const Text('Trasferisci tra portafogli'),
+            ),
+            for (final MapEntry(key: group, value: list) in byGroup.entries)
+              section(walletGroupLabel(group), formatCents(groupTotals[group]!), list),
+            if (archived.isNotEmpty) section('Archiviati', null, archived),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'I trasferimenti spostano denaro tra portafogli: non contano come entrate o spese nei grafici.',
+              style: textTheme.bodySmall?.copyWith(height: 1.45),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

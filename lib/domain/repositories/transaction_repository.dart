@@ -6,6 +6,9 @@ abstract interface class TransactionRepository {
   /// Tutti i movimenti non cancellati, dal più recente. Serve ai saldi.
   Stream<List<Transaction>> watchAll();
 
+  /// Come [watchAll], ma una lettura singola.
+  Future<List<Transaction>> getAll();
+
   /// Movimenti non cancellati con data in [range], dal più recente.
   Stream<List<Transaction>> watchInRange(DateRange range);
 
