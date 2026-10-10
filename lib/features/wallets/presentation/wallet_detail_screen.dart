@@ -155,7 +155,7 @@ class WalletDetailScreen extends ConsumerWidget {
                           onPressed: () async {
                             final messenger = ScaffoldMessenger.of(context);
                             final saved = await showUpdateBalanceSheet(context, wallet);
-                            if (saved != null) {
+                            if (saved == true) {
                               messenger.showSnackBar(const SnackBar(content: Text('Saldo aggiornato')));
                             }
                           },

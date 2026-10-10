@@ -12,16 +12,15 @@ import '../../../../core/widgets/section_label.dart';
 import '../../../../domain/models/app_settings.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/enums.dart';
-import '../../../../domain/models/transaction.dart';
 import '../../../../domain/models/wallet.dart';
 import '../../../../domain/services/balances.dart';
 import '../../../settings/application/settings_providers.dart';
 import '../../../transactions/presentation/widgets/date_picker_sheet.dart';
 import '../../application/wallet_providers.dart';
 
-/// Apre "Aggiorna saldo". Restituisce il movimento registrato, o null se chiuso senza salvare.
-Future<Transaction?> showUpdateBalanceSheet(BuildContext context, Wallet wallet) {
-  return AppBottomSheet.show<Transaction>(
+/// Apre "Aggiorna saldo". Restituisce true se l'aggiornamento è stato salvato.
+Future<bool?> showUpdateBalanceSheet(BuildContext context, Wallet wallet) {
+  return AppBottomSheet.show<bool>(
     context,
     title: 'Aggiorna saldo',
     titleTrailing: Builder(
@@ -68,7 +67,7 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
     }
     setState(() => _saving = true);
     try {
-      final transaction = await ref
+      await ref
           .read(walletActionsProvider)
           .updateBalance(
             wallet: widget.wallet,
@@ -77,7 +76,7 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
             mode: _mode,
             categoryId: needsCategory ? _categoryId : null,
           );
-      if (mounted) Navigator.pop(context, transaction);
+      if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -253,7 +252,10 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
         ],
         if (difference == 0 && newBalance != null) ...[
           const SizedBox(height: AppSpacing.sm),
-          Text('Il saldo coincide: verrà registrata solo la data di controllo.', style: textTheme.bodySmall),
+          Text(
+            'Il saldo coincide: nessun movimento, verrà registrata solo la data di verifica.',
+            style: textTheme.bodySmall,
+          ),
         ],
         const SizedBox(height: 18),
         FilledButton(

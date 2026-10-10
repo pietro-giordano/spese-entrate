@@ -191,3 +191,44 @@ final class SettingsRepositoryProvider
 }
 
 String _$settingsRepositoryHash() => r'0eda22c9c7a5e68c8661bf58b528d73264ef9a19';
+
+/// Per raggruppare scritture di più repository in un'unica transazione.
+
+@ProviderFor(atomicWrites)
+final atomicWritesProvider = AtomicWritesProvider._();
+
+/// Per raggruppare scritture di più repository in un'unica transazione.
+
+final class AtomicWritesProvider extends $FunctionalProvider<AtomicWrites, AtomicWrites, AtomicWrites>
+    with $Provider<AtomicWrites> {
+  /// Per raggruppare scritture di più repository in un'unica transazione.
+  AtomicWritesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'atomicWritesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$atomicWritesHash();
+
+  @$internal
+  @override
+  $ProviderElement<AtomicWrites> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  AtomicWrites create(Ref ref) {
+    return atomicWrites(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AtomicWrites value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<AtomicWrites>(value));
+  }
+}
+
+String _$atomicWritesHash() => r'bc323f91d74bab0a194d1cbd108f6ee9d66d9ea4';

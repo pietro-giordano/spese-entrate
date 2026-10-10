@@ -24,6 +24,7 @@ Wallet walletFromRow(WalletRow row) => Wallet(
   includeInTotal: row.includeInTotal,
   sortOrder: row.sortOrder,
   archivedAt: _fromMs(row.archivedAt),
+  lastBalanceVerifiedDate: row.lastBalanceVerifiedDate,
 );
 
 WalletsCompanion walletToCompanion(Wallet wallet) => WalletsCompanion(
@@ -35,6 +36,7 @@ WalletsCompanion walletToCompanion(Wallet wallet) => WalletsCompanion(
   includeInTotal: Value(wallet.includeInTotal),
   sortOrder: Value(wallet.sortOrder),
   archivedAt: Value(_toMs(wallet.archivedAt)),
+  lastBalanceVerifiedDate: Value(wallet.lastBalanceVerifiedDate),
 );
 
 Category categoryFromRow(CategoryRow row) => Category(

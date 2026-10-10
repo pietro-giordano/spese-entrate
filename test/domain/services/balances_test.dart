@@ -167,7 +167,7 @@ void main() {
   group('balanceUpdateTransaction', () {
     final existing = [tx(TransactionType.income, 20000, date: LocalDate(2026, 9, 1))];
     // Saldo al 30 settembre: 1.000,00 + 200,00 = 1.200,00
-    Transaction update(int newBalance, BalanceUpdateMode mode, {String? categoryId, LocalDate? date}) =>
+    Transaction? update(int newBalance, BalanceUpdateMode mode, {String? categoryId, LocalDate? date}) =>
         balanceUpdateTransaction(
           id: 'u',
           wallet: checking,
@@ -179,28 +179,105 @@ void main() {
         );
 
     test('rettifica con la differenza e il suo segno', () {
-      final up = update(131240, BalanceUpdateMode.adjustment);
+      final up = update(131240, BalanceUpdateMode.adjustment)!;
       expect((up.type, up.amountCents, up.categoryId), (TransactionType.adjustment, 11240, null));
-      expect(update(100000, BalanceUpdateMode.adjustment).amountCents, -20000);
+      expect(update(100000, BalanceUpdateMode.adjustment)!.amountCents, -20000);
     });
 
     test('la differenza si calcola sul saldo alla data scelta', () {
       // Al 31 agosto l'entrata del 1° settembre non c'è ancora: saldo 1.000,00.
-      expect(update(131240, BalanceUpdateMode.adjustment, date: LocalDate(2026, 8, 31)).amountCents, 31240);
+      expect(update(131240, BalanceUpdateMode.adjustment, date: LocalDate(2026, 8, 31))!.amountCents, 31240);
     });
 
     test('come movimento: entrata o spesa con categoria e importo positivo', () {
-      final gain = update(130000, BalanceUpdateMode.movement, categoryId: 'gifts');
+      final gain = update(130000, BalanceUpdateMode.movement, categoryId: 'gifts')!;
       expect((gain.type, gain.amountCents, gain.categoryId), (TransactionType.income, 10000, 'gifts'));
-      final loss = update(110000, BalanceUpdateMode.movement, categoryId: 'other');
+      final loss = update(110000, BalanceUpdateMode.movement, categoryId: 'other')!;
       expect((loss.type, loss.amountCents), (TransactionType.expense, 10000));
       expect(() => update(110000, BalanceUpdateMode.movement), throwsArgumentError);
     });
 
-    test('differenza zero: rettifica da 0 che conferma il saldo', () {
-      final same = update(120000, BalanceUpdateMode.movement);
-      expect((same.type, same.amountCents), (TransactionType.adjustment, 0));
-      expect(lastUpdate(checking, [...existing, same]), LocalDate(2026, 9, 30));
+    test('differenza zero: nessun movimento, in entrambe le modalità', () {
+      expect(update(120000, BalanceUpdateMode.adjustment), isNull);
+      expect(update(120000, BalanceUpdateMode.movement), isNull, reason: 'senza differenza non serve la categoria');
+    });
+  });
+
+  group('verifica del saldo', () {
+    test('lastUpdate usa la verifica anche senza rettifiche', () {
+      final verified = checking.copyWith(lastBalanceVerifiedDate: LocalDate(2026, 9, 20));
+      expect(
+        lastUpdate(verified, [tx(TransactionType.income, 100, date: LocalDate(2026, 10, 1))]),
+        LocalDate(2026, 9, 20),
+      );
+    });
+
+    test('vince la data più recente tra verifica e rettifica', () {
+      final verified = checking.copyWith(lastBalanceVerifiedDate: LocalDate(2026, 9, 20));
+      final later = tx(TransactionType.adjustment, 100, date: LocalDate(2026, 9, 25));
+      expect(lastUpdate(verified, [later]), LocalDate(2026, 9, 25));
+      expect(
+        lastUpdate(verified.copyWith(lastBalanceVerifiedDate: LocalDate(2026, 9, 30)), [later]),
+        LocalDate(2026, 9, 30),
+      );
+    });
+
+    test('markBalanceVerified non torna indietro nel tempo', () {
+      final verified = markBalanceVerified(checking, LocalDate(2026, 9, 20));
+      expect(verified.lastBalanceVerifiedDate, LocalDate(2026, 9, 20));
+      expect(markBalanceVerified(verified, LocalDate(2026, 9, 1)), same(verified));
+      expect(markBalanceVerified(verified, LocalDate(2026, 9, 20)), same(verified));
+      expect(markBalanceVerified(verified, LocalDate(2026, 10, 1)).lastBalanceVerifiedDate, LocalDate(2026, 10, 1));
+    });
+
+    test('una verifica di oltre 30 giorni fa fa ricomparire il badge', () {
+      final verified = checking.copyWith(lastBalanceVerifiedDate: LocalDate(2026, 8, 31));
+      expect(needsUpdate(verified, const [], LocalDate(2026, 9, 30)), isFalse);
+      expect(needsUpdate(verified, const [], LocalDate(2026, 10, 1)), isTrue);
+    });
+  });
+
+  group('monthlyBalances, casi limite', () {
+    final today = LocalDate(2026, 10, 3);
+    List<int> series(Wallet wallet, List<Transaction> list) =>
+        monthlyBalances(wallet, list, today).map((p) => p.balanceCents).toList();
+    final base = [tx(TransactionType.income, 10000, date: LocalDate(2026, 6, 15))];
+
+    test('una rettifica di oggi cambia solo l\'ultimo punto', () {
+      final before = series(checking, base);
+      final after = series(checking, [...base, tx(TransactionType.adjustment, 5000, date: today)]);
+      expect(after.sublist(0, 5), before.sublist(0, 5));
+      expect(after.last, before.last + 5000);
+    });
+
+    test('un movimento retrodatato sposta i saldi dal suo mese in poi', () {
+      final before = series(checking, base);
+      final after = series(checking, [...base, tx(TransactionType.expense, 3000, date: LocalDate(2026, 7, 10))]);
+      // Punti: mag, giu, lug, ago, set, ott. Luglio e i successivi calano di 30,00.
+      expect(after.sublist(0, 2), before.sublist(0, 2));
+      expect(after.sublist(2), [for (final v in before.sublist(2)) v - 3000]);
+    });
+
+    test('un movimento dell\'ultimo giorno del mese conta in quel mese', () {
+      final points = series(checking, [tx(TransactionType.income, 700, date: LocalDate(2026, 8, 31))]);
+      expect(points[3], 100700, reason: 'agosto');
+      expect(points[2], 100000, reason: 'luglio');
+    });
+
+    test('ignora pending e altri portafogli, conta i trasferimenti nei due versi', () {
+      final points = series(checking, [
+        tx(TransactionType.expense, 999, status: TransactionStatus.pending, date: LocalDate(2026, 9, 1)),
+        tx(TransactionType.income, 999, walletId: 'cash', date: LocalDate(2026, 9, 1)),
+        tx(TransactionType.transfer, 2000, toWalletId: 'cash', date: LocalDate(2026, 9, 5)),
+        tx(TransactionType.transfer, 500, walletId: 'cash', toWalletId: 'cc', date: LocalDate(2026, 9, 6)),
+      ]);
+      expect(points.sublist(4), [98500, 98500]);
+    });
+
+    test('i mesi prima del saldo iniziale non ci sono', () {
+      final recent = checking.copyWith(initialBalanceDate: LocalDate(2026, 8, 15));
+      final points = monthlyBalances(recent, const [], today);
+      expect(points.map((p) => p.date), [LocalDate(2026, 8, 31), LocalDate(2026, 9, 30), today]);
     });
   });
 }

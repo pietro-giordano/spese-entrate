@@ -17,6 +17,9 @@ abstract class Wallet with _$Wallet {
     @Default(true) bool includeInTotal,
     @Default(0) int sortOrder,
     DateTime? archivedAt,
+
+    /// Ultima volta che l'utente ha verificato il saldo con "Aggiorna saldo" (anche senza differenze).
+    LocalDate? lastBalanceVerifiedDate,
   }) = _Wallet;
 
   const Wallet._();

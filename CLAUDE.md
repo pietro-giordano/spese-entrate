@@ -103,7 +103,8 @@ Colonne in snake_case. "Comuni" = `id TEXT PK, created_at INT, updated_at INT, d
 **wallets** — comuni +
 `name TEXT`, `type TEXT` (cash | checking | card | savings | investment | other),
 `currency TEXT DEFAULT 'EUR'`, `initial_balance_cents INT`, `initial_balance_date TEXT`,
-`include_in_total BOOL DEFAULT true`, `sort_order INT`, `archived_at INT NULL`.
+`include_in_total BOOL DEFAULT true`, `sort_order INT`, `archived_at INT NULL`,
+`last_balance_verified_date TEXT NULL` (data dell'ultima verifica con "Aggiorna saldo", dalla versione 2 dello schema).
 
 **categories** — comuni +
 `name TEXT`, `kind TEXT` (expense | income), `color INT`, `sort_order INT`, `archived_at INT NULL`.
@@ -169,10 +170,12 @@ Al primo avvio, se il database è vuoto:
 - **Statistiche** (riepiloghi, grafici, confronti): solo `expense` e `income` con `status = confirmed`.
   Trasferimenti e rettifiche **non contano mai** come spese o entrate.
 - **Patrimonio totale**: somma dei saldi dei portafogli con `include_in_total` e non archiviati.
-- **Ultimo aggiornamento** di un portafoglio = data dell'ultima rettifica, altrimenti
-  `initial_balance_date`. Badge "Da aggiornare" se è più vecchia di 30 giorni.
+- **Ultimo aggiornamento** di un portafoglio = la data più recente tra `initial_balance_date`,
+  `last_balance_verified_date` e l'ultima rettifica. Badge "Da aggiornare" se è più vecchia di 30 giorni.
 - **Aggiorna saldo**: l'utente inserisce il nuovo saldo e la data; la differenza si registra come
   `adjustment` (default, consigliato per investimenti) oppure come `expense`/`income` con categoria.
+  Con differenza zero non si crea nessun movimento. In ogni caso si aggiorna
+  `last_balance_verified_date` (mai all'indietro), nella stessa transazione del movimento.
 - **Predefiniti**: un solo portafoglio predefinito per le spese e uno per le entrate.
 - **Grafico per label**: un movimento con più label conta in ciascuna; le percentuali sono sulla
   somma delle label. I movimenti senza label finiscono in "Senza label".

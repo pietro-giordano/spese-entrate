@@ -74,7 +74,7 @@ void main() {
           'transactions_category_id',
         ]),
       );
-      expect(db.schemaVersion, 1);
+      expect(db.schemaVersion, 2);
     });
   });
 

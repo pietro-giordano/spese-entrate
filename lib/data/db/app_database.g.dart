@@ -127,6 +127,14 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, WalletRow> {
     requiredDuringInsert: false,
   );
   @override
+  late final GeneratedColumnWithTypeConverter<LocalDate?, String> lastBalanceVerifiedDate = GeneratedColumn<String>(
+    'last_balance_verified_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  ).withConverter<LocalDate?>($WalletsTable.$converterlastBalanceVerifiedDaten);
+  @override
   List<GeneratedColumn> get $columns => [
     id,
     createdAt,
@@ -141,6 +149,7 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, WalletRow> {
     includeInTotal,
     sortOrder,
     archivedAt,
+    lastBalanceVerifiedDate,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -233,6 +242,9 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, WalletRow> {
       includeInTotal: attachedDatabase.typeMapping.read(DriftSqlType.bool, data['${effectivePrefix}include_in_total'])!,
       sortOrder: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
       archivedAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}archived_at']),
+      lastBalanceVerifiedDate: $WalletsTable.$converterlastBalanceVerifiedDaten.fromSql(
+        attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}last_balance_verified_date']),
+      ),
     );
   }
 
@@ -245,6 +257,10 @@ class $WalletsTable extends Wallets with TableInfo<$WalletsTable, WalletRow> {
     WalletType.values,
   );
   static TypeConverter<LocalDate, String> $converterinitialBalanceDate = const LocalDateConverter();
+  static TypeConverter<LocalDate, String> $converterlastBalanceVerifiedDate = const LocalDateConverter();
+  static TypeConverter<LocalDate?, String?> $converterlastBalanceVerifiedDaten = NullAwareTypeConverter.wrap(
+    $converterlastBalanceVerifiedDate,
+  );
 }
 
 class WalletRow extends DataClass implements Insertable<WalletRow> {
@@ -261,6 +277,10 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
   final bool includeInTotal;
   final int sortOrder;
   final int? archivedAt;
+
+  /// Data (di calendario) dell'ultima verifica del saldo con "Aggiorna saldo",
+  /// indipendente da come è stata registrata la differenza. Aggiunta nella versione 2.
+  final LocalDate? lastBalanceVerifiedDate;
   const WalletRow({
     required this.id,
     required this.createdAt,
@@ -275,6 +295,7 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
     required this.includeInTotal,
     required this.sortOrder,
     this.archivedAt,
+    this.lastBalanceVerifiedDate,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -302,6 +323,11 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
     if (!nullToAbsent || archivedAt != null) {
       map['archived_at'] = Variable<int>(archivedAt);
     }
+    if (!nullToAbsent || lastBalanceVerifiedDate != null) {
+      map['last_balance_verified_date'] = Variable<String>(
+        $WalletsTable.$converterlastBalanceVerifiedDaten.toSql(lastBalanceVerifiedDate),
+      );
+    }
     return map;
   }
 
@@ -320,6 +346,9 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
       includeInTotal: Value(includeInTotal),
       sortOrder: Value(sortOrder),
       archivedAt: archivedAt == null && nullToAbsent ? const Value.absent() : Value(archivedAt),
+      lastBalanceVerifiedDate: lastBalanceVerifiedDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastBalanceVerifiedDate),
     );
   }
 
@@ -339,6 +368,7 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
       includeInTotal: serializer.fromJson<bool>(json['includeInTotal']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       archivedAt: serializer.fromJson<int?>(json['archivedAt']),
+      lastBalanceVerifiedDate: serializer.fromJson<LocalDate?>(json['lastBalanceVerifiedDate']),
     );
   }
   @override
@@ -358,6 +388,7 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
       'includeInTotal': serializer.toJson<bool>(includeInTotal),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'archivedAt': serializer.toJson<int?>(archivedAt),
+      'lastBalanceVerifiedDate': serializer.toJson<LocalDate?>(lastBalanceVerifiedDate),
     };
   }
 
@@ -375,6 +406,7 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
     bool? includeInTotal,
     int? sortOrder,
     Value<int?> archivedAt = const Value.absent(),
+    Value<LocalDate?> lastBalanceVerifiedDate = const Value.absent(),
   }) => WalletRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -389,6 +421,9 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
     includeInTotal: includeInTotal ?? this.includeInTotal,
     sortOrder: sortOrder ?? this.sortOrder,
     archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+    lastBalanceVerifiedDate: lastBalanceVerifiedDate.present
+        ? lastBalanceVerifiedDate.value
+        : this.lastBalanceVerifiedDate,
   );
   WalletRow copyWithCompanion(WalletsCompanion data) {
     return WalletRow(
@@ -405,6 +440,9 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
       includeInTotal: data.includeInTotal.present ? data.includeInTotal.value : this.includeInTotal,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       archivedAt: data.archivedAt.present ? data.archivedAt.value : this.archivedAt,
+      lastBalanceVerifiedDate: data.lastBalanceVerifiedDate.present
+          ? data.lastBalanceVerifiedDate.value
+          : this.lastBalanceVerifiedDate,
     );
   }
 
@@ -423,7 +461,8 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
           ..write('initialBalanceDate: $initialBalanceDate, ')
           ..write('includeInTotal: $includeInTotal, ')
           ..write('sortOrder: $sortOrder, ')
-          ..write('archivedAt: $archivedAt')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('lastBalanceVerifiedDate: $lastBalanceVerifiedDate')
           ..write(')'))
         .toString();
   }
@@ -443,6 +482,7 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
     includeInTotal,
     sortOrder,
     archivedAt,
+    lastBalanceVerifiedDate,
   );
   @override
   bool operator ==(Object other) =>
@@ -460,7 +500,8 @@ class WalletRow extends DataClass implements Insertable<WalletRow> {
           other.initialBalanceDate == this.initialBalanceDate &&
           other.includeInTotal == this.includeInTotal &&
           other.sortOrder == this.sortOrder &&
-          other.archivedAt == this.archivedAt);
+          other.archivedAt == this.archivedAt &&
+          other.lastBalanceVerifiedDate == this.lastBalanceVerifiedDate);
 }
 
 class WalletsCompanion extends UpdateCompanion<WalletRow> {
@@ -477,6 +518,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
   final Value<bool> includeInTotal;
   final Value<int> sortOrder;
   final Value<int?> archivedAt;
+  final Value<LocalDate?> lastBalanceVerifiedDate;
   final Value<int> rowid;
   const WalletsCompanion({
     this.id = const Value.absent(),
@@ -492,6 +534,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
     this.includeInTotal = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.archivedAt = const Value.absent(),
+    this.lastBalanceVerifiedDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   WalletsCompanion.insert({
@@ -508,6 +551,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
     this.includeInTotal = const Value.absent(),
     required int sortOrder,
     this.archivedAt = const Value.absent(),
+    this.lastBalanceVerifiedDate = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -532,6 +576,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
     Expression<bool>? includeInTotal,
     Expression<int>? sortOrder,
     Expression<int>? archivedAt,
+    Expression<String>? lastBalanceVerifiedDate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -548,6 +593,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
       if (includeInTotal != null) 'include_in_total': includeInTotal,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (archivedAt != null) 'archived_at': archivedAt,
+      if (lastBalanceVerifiedDate != null) 'last_balance_verified_date': lastBalanceVerifiedDate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -566,6 +612,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
     Value<bool>? includeInTotal,
     Value<int>? sortOrder,
     Value<int?>? archivedAt,
+    Value<LocalDate?>? lastBalanceVerifiedDate,
     Value<int>? rowid,
   }) {
     return WalletsCompanion(
@@ -582,6 +629,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
       includeInTotal: includeInTotal ?? this.includeInTotal,
       sortOrder: sortOrder ?? this.sortOrder,
       archivedAt: archivedAt ?? this.archivedAt,
+      lastBalanceVerifiedDate: lastBalanceVerifiedDate ?? this.lastBalanceVerifiedDate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -630,6 +678,11 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
     if (archivedAt.present) {
       map['archived_at'] = Variable<int>(archivedAt.value);
     }
+    if (lastBalanceVerifiedDate.present) {
+      map['last_balance_verified_date'] = Variable<String>(
+        $WalletsTable.$converterlastBalanceVerifiedDaten.toSql(lastBalanceVerifiedDate.value),
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -652,6 +705,7 @@ class WalletsCompanion extends UpdateCompanion<WalletRow> {
           ..write('includeInTotal: $includeInTotal, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('archivedAt: $archivedAt, ')
+          ..write('lastBalanceVerifiedDate: $lastBalanceVerifiedDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5741,6 +5795,7 @@ typedef $$WalletsTableCreateCompanionBuilder = WalletsCompanion Function({
   Value<bool> includeInTotal,
   required int sortOrder,
   Value<int?> archivedAt,
+  Value<LocalDate?> lastBalanceVerifiedDate,
   Value<int> rowid,
 });
 typedef $$WalletsTableUpdateCompanionBuilder = WalletsCompanion Function({
@@ -5757,6 +5812,7 @@ typedef $$WalletsTableUpdateCompanionBuilder = WalletsCompanion Function({
   Value<bool> includeInTotal,
   Value<int> sortOrder,
   Value<int?> archivedAt,
+  Value<LocalDate?> lastBalanceVerifiedDate,
   Value<int> rowid,
 });
 
@@ -5806,6 +5862,11 @@ class $$WalletsTableFilterComposer extends Composer<_$AppDatabase, $WalletsTable
 
   ColumnFilters<int> get archivedAt =>
       $composableBuilder(column: $table.archivedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnWithTypeConverterFilters<LocalDate?, LocalDate, String> get lastBalanceVerifiedDate => $composableBuilder(
+    column: $table.lastBalanceVerifiedDate,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
 }
 
 class $$WalletsTableOrderingComposer extends Composer<_$AppDatabase, $WalletsTable> {
@@ -5853,6 +5914,9 @@ class $$WalletsTableOrderingComposer extends Composer<_$AppDatabase, $WalletsTab
 
   ColumnOrderings<int> get archivedAt =>
       $composableBuilder(column: $table.archivedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastBalanceVerifiedDate =>
+      $composableBuilder(column: $table.lastBalanceVerifiedDate, builder: (column) => ColumnOrderings(column));
 }
 
 class $$WalletsTableAnnotationComposer extends Composer<_$AppDatabase, $WalletsTable> {
@@ -5892,6 +5956,9 @@ class $$WalletsTableAnnotationComposer extends Composer<_$AppDatabase, $WalletsT
   GeneratedColumn<int> get sortOrder => $composableBuilder(column: $table.sortOrder, builder: (column) => column);
 
   GeneratedColumn<int> get archivedAt => $composableBuilder(column: $table.archivedAt, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<LocalDate?, String> get lastBalanceVerifiedDate =>
+      $composableBuilder(column: $table.lastBalanceVerifiedDate, builder: (column) => column);
 }
 
 class $$WalletsTableTableManager
@@ -5932,6 +5999,7 @@ class $$WalletsTableTableManager
                 Value<bool> includeInTotal = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<int?> archivedAt = const Value.absent(),
+                Value<LocalDate?> lastBalanceVerifiedDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion(
                 id: id,
@@ -5947,6 +6015,7 @@ class $$WalletsTableTableManager
                 includeInTotal: includeInTotal,
                 sortOrder: sortOrder,
                 archivedAt: archivedAt,
+                lastBalanceVerifiedDate: lastBalanceVerifiedDate,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5964,6 +6033,7 @@ class $$WalletsTableTableManager
                 Value<bool> includeInTotal = const Value.absent(),
                 required int sortOrder,
                 Value<int?> archivedAt = const Value.absent(),
+                Value<LocalDate?> lastBalanceVerifiedDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => WalletsCompanion.insert(
                 id: id,
@@ -5979,6 +6049,7 @@ class $$WalletsTableTableManager
                 includeInTotal: includeInTotal,
                 sortOrder: sortOrder,
                 archivedAt: archivedAt,
+                lastBalanceVerifiedDate: lastBalanceVerifiedDate,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

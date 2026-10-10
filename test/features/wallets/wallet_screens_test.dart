@@ -165,6 +165,28 @@ void main() {
     expect((adjustment.type, adjustment.amountCents), (TransactionType.adjustment, 31240));
   });
 
+  testWidgets('dettaglio: saldo confermato senza differenze toglie il badge senza creare movimenti', (tester) async {
+    await pumpWallets(tester);
+    await tester.tap(find.text('ETF'));
+    await tester.pumpAndSettle();
+    expect(inDetail(find.text('Da aggiornare')), findsOneWidget);
+
+    await tester.tap(find.text('Aggiorna saldo'));
+    await tester.pumpAndSettle();
+    expect(find.text('€ 0,00'), findsOneWidget, reason: 'differenza');
+    expect(find.textContaining('Il saldo coincide'), findsOneWidget);
+
+    await tester.tap(find.text('Salva aggiornamento'));
+    await waitFor(tester, () => gone(find.text('Salva aggiornamento')));
+
+    expect(find.text('Saldo aggiornato'), findsOneWidget);
+    expect(inDetail(find.text('Da aggiornare')), findsNothing);
+    expect(inDetail(find.text('Aggiornato oggi')), findsOneWidget);
+    expect(inDetail(find.text('€ 12.480,00')), findsOneWidget);
+    expect(await stored(tester), isEmpty);
+    expect(find.text('Ancora nessun movimento.'), findsOneWidget);
+  });
+
   testWidgets('dettaglio: Aggiorna saldo come movimento chiede la categoria', (tester) async {
     await pumpWallets(tester);
     await tester.tap(find.text('Contanti'));

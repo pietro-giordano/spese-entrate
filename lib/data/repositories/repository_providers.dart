@@ -1,11 +1,13 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../domain/repositories/atomic_writes.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/label_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/wallet_repository.dart';
 import '../db/database_provider.dart';
+import 'drift_atomic_writes.dart';
 import 'drift_category_repository.dart';
 import 'drift_label_repository.dart';
 import 'drift_settings_repository.dart';
@@ -31,3 +33,7 @@ TransactionRepository transactionRepository(Ref ref) => DriftTransactionReposito
 
 @Riverpod(keepAlive: true)
 SettingsRepository settingsRepository(Ref ref) => DriftSettingsRepository(ref.watch(appDatabaseProvider));
+
+/// Per raggruppare scritture di più repository in un'unica transazione.
+@Riverpod(keepAlive: true)
+AtomicWrites atomicWrites(Ref ref) => DriftAtomicWrites(ref.watch(appDatabaseProvider));

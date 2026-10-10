@@ -29,6 +29,10 @@ class Wallets extends Table with SyncColumns {
   BoolColumn get includeInTotal => boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer()();
   IntColumn get archivedAt => integer().nullable()();
+
+  /// Data (di calendario) dell'ultima verifica del saldo con "Aggiorna saldo",
+  /// indipendente da come è stata registrata la differenza. Aggiunta nella versione 2.
+  TextColumn get lastBalanceVerifiedDate => text().map(const LocalDateConverter()).nullable()();
 }
 
 @DataClassName('CategoryRow')

@@ -4,6 +4,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 import '../../core/dates.dart';
 import '../../core/ids.dart';
 import '../../domain/models/enums.dart';
+import 'app_database.steps.dart';
 import 'converters.dart';
 import 'seed.dart';
 import 'tables.dart';
@@ -44,21 +45,20 @@ class AppDatabase extends _$AppDatabase {
   /// Versione dello schema. Va incrementata a ogni modifica delle tabelle,
   /// insieme a una migrazione (vedi [migration]).
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (m) => m.createAll(),
-      onUpgrade: (m, from, to) async {
-        // Per passare alla versione 2:
-        // 1. modifica le tabelle e porta schemaVersion a 2;
-        // 2. `dart run drift_dev make-migrations` salva lo schema e genera
-        //    `app_database.steps.dart` con la funzione `stepByStep`;
-        // 3. qui: `await transaction(() => stepByStep(from1To2: (m, schema) async {...})(m, from, to));`
-        // 4. completa il test generato in test/drift/ che verifica la migrazione.
-        throw UnsupportedError('Migrazione dalla versione $from alla $to non definita');
-      },
+      // Un passo per ogni versione. Per aggiungerne uno: modifica le tabelle, incrementa
+      // schemaVersion, lancia `dart run drift_dev make-migrations` (rigenera app_database.steps.dart
+      // e i test in test/drift/) e aggiungi qui il nuovo `fromXToY`.
+      onUpgrade: stepByStep(
+        from1To2: (m, schema) async {
+          await m.addColumn(schema.wallets, schema.wallets.lastBalanceVerifiedDate);
+        },
+      ),
       beforeOpen: (details) async {
         final deviceId = await _ensureDeviceId();
         if (details.wasCreated) {

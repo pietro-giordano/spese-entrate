@@ -103,7 +103,8 @@ Future<List<({LocalDate date, int balanceCents})>> walletBalanceHistory(Ref ref,
   return balances.monthlyBalances(wallet, transactions, ref.watch(todayProvider));
 }
 
-/// Operazioni sui portafogli che toccano più repository.
+/// Operazioni sui portafogli che toccano più repository. Ognuna è atomica ([AtomicWrites]):
+/// se una scrittura fallisce non resta nessuno stato parziale.
 class WalletActions {
   WalletActions(this._ref);
 
@@ -111,17 +112,19 @@ class WalletActions {
 
   /// Salva il portafoglio e aggiorna i predefiniti: ce n'è al massimo uno per le spese
   /// e uno per le entrate, quindi sceglierne uno nuovo sostituisce il precedente.
-  Future<void> save(Wallet wallet, {required bool defaultForExpenses, required bool defaultForIncome}) async {
-    await _ref.read(walletRepositoryProvider).save(wallet);
+  Future<void> save(Wallet wallet, {required bool defaultForExpenses, required bool defaultForIncome}) {
+    return _ref.read(atomicWritesProvider).run(() async {
+      await _ref.read(walletRepositoryProvider).save(wallet);
 
-    final settingsRepository = _ref.read(settingsRepositoryProvider);
-    final settings = await settingsRepository.get();
-    String? next(String? current, bool selected) => selected ? wallet.id : (current == wallet.id ? null : current);
-    final updated = settings.copyWith(
-      defaultExpenseWalletId: next(settings.defaultExpenseWalletId, defaultForExpenses),
-      defaultIncomeWalletId: next(settings.defaultIncomeWalletId, defaultForIncome),
-    );
-    if (updated != settings) await settingsRepository.save(updated);
+      final settingsRepository = _ref.read(settingsRepositoryProvider);
+      final settings = await settingsRepository.get();
+      String? next(String? current, bool selected) => selected ? wallet.id : (current == wallet.id ? null : current);
+      final updated = settings.copyWith(
+        defaultExpenseWalletId: next(settings.defaultExpenseWalletId, defaultForExpenses),
+        defaultIncomeWalletId: next(settings.defaultIncomeWalletId, defaultForIncome),
+      );
+      if (updated != settings) await settingsRepository.save(updated);
+    });
   }
 
   /// Archivia: il portafoglio sparisce dalle scelte e dal patrimonio, ma i movimenti restano.
@@ -133,26 +136,37 @@ class WalletActions {
 
   Future<void> unarchive(Wallet wallet) => _ref.read(walletRepositoryProvider).save(wallet.copyWith(archivedAt: null));
 
-  /// "Aggiorna saldo": registra la differenza come rettifica o come entrata/spesa.
-  Future<Transaction> updateBalance({
+  /// "Aggiorna saldo": registra la differenza come rettifica o come entrata/spesa e, sempre,
+  /// la data di verifica del saldo. Restituisce il movimento creato, o null se il saldo coincideva.
+  Future<Transaction?> updateBalance({
     required Wallet wallet,
     required int newBalanceCents,
     required LocalDate date,
     required balances.BalanceUpdateMode mode,
     String? categoryId,
-  }) async {
-    final repository = _ref.read(transactionRepositoryProvider);
-    final transaction = balances.balanceUpdateTransaction(
-      id: newId(),
-      wallet: wallet,
-      transactions: await repository.getAll(),
-      newBalanceCents: newBalanceCents,
-      date: date,
-      mode: mode,
-      categoryId: categoryId,
-    );
-    await repository.save(transaction);
-    return transaction;
+  }) {
+    return _ref.read(atomicWritesProvider).run(() async {
+      final transactions = _ref.read(transactionRepositoryProvider);
+      final wallets = _ref.read(walletRepositoryProvider);
+
+      // Saldo letto dentro la transazione: è quello su cui si basa la differenza scritta.
+      final transaction = balances.balanceUpdateTransaction(
+        id: newId(),
+        wallet: wallet,
+        transactions: await transactions.getAll(),
+        newBalanceCents: newBalanceCents,
+        date: date,
+        mode: mode,
+        categoryId: categoryId,
+      );
+      if (transaction != null) await transactions.save(transaction);
+
+      // Si parte dalla versione salvata, per non sovrascrivere modifiche più recenti.
+      final current = await wallets.getById(wallet.id) ?? wallet;
+      final verified = balances.markBalanceVerified(current, date);
+      if (verified != current) await wallets.save(verified);
+      return transaction;
+    });
   }
 }
 
