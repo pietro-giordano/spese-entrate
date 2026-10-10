@@ -14,6 +14,10 @@ abstract interface class RecurrenceRepository {
   /// Eccezioni (date saltate) non cancellate di tutte le regole.
   Stream<List<RecurrenceException>> watchExceptions();
 
+  /// Date delle occorrenze di [ruleId] il cui movimento è stato eliminato: occupano la data,
+  /// quindi non si rigenerano, ma vanno mostrate come eliminate.
+  Stream<Set<LocalDate>> watchDeletedOccurrences(String ruleId);
+
   /// Crea o aggiorna la regola. [skippedDates] diventano eccezioni: servono per le occorrenze
   /// arretrate che l'utente non vuole registrare.
   Future<void> save(RecurrenceRule rule, {List<LocalDate> skippedDates = const []});

@@ -14,6 +14,8 @@ import '../../../core/widgets/screen_placeholder.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/transaction.dart';
+import '../../../domain/services/recurrence.dart';
+import '../../recurring/application/recurring_providers.dart';
 import '../../recurring/presentation/recurrence_text.dart';
 import '../../settings/application/settings_providers.dart';
 import '../application/transaction_detail_providers.dart';
@@ -46,16 +48,21 @@ class ConfirmTransactionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return switch (ref.watch(transactionDetailProvider(transactionId))) {
-      AsyncValue(value: final detail?) when !detail.transaction.isConfirmed => _QuickAddForm(
-        seed: TransactionFormSeed.confirm(detail.transaction),
-      ),
-      AsyncValue(isLoading: true) => const Scaffold(body: SizedBox.shrink()),
-      _ => const ScreenPlaceholder(
-        title: 'Conferma',
-        description: 'Questo movimento è già stato confermato o non esiste più.',
-      ),
-    };
+    final detail = ref.watch(transactionDetailProvider(transactionId));
+    final ruleId = detail.value?.transaction.recurrenceId;
+    final rule = ruleId == null ? null : ref.watch(recurrenceRuleProvider(ruleId));
+    if (detail.isLoading || (rule?.isLoading ?? false)) return const Scaffold(body: SizedBox.shrink());
+
+    final tx = detail.value?.transaction;
+    if (tx != null && canConfirmManually(tx, rule?.value)) {
+      return _QuickAddForm(seed: TransactionFormSeed.confirm(tx));
+    }
+    return ScreenPlaceholder(
+      title: 'Conferma',
+      description: tx != null && !tx.isConfirmed
+          ? 'Questo movimento è automatico: verrà registrato da solo il ${longDate(tx.date)}.'
+          : 'Questo movimento è già stato confermato o non esiste più.',
+    );
   }
 }
 

@@ -69,6 +69,11 @@ Future<List<Transaction>> upcomingTransactions(Ref ref) async {
       .sorted((a, b) => a.date.compareTo(b.date));
 }
 
+/// Date delle occorrenze eliminate di una regola (non si rigenerano).
+@riverpod
+Stream<Set<LocalDate>> deletedOccurrences(Ref ref, String ruleId) =>
+    ref.watch(recurrenceRepositoryProvider).watchDeletedOccurrences(ruleId);
+
 /// Movimenti (non cancellati) di una regola, dal più recente.
 @riverpod
 Future<List<Transaction>> ruleTransactions(Ref ref, String ruleId) async =>

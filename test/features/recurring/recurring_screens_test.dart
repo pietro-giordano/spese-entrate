@@ -156,6 +156,41 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('automatica futura: visibile in "In arrivo" senza Conferma, in nessun percorso', (tester) async {
+      await pumpAt(tester, AppRoutes.transactions);
+      // Spotify del 7 ottobre creata in anticipo (es. "Modifica solo questa"): pending.
+      final spotify = occurrenceId('spotify', d(2026, 10, 7));
+      await tester.runAsync(
+        () => container.read(recurrenceRepositoryProvider).occurrenceTransaction('spotify', d(2026, 10, 7)),
+      );
+      await waitFor(tester, () async => (await readTx(spotify)) != null);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spotify'), findsOneWidget);
+      expect(find.text('Automatica · 7 ott'), findsOneWidget);
+      expect(find.text('Conferma'), findsOneWidget, reason: 'solo quello della bolletta, che è da confermare');
+
+      // Neanche aprendo direttamente la rotta di conferma.
+      container.read(appRouterProvider).push(AppRoutes.confirm(spotify));
+      await tester.pumpAndSettle();
+      expect(find.byType(ConfirmTransactionScreen), findsOneWidget);
+      expect(find.text('Conferma spesa'), findsNothing);
+      expect(find.textContaining('verrà registrato da solo il mercoledì 7 ottobre 2026'), findsOneWidget);
+      container.read(appRouterProvider).pop();
+      await tester.pumpAndSettle();
+
+      // Né dal dettaglio della ricorrenza.
+      container.read(appRouterProvider).push(AppRoutes.recurrence('spotify'));
+      await tester.pumpAndSettle();
+      expect(find.text('Mercoledì 7 ottobre 2026'), findsOneWidget);
+      expect(find.text('Verrà registrata automaticamente'), findsWidgets);
+      expect(find.text('Conferma'), findsNothing);
+
+      expect((await byId(tester, spotify))!.status, TransactionStatus.pending);
+      await finish(tester);
+    });
+
     testWidgets('"Tutti" apre i movimenti ricorrenti', (tester) async {
       await pumpAt(tester, AppRoutes.transactions);
       await tester.tap(find.text('Tutti'));
@@ -221,6 +256,19 @@ void main() {
       await waitFor(tester, () async => (await readRules()).firstWhere((r) => r.id == 'luce').isPaused);
       expect(find.text('In pausa'), findsWidgets);
       expect(find.text('Conferma'), findsNothing, reason: 'in pausa non si conferma');
+      await finish(tester);
+    });
+
+    testWidgets('un\'occorrenza eliminata dal form di modifica appare come "Eliminata", senza azioni', (tester) async {
+      await pumpAt(tester, AppRoutes.recurrence('luce'));
+      await tester.runAsync(() => container.read(transactionRepositoryProvider).delete(octoberBill));
+      await waitFor(tester, () async => (await readTx(octoberBill)) == null);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pumpAndSettle();
+      expect(find.text('Lunedì 5 ottobre 2026'), findsOneWidget);
+      expect(find.text('Eliminata'), findsOneWidget);
+      expect(find.byTooltip('Opzioni per Lunedì 5 ottobre 2026'), findsNothing);
+      expect(find.text('Conferma'), findsNothing);
       await finish(tester);
     });
 

@@ -192,6 +192,40 @@ void main() {
       expect((await ofRule('luce')).map((t) => t.date), [d(2026, 9, 5), d(2026, 11, 5)]);
     });
 
+    test('tutto l\'intervallo di pausa risulta saltato, anche i pending generati prima; dopo la ripresa no', () async {
+      // Ogni giorno, da confermare: il 1° ottobre il generatore propone fino all'8.
+      final daily = anchorRuleAt(
+        monthly(start: d(2026, 10, 1), mode: RecurrenceMode.confirm).copyWith(frequency: RecurrenceFrequency.daily),
+        d(2026, 10, 1),
+      );
+      await recurrences.save(daily);
+      await recurrences.generate(today: d(2026, 10, 1));
+      // L'1 ottobre viene confermato prima della pausa.
+      final first = (await transactions.getById(occurrenceId('luce', d(2026, 10, 1))))!;
+      await transactions.save(first.copyWith(status: TransactionStatus.confirmed));
+
+      now = DateTime(2026, 10, 2, 9); // pausa il 2
+      await recurrences.pause('luce');
+      await recurrences.generate(today: d(2026, 10, 4)); // in pausa: nulla di nuovo
+      await recurrences.resume('luce', today: d(2026, 10, 5)); // ripresa il 5
+
+      final pauseRange = [d(2026, 10, 2), d(2026, 10, 3), d(2026, 10, 4)];
+      expect(await skipsOf('luce'), pauseRange.toSet());
+      final rows = {for (final r in await rowsOfRule('luce')) r.occurrenceDate: r};
+      for (final date in pauseRange) {
+        expect(rows[date]!.deletedAt, isNotNull, reason: 'pending del $date generato prima della pausa');
+      }
+      expect(rows[d(2026, 10, 1)]!.deletedAt, isNull, reason: 'confermato prima della pausa');
+      for (final date in [d(2026, 10, 5), d(2026, 10, 6), d(2026, 10, 7), d(2026, 10, 8)]) {
+        expect(rows[date]!.deletedAt, isNull, reason: 'il $date è dopo la ripresa');
+        expect(rows[date]!.status, TransactionStatus.pending);
+      }
+
+      await recurrences.generate(today: d(2026, 10, 5));
+      final active = (await ofRule('luce')).map((t) => t.date).toList();
+      expect(active, [for (var day = 5; day <= 12; day++) d(2026, 10, day)]..insert(0, d(2026, 10, 1)));
+    });
+
     test('pausa e ripresa nello stesso giorno non saltano nulla', () async {
       await recurrences.save(monthly(start: d(2026, 9, 5)));
       await recurrences.pause('luce');
@@ -202,6 +236,16 @@ void main() {
   });
 
   group('salta, elimina, occorrenza', () {
+    test('le occorrenze eliminate si vedono come tali e non si rigenerano', () async {
+      await recurrences.save(monthly(start: d(2026, 9, 5), mode: RecurrenceMode.confirm));
+      await recurrences.generate(today: d(2026, 9, 30));
+      expect(await recurrences.watchDeletedOccurrences('luce').first, isEmpty);
+      await transactions.delete(occurrenceId('luce', d(2026, 10, 5)));
+      expect(await recurrences.watchDeletedOccurrences('luce').first, {d(2026, 10, 5)});
+      await recurrences.generate(today: d(2026, 10, 1));
+      expect((await ofRule('luce')).map((t) => t.date), [d(2026, 9, 5)]);
+    });
+
     test('salta: eccezione e pending cancellato; un confermato resta', () async {
       await recurrences.save(monthly(start: d(2026, 9, 5), mode: RecurrenceMode.confirm));
       await recurrences.generate(today: d(2026, 9, 30));

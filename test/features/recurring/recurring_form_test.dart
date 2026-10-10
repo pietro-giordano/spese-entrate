@@ -11,7 +11,9 @@ import 'package:spese_entrate/data/repositories/repository_providers.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/domain/models/recurrence_rule.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
+import 'package:spese_entrate/domain/services/balances.dart';
 import 'package:spese_entrate/domain/services/recurrence.dart';
+import 'package:spese_entrate/domain/services/statistics.dart';
 import 'package:spese_entrate/features/recurring/application/recurring_providers.dart';
 import 'package:spese_entrate/features/transactions/application/transaction_form_controller.dart';
 
@@ -110,6 +112,67 @@ void main() {
       expect((await all()).every((t) => t.isConfirmed), isTrue);
     });
 
+    test(
+      'prima occorrenza futura: pending, fuori da saldi e statistiche; l\'automatica si conferma alla data',
+      () async {
+        final f = form(seed);
+        fill(
+          f,
+          date: d(2026, 10, 15),
+          repeat: const RepeatSettings(frequency: RecurrenceFrequency.monthly),
+        );
+        final saved = (await f.save(walletId: walletId))!;
+        expect(saved.status, TransactionStatus.pending);
+        expect((await all()).single.status, TransactionStatus.pending);
+
+        final wallet = (await container.read(walletRepositoryProvider).watchAll().first).firstWhere(
+          (w) => w.id == walletId,
+        );
+        expect(walletBalance(wallet, await all()), 0, reason: 'il pending non tocca il saldo');
+        expect(summarize(await all(), DateRange(d(2026, 10, 1), d(2026, 10, 31))).expenseCents, 0);
+
+        final repository = container.read(recurrenceRepositoryProvider);
+        await repository.generate(today: d(2026, 10, 14));
+        expect((await all()).single.status, TransactionStatus.pending);
+        await repository.generate(today: d(2026, 10, 15));
+        final confirmed = (await all()).single;
+        expect(confirmed.status, TransactionStatus.confirmed);
+        expect(confirmed.date, d(2026, 10, 15));
+        expect(walletBalance(wallet, await all()), -6400);
+      },
+    );
+
+    test('prima occorrenza futura da confermare: resta pending finché l\'utente non conferma', () async {
+      final f = form(seed);
+      fill(
+        f,
+        date: d(2026, 10, 15),
+        repeat: const RepeatSettings(frequency: RecurrenceFrequency.monthly, mode: RecurrenceMode.confirm),
+      );
+      final saved = (await f.save(walletId: walletId))!;
+      await container.read(recurrenceRepositoryProvider).generate(today: d(2026, 10, 20));
+      expect(
+        (await container.read(transactionRepositoryProvider).getById(saved.id))!.status,
+        TransactionStatus.pending,
+      );
+    });
+
+    test('prima occorrenza oggi o nel passato: confermata come sempre', () async {
+      final f = form(seed);
+      fill(
+        f,
+        date: d(2026, 10, 10),
+        repeat: const RepeatSettings(frequency: RecurrenceFrequency.monthly),
+      );
+      expect((await f.save(walletId: walletId))!.status, TransactionStatus.confirmed);
+    });
+
+    test('un movimento non ricorrente con data futura resta confermato (comportamento invariato)', () async {
+      final f = form(seed);
+      fill(f, date: d(2026, 10, 15));
+      expect((await f.save(walletId: walletId))!.status, TransactionStatus.confirmed);
+    });
+
     test('se il movimento non si salva, non resta nemmeno la regola', () async {
       await db.customStatement(
         'CREATE TRIGGER errore_simulato BEFORE INSERT ON transactions '
@@ -153,6 +216,26 @@ void main() {
       expect(saved!.status, TransactionStatus.confirmed);
       expect(saved.id, pending.id);
       expect((await container.read(transactionRepositoryProvider).getById(pending.id))!.isConfirmed, isTrue);
+    });
+  });
+
+  group('Conferma anticipata di un\'automatica', () {
+    test('il form rifiuta la conferma e il movimento resta pending', () async {
+      final repository = container.read(recurrenceRepositoryProvider);
+      await repository.save(anchorRuleAt(ruleFor(walletId, categoryId, start: d(2026, 10, 15)), d(2026, 10, 15)));
+      final future = (await repository.occurrenceTransaction('luce', d(2026, 10, 15)))!;
+      expect(future.status, TransactionStatus.pending);
+
+      final f = form(TransactionFormSeed.confirm(future));
+      await expectLater(f.save(walletId: walletId), throwsA(isA<AutomaticOccurrenceException>()));
+      expect(
+        (await container.read(transactionRepositoryProvider).getById(future.id))!.status,
+        TransactionStatus.pending,
+      );
+
+      // Alla data la conferma il generatore, come sempre.
+      await repository.generate(today: d(2026, 10, 15));
+      expect((await container.read(transactionRepositoryProvider).getById(future.id))!.isConfirmed, isTrue);
     });
   });
 

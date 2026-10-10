@@ -104,6 +104,21 @@ int monthlyEquivalentCents(RecurrenceRule rule) {
 /// True se la regola cade esattamente una volta al mese (nessuna media da calcolare).
 bool isMonthly(RecurrenceRule rule) => rule.frequency == RecurrenceFrequency.monthly && rule.interval == 1;
 
+/// True se l'utente può confermare a mano [tx]: un `pending` che non appartiene a una regola
+/// automatica ([rule] è la sua regola, se c'è). Le occorrenze automatiche le conferma solo
+/// il generatore, alla loro data.
+bool canConfirmManually(Transaction tx, RecurrenceRule? rule) => !tx.isConfirmed && rule?.mode != RecurrenceMode.auto;
+
+/// Tentativo di confermare a mano un'occorrenza di una regola automatica.
+class AutomaticOccurrenceException implements Exception {
+  const AutomaticOccurrenceException(this.transactionId);
+
+  final String transactionId;
+
+  @override
+  String toString() => 'Il movimento $transactionId verrà confermato automaticamente alla sua data';
+}
+
 /// La nuova data di "questa e le successive" deve venire dopo l'occorrenza precedente,
 /// altrimenti le due regole si sovrapporrebbero.
 class SplitDateException implements Exception {

@@ -353,6 +353,13 @@ class TransactionFormController extends _$TransactionFormController {
       note: note.isEmpty ? null : note,
     );
 
+    // Le occorrenze automatiche si confermano solo con il generatore, alla loro data.
+    if (state.confirming) {
+      final ruleId = base.recurrenceId;
+      final rule = ruleId == null ? null : await ref.read(recurrenceRepositoryProvider).getById(ruleId);
+      if (!canConfirmManually(base, rule)) throw AutomaticOccurrenceException(base.id);
+    }
+
     state = state.copyWith(saving: true);
     final storage = ref.read(attachmentStorageProvider);
     final stored = <Attachment>[];
@@ -368,7 +375,15 @@ class TransactionFormController extends _$TransactionFormController {
         if (draftRule != null) {
           final rule = _ruleFrom(draftRule.copyWith(id: newId(), name: ruleName), transaction);
           await recurrences.save(rule, skippedDates: skippedBacklog);
-          transaction = transaction.copyWith(recurrenceId: rule.id, occurrenceDate: rule.startDate);
+          transaction = transaction.copyWith(
+            recurrenceId: rule.id,
+            occurrenceDate: rule.startDate,
+            // Prima occorrenza nel futuro: resta `pending` (fuori da saldi e statistiche) finché
+            // il generatore non la conferma (automatica) o la conferma l'utente (da confermare).
+            status: rule.startDate.isAfter(ref.read(todayProvider))
+                ? TransactionStatus.pending
+                : TransactionStatus.confirmed,
+          );
         }
         if (scope == EditScope.following) transaction = await _splitRule(transaction);
         await ref

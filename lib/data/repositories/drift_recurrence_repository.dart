@@ -51,6 +51,12 @@ class DriftRecurrenceRepository implements RecurrenceRepository {
   }
 
   @override
+  Stream<Set<LocalDate>> watchDeletedOccurrences(String ruleId) {
+    final query = _db.select(_db.transactions)..where((t) => t.recurrenceId.equals(ruleId) & t.deletedAt.isNotNull());
+    return query.watch().map((rows) => {for (final row in rows) row.occurrenceDate!});
+  }
+
+  @override
   Future<void> save(RecurrenceRule rule, {List<LocalDate> skippedDates = const []}) {
     return _db.transaction(() async {
       // Una regola cancellata non torna attiva salvandola (lapide definitiva).

@@ -176,7 +176,8 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
                   if (rule != null) ...[
                     _RecurrenceBanner(
                       rule: rule,
-                      pending: !_original.isConfirmed,
+                      pending: canConfirmManually(_original, rule),
+                      automatic: !_original.isConfirmed && !canConfirmManually(_original, rule),
                       following: widget.scope == EditScope.following,
                       onTap: () => context.push(AppRoutes.recurrence(rule.id)),
                     ),
@@ -391,10 +392,21 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
 
 /// Banner in cima al form: il movimento fa parte di una ricorrenza (tocca per aprirla).
 class _RecurrenceBanner extends StatelessWidget {
-  const _RecurrenceBanner({required this.rule, required this.pending, required this.following, required this.onTap});
+  const _RecurrenceBanner({
+    required this.rule,
+    required this.pending,
+    required this.automatic,
+    required this.following,
+    required this.onTap,
+  });
 
   final RecurrenceRule rule;
+
+  /// Da confermare dall'utente.
   final bool pending;
+
+  /// Non ancora registrato, lo conferma il generatore alla data.
+  final bool automatic;
   final bool following;
   final VoidCallback onTap;
 
@@ -406,7 +418,12 @@ class _RecurrenceBanner extends StatelessWidget {
     final title = rule.name;
     final subtitle = following
         ? 'Le modifiche varranno anche per le occorrenze successive'
-        : ['Si ripete', describeSchedule(rule), if (pending) 'da confermare'].join(' · ');
+        : [
+            'Si ripete',
+            describeSchedule(rule),
+            if (pending) 'da confermare',
+            if (automatic) 'si registrerà da solo',
+          ].join(' · ');
 
     return Semantics(
       container: true,

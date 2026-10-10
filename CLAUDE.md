@@ -216,13 +216,21 @@ Al primo avvio, se il database è vuoto:
   le occorrenze passate; se no, diventano eccezioni `skip`. Ogni movimento generato ha la data
   dell'occorrenza, mai quella del giorno in cui gira il generatore.
 - **Pausa**: `paused_at` ferma il generatore e nasconde i `pending` da "In arrivo". Alla ripresa
-  le occorrenze dal giorno della pausa a ieri diventano eccezioni `skip` (i `pending` di quelle date
-  si cancellano, i confermati restano): non si recuperano, anche dopo un riavvio.
+  tutte le occorrenze dal giorno della pausa a ieri diventano eccezioni `skip`, comprese quelle già
+  generate come `pending` prima della pausa (che si cancellano); i confermati restano. Quelle dal
+  giorno della ripresa in poi restano valide. Vale anche dopo un riavvio.
 - **Salta**: eccezione `skip` + cancellazione logica del `pending` di quella data.
   **Elimina regola**: regola e `pending` cancellati, i confermati restano.
-- Un'occorrenza futura modificata prima del tempo si crea come `pending` con l'ID deterministico;
-  per le regole `auto` il generatore la conferma quando arriva la data (un confermato con data
-  futura entrerebbe subito nei saldi).
+- Un'occorrenza futura non è mai `confirmed` prima della sua data: sia la prima occorrenza di una
+  regola nuova con data futura, sia un'occorrenza modificata prima del tempo (creata con l'ID
+  deterministico) restano `pending`, fuori da saldi e statistiche. Per le regole `auto` il generatore
+  le conferma quando arriva la data; per quelle `confirm` serve l'utente. (I movimenti non ricorrenti
+  con data futura, per ora, restano confermati.)
+- **Conferma manuale** solo per i `pending` delle regole `confirm` (`canConfirmManually`). Le occorrenze
+  automatiche future compaiono in "In arrivo" come "Automatica · <data>", senza pulsante; la rotta di
+  conferma e il form le rifiutano (`AutomaticOccurrenceException`). Le conferma solo il generatore.
+- Nel dettaglio, le occorrenze il cui movimento è stato eliminato appaiono come "Eliminata"
+  (barrate, senza azioni) e non si rigenerano.
 - Nome della regola: la nota, altrimenti la categoria, altrimenti "Trasferimento".
 - **Totali fissi** (Movimenti ricorrenti): l'effettivo del mese (importi registrati o della regola,
   senza saltate e pause) e, se ci sono regole non mensili, la "Media mensile prevista"

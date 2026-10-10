@@ -111,6 +111,28 @@ void main() {
     });
   });
 
+  group('conferma manuale', () {
+    Transaction tx(TransactionStatus status) => Transaction(
+      id: 't',
+      type: TransactionType.expense,
+      status: status,
+      amountCents: 100,
+      date: d(2026, 10, 15),
+      walletId: 'w',
+      recurrenceId: 'r',
+      occurrenceDate: d(2026, 10, 15),
+    );
+    final auto = rule(RecurrenceFrequency.monthly, d(2026, 1, 15));
+    final confirm = auto.copyWith(mode: RecurrenceMode.confirm);
+
+    test('solo i pending delle regole "Da confermare" (o senza regola)', () {
+      expect(canConfirmManually(tx(TransactionStatus.pending), confirm), isTrue);
+      expect(canConfirmManually(tx(TransactionStatus.pending), null), isTrue);
+      expect(canConfirmManually(tx(TransactionStatus.pending), auto), isFalse);
+      expect(canConfirmManually(tx(TransactionStatus.confirmed), confirm), isFalse);
+    });
+  });
+
   group('importo medio mensile', () {
     test('mensile = importo, altre frequenze = media', () {
       expect(monthlyEquivalentCents(rule(RecurrenceFrequency.monthly, d(2026, 1, 1), amount: 1099)), 1099);

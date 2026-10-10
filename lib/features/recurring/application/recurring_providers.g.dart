@@ -234,6 +234,79 @@ final class UpcomingTransactionsProvider
 
 String _$upcomingTransactionsHash() => r'3aa91be9b952fe415800101c4f04c20361e27988';
 
+/// Date delle occorrenze eliminate di una regola (non si rigenerano).
+
+@ProviderFor(deletedOccurrences)
+final deletedOccurrencesProvider = DeletedOccurrencesFamily._();
+
+/// Date delle occorrenze eliminate di una regola (non si rigenerano).
+
+final class DeletedOccurrencesProvider
+    extends $FunctionalProvider<AsyncValue<Set<LocalDate>>, Set<LocalDate>, Stream<Set<LocalDate>>>
+    with $FutureModifier<Set<LocalDate>>, $StreamProvider<Set<LocalDate>> {
+  /// Date delle occorrenze eliminate di una regola (non si rigenerano).
+  DeletedOccurrencesProvider._({required DeletedOccurrencesFamily super.from, required String super.argument})
+    : super(
+        retry: null,
+        name: r'deletedOccurrencesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$deletedOccurrencesHash();
+
+  @override
+  String toString() {
+    return r'deletedOccurrencesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<Set<LocalDate>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
+
+  @override
+  Stream<Set<LocalDate>> create(Ref ref) {
+    final argument = this.argument as String;
+    return deletedOccurrences(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DeletedOccurrencesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$deletedOccurrencesHash() => r'8161624490be8594eb9afa442f4550b587f61ed2';
+
+/// Date delle occorrenze eliminate di una regola (non si rigenerano).
+
+final class DeletedOccurrencesFamily extends $Family with $FunctionalFamilyOverride<Stream<Set<LocalDate>>, String> {
+  DeletedOccurrencesFamily._()
+    : super(
+        retry: null,
+        name: r'deletedOccurrencesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Date delle occorrenze eliminate di una regola (non si rigenerano).
+
+  DeletedOccurrencesProvider call(String ruleId) => DeletedOccurrencesProvider._(argument: ruleId, from: this);
+
+  @override
+  String toString() => r'deletedOccurrencesProvider';
+}
+
 /// Movimenti (non cancellati) di una regola, dal più recente.
 
 @ProviderFor(ruleTransactions)

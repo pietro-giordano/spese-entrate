@@ -15,6 +15,7 @@ import '../../../../domain/models/enums.dart';
 import '../../../../domain/models/recurrence_rule.dart';
 import '../../../../domain/models/transaction.dart';
 import '../../../settings/application/settings_providers.dart';
+import '../../../../domain/services/recurrence.dart';
 import '../../application/recurring_providers.dart';
 import '../recurrence_text.dart';
 import 'recurrence_widgets.dart';
@@ -66,6 +67,7 @@ class UpcomingSection extends ConsumerWidget {
                     if (index > 0) Divider(height: 1, indent: 14, endIndent: 14, color: colors.divider),
                     _UpcomingRow(
                       transaction: tx,
+                      rule: rules[tx.recurrenceId],
                       title:
                           rules[tx.recurrenceId]?.name ??
                           tx.note ??
@@ -84,9 +86,10 @@ class UpcomingSection extends ConsumerWidget {
 }
 
 class _UpcomingRow extends ConsumerWidget {
-  const _UpcomingRow({required this.transaction, required this.title});
+  const _UpcomingRow({required this.transaction, required this.rule, required this.title});
 
   final Transaction transaction;
+  final RecurrenceRule? rule;
   final String title;
 
   @override
@@ -135,18 +138,25 @@ class _UpcomingRow extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.neutral.fill,
-                foregroundColor: colors.neutral.onFill,
-                minimumSize: const Size(44, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+            if (!canConfirmManually(tx, rule))
+              // Automatica: si registra da sola alla data, niente conferma anticipata.
+              Text(
+                'Automatica · ${shortDate(tx.date, today)}',
+                style: textTheme.labelSmall?.copyWith(color: colors.textMuted, fontWeight: FontWeight.w700),
+              )
+            else
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.neutral.fill,
+                  foregroundColor: colors.neutral.onFill,
+                  minimumSize: const Size(44, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  textStyle: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                onPressed: () => context.push(AppRoutes.confirm(tx.id)),
+                child: Semantics(label: 'Conferma $title', excludeSemantics: true, child: const Text('Conferma')),
               ),
-              onPressed: () => context.push(AppRoutes.confirm(tx.id)),
-              child: Semantics(label: 'Conferma $title', excludeSemantics: true, child: const Text('Conferma')),
-            ),
           ],
         ),
       ),

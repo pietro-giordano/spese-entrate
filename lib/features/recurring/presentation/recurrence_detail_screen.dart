@@ -52,7 +52,7 @@ class RecurrenceDetailScreen extends ConsumerWidget {
 
 /// Una riga di "Prossime occorrenze".
 class _Occurrence {
-  const _Occurrence({required this.date, this.transaction, this.skipped = false});
+  const _Occurrence({required this.date, this.transaction, this.skipped = false, this.deleted = false});
 
   /// Data originale dell'occorrenza.
   final LocalDate date;
@@ -60,6 +60,12 @@ class _Occurrence {
   /// Movimento già creato (di solito `pending`), se c'è.
   final Transaction? transaction;
   final bool skipped;
+
+  /// Il suo movimento è stato eliminato (es. dal form di modifica): non si rigenera.
+  final bool deleted;
+
+  /// Saltata o eliminata: niente azioni, data barrata.
+  bool get isGone => skipped || deleted;
 }
 
 class _RecurrenceDetail extends ConsumerWidget {
@@ -79,7 +85,8 @@ class _RecurrenceDetail extends ConsumerWidget {
         .toSet();
     final finished = isRuleFinished(rule, today);
     final history = transactions.where((tx) => tx.isConfirmed).sorted((a, b) => b.date.compareTo(a.date));
-    final upcoming = _upcoming(transactions, exceptions, today);
+    final deleted = ref.watch(deletedOccurrencesProvider(rule.id)).value ?? const <LocalDate>{};
+    final upcoming = _upcoming(transactions, exceptions, deleted, today);
 
     return Scaffold(
       body: SafeArea(
@@ -176,7 +183,12 @@ class _RecurrenceDetail extends ConsumerWidget {
 
   /// `pending` scaduti, poi le prossime [_upcomingCount] occorrenze non ancora confermate
   /// (le saltate restano visibili, barrate).
-  List<_Occurrence> _upcoming(List<Transaction> transactions, Set<LocalDate> skipped, LocalDate today) {
+  List<_Occurrence> _upcoming(
+    List<Transaction> transactions,
+    Set<LocalDate> skipped,
+    Set<LocalDate> deleted,
+    LocalDate today,
+  ) {
     final bySlot = {for (final tx in transactions) tx.occurrenceDate: tx};
     final overdue = [
       for (final tx in transactions)
@@ -187,7 +199,14 @@ class _RecurrenceDetail extends ConsumerWidget {
         .skipWhile((d) => d.isBefore(today))
         .where((d) => !(bySlot[d]?.isConfirmed ?? false))
         .take(_upcomingCount)
-        .map((d) => _Occurrence(date: d, transaction: bySlot[d], skipped: skipped.contains(d)));
+        .map(
+          (d) => _Occurrence(
+            date: d,
+            transaction: bySlot[d],
+            skipped: skipped.contains(d),
+            deleted: !skipped.contains(d) && deleted.contains(d),
+          ),
+        );
     return [...overdue, ...next];
   }
 
@@ -332,7 +351,12 @@ class _OccurrenceRow extends ConsumerWidget {
     final tx = occurrence.transaction;
     final note = switch (occurrence) {
       _Occurrence(skipped: true) => 'Saltata',
+      _Occurrence(deleted: true) => 'Eliminata',
       _ when rule.isPaused => 'In pausa',
+      _Occurrence(transaction: final tx?) when !canConfirmManually(tx, rule) =>
+        tx.date != occurrence.date
+            ? 'Verrà registrata automaticamente il ${shortDate(tx.date, today)}'
+            : 'Verrà registrata automaticamente',
       _Occurrence(transaction: _?) when occurrence.date.isBefore(today) => 'Da confermare · scaduta',
       _Occurrence(transaction: final tx?) when tx.date != occurrence.date =>
         'Da confermare · spostata al ${shortDate(tx.date, today)}',
@@ -356,7 +380,7 @@ class _OccurrenceRow extends ConsumerWidget {
                     dateText,
                     style: textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      decoration: occurrence.skipped ? TextDecoration.lineThrough : null,
+                      decoration: occurrence.isGone ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -364,7 +388,7 @@ class _OccurrenceRow extends ConsumerWidget {
                 ],
               ),
             ),
-            if (showConfirm && tx != null && !rule.isPaused)
+            if (showConfirm && tx != null && !rule.isPaused && canConfirmManually(tx, rule))
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.neutral.fill,
@@ -377,7 +401,7 @@ class _OccurrenceRow extends ConsumerWidget {
                 onPressed: () => context.push(AppRoutes.confirm(tx.id)),
                 child: const Text('Conferma'),
               ),
-            if (!occurrence.skipped)
+            if (!occurrence.isGone)
               IconButton(
                 tooltip: 'Opzioni per $dateText',
                 icon: Icon(Icons.more_horiz_rounded, color: colors.neutral.onTint),
