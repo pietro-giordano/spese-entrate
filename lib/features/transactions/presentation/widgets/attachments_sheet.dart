@@ -8,28 +8,34 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../data/files/attachment_picker.dart';
-import '../../application/quick_add_controller.dart';
+import '../../application/transaction_form_controller.dart';
 
-/// Pannello Allegati: anteprime con rimozione, foto, galleria e file. Legge e modifica
-/// direttamente lo stato dell'inserimento rapido ([provider]).
-Future<void> showAttachmentsSheet(BuildContext context, QuickAddControllerProvider provider) {
+/// Pannello Allegati: anteprime dei nuovi allegati con rimozione, foto, galleria e file.
+/// Legge e modifica direttamente lo stato del form ([provider]). Con [showThumbnails] false
+/// mostra solo le azioni (in Modifica movimento le anteprime sono già nella schermata).
+Future<void> showAttachmentsSheet(
+  BuildContext context,
+  TransactionFormControllerProvider provider, {
+  bool showThumbnails = true,
+}) {
   return AppBottomSheet.show<void>(
     context,
     title: 'Allegati',
     titleTrailing: Consumer(
       builder: (context, ref, _) => Text(
-        '${ref.watch(provider.select((s) => s.attachments.length))} di $maxAttachments',
+        '${ref.watch(provider.select((s) => s.attachmentCount))} di $maxAttachments',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(color: context.colors.textMuted),
       ),
     ),
-    builder: (_) => _AttachmentsBody(provider: provider),
+    builder: (_) => _AttachmentsBody(provider: provider, showThumbnails: showThumbnails),
   );
 }
 
 class _AttachmentsBody extends ConsumerStatefulWidget {
-  const _AttachmentsBody({required this.provider});
+  const _AttachmentsBody({required this.provider, required this.showThumbnails});
 
-  final QuickAddControllerProvider provider;
+  final TransactionFormControllerProvider provider;
+  final bool showThumbnails;
 
   @override
   ConsumerState<_AttachmentsBody> createState() => _AttachmentsBodyState();
@@ -51,14 +57,14 @@ class _AttachmentsBodyState extends ConsumerState<_AttachmentsBody> {
 
   @override
   Widget build(BuildContext context) {
-    final attachments = ref.watch(widget.provider.select((s) => s.attachments));
-    final canAdd = attachments.length < maxAttachments;
+    final attachments = ref.watch(widget.provider.select((s) => s.newAttachments));
+    final canAdd = ref.watch(widget.provider.select((s) => s.canAddAttachment));
     final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (attachments.isNotEmpty) ...[
+        if (widget.showThumbnails && attachments.isNotEmpty) ...[
           Wrap(
             children: [
               for (final file in attachments)

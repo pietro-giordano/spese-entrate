@@ -12,13 +12,7 @@ part of 'attachment_picker.dart';
 @ProviderFor(attachmentPicker)
 final attachmentPickerProvider = AttachmentPickerProvider._();
 
-final class AttachmentPickerProvider
-    extends
-        $FunctionalProvider<
-          AttachmentPicker,
-          AttachmentPicker,
-          AttachmentPicker
-        >
+final class AttachmentPickerProvider extends $FunctionalProvider<AttachmentPicker, AttachmentPicker, AttachmentPicker>
     with $Provider<AttachmentPicker> {
   AttachmentPickerProvider._()
     : super(
@@ -36,8 +30,7 @@ final class AttachmentPickerProvider
 
   @$internal
   @override
-  $ProviderElement<AttachmentPicker> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<AttachmentPicker> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
   AttachmentPicker create(Ref ref) {
@@ -46,10 +39,7 @@ final class AttachmentPickerProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(AttachmentPicker value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<AttachmentPicker>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<AttachmentPicker>(value));
   }
 }
 

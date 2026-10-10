@@ -8,6 +8,7 @@ import 'package:spese_entrate/data/repositories/drift_label_repository.dart';
 import 'package:spese_entrate/data/repositories/drift_settings_repository.dart';
 import 'package:spese_entrate/data/repositories/drift_transaction_repository.dart';
 import 'package:spese_entrate/data/repositories/drift_wallet_repository.dart';
+import 'package:spese_entrate/domain/models/attachment.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/domain/models/label.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
@@ -173,6 +174,62 @@ void main() {
         <String>[],
         ['home'],
       ]);
+    });
+  });
+
+  group('modifica, allegati e ripristino', () {
+    Attachment attachment(String transactionId, String name) => Attachment(
+      id: newId(),
+      transactionId: transactionId,
+      localPath: 'attachments/$transactionId/$name',
+      mimeType: 'application/pdf',
+      sizeBytes: 10,
+      sha256: 'hash',
+    );
+
+    test('save aggiunge e rimuove (logicamente) gli allegati', () async {
+      final repo = DriftTransactionRepository(db);
+      final tx = expense();
+      final first = attachment(tx.id, 'a.pdf');
+      final second = attachment(tx.id, 'b.pdf');
+      await repo.save(tx, attachments: [first, second]);
+      // Stesso istante di creazione: l'ordine tra i due non è definito.
+      expect((await repo.getAttachments(tx.id)).map((a) => a.id), unorderedEquals([first.id, second.id]));
+
+      await repo.save(tx, removedAttachmentIds: [first.id]);
+      expect((await repo.getAttachments(tx.id)).map((a) => a.id), [second.id]);
+      final row = await (db.select(db.attachments)..where((a) => a.id.equals(first.id))).getSingle();
+      expect(row.deletedAt, isNotNull, reason: 'cancellazione logica: la riga resta');
+    });
+
+    test('restore annulla la cancellazione e accoda un upsert', () async {
+      final repo = DriftTransactionRepository(db);
+      final tx = expense();
+      await repo.save(tx);
+      await repo.delete(tx.id);
+      expect(await repo.getById(tx.id), isNull);
+
+      now = now.add(const Duration(minutes: 1));
+      await repo.restore(tx.id);
+      expect(await repo.getById(tx.id), tx);
+      final outbox = await newOutbox();
+      expect(outbox.map((o) => o.op), [OutboxOp.upsert, OutboxOp.delete, OutboxOp.upsert]);
+      final row = await (db.select(db.transactions)..where((t) => t.id.equals(tx.id))).getSingle();
+      expect(row.updatedAt, ms(now));
+    });
+
+    test('getTimestamps restituisce creazione e ultima modifica', () async {
+      final repo = DriftTransactionRepository(db);
+      final tx = expense();
+      await repo.save(tx);
+      final created = now;
+      now = now.add(const Duration(hours: 2));
+      await repo.save(tx.copyWith(note: 'modificato'));
+
+      final timestamps = await repo.getTimestamps(tx.id);
+      expect(timestamps!.createdAt, created);
+      expect(timestamps.updatedAt, now);
+      expect(await repo.getTimestamps('inesistente'), isNull);
     });
   });
 

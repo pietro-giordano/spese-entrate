@@ -16,15 +16,8 @@ final allTransactionsProvider = AllTransactionsProvider._();
 /// Tutti i movimenti non cancellati (servono ai saldi).
 
 final class AllTransactionsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Transaction>>,
-          List<Transaction>,
-          Stream<List<Transaction>>
-        >
-    with
-        $FutureModifier<List<Transaction>>,
-        $StreamProvider<List<Transaction>> {
+    extends $FunctionalProvider<AsyncValue<List<Transaction>>, List<Transaction>, Stream<List<Transaction>>>
+    with $FutureModifier<List<Transaction>>, $StreamProvider<List<Transaction>> {
   /// Tutti i movimenti non cancellati (servono ai saldi).
   AllTransactionsProvider._()
     : super(
@@ -42,9 +35,7 @@ final class AllTransactionsProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<Transaction>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<List<Transaction>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<List<Transaction>> create(Ref ref) {
@@ -62,26 +53,17 @@ final transactionsInRangeProvider = TransactionsInRangeFamily._();
 /// Movimenti con data nel periodo, dal più recente.
 
 final class TransactionsInRangeProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Transaction>>,
-          List<Transaction>,
-          Stream<List<Transaction>>
-        >
-    with
-        $FutureModifier<List<Transaction>>,
-        $StreamProvider<List<Transaction>> {
+    extends $FunctionalProvider<AsyncValue<List<Transaction>>, List<Transaction>, Stream<List<Transaction>>>
+    with $FutureModifier<List<Transaction>>, $StreamProvider<List<Transaction>> {
   /// Movimenti con data nel periodo, dal più recente.
-  TransactionsInRangeProvider._({
-    required TransactionsInRangeFamily super.from,
-    required DateRange super.argument,
-  }) : super(
-         retry: null,
-         name: r'transactionsInRangeProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
+  TransactionsInRangeProvider._({required TransactionsInRangeFamily super.from, required DateRange super.argument})
+    : super(
+        retry: null,
+        name: r'transactionsInRangeProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$transactionsInRangeHash();
@@ -95,9 +77,7 @@ final class TransactionsInRangeProvider
 
   @$internal
   @override
-  $StreamProviderElement<List<Transaction>> $createElement(
-    $ProviderPointer pointer,
-  ) => $StreamProviderElement(pointer);
+  $StreamProviderElement<List<Transaction>> $createElement($ProviderPointer pointer) => $StreamProviderElement(pointer);
 
   @override
   Stream<List<Transaction>> create(Ref ref) {
@@ -116,8 +96,7 @@ final class TransactionsInRangeProvider
   }
 }
 
-String _$transactionsInRangeHash() =>
-    r'576e81ea1c8d387ad9394371a5e2effe4029cde4';
+String _$transactionsInRangeHash() => r'576e81ea1c8d387ad9394371a5e2effe4029cde4';
 
 /// Movimenti con data nel periodo, dal più recente.
 
@@ -134,8 +113,7 @@ final class TransactionsInRangeFamily extends $Family
 
   /// Movimenti con data nel periodo, dal più recente.
 
-  TransactionsInRangeProvider call(DateRange range) =>
-      TransactionsInRangeProvider._(argument: range, from: this);
+  TransactionsInRangeProvider call(DateRange range) => TransactionsInRangeProvider._(argument: range, from: this);
 
   @override
   String toString() => r'transactionsInRangeProvider';
@@ -149,24 +127,17 @@ final periodSummaryProvider = PeriodSummaryFamily._();
 /// Entrate, uscite e saldo del periodo (solo spese ed entrate confermate).
 
 final class PeriodSummaryProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<PeriodSummary>,
-          PeriodSummary,
-          FutureOr<PeriodSummary>
-        >
+    extends $FunctionalProvider<AsyncValue<PeriodSummary>, PeriodSummary, FutureOr<PeriodSummary>>
     with $FutureModifier<PeriodSummary>, $FutureProvider<PeriodSummary> {
   /// Entrate, uscite e saldo del periodo (solo spese ed entrate confermate).
-  PeriodSummaryProvider._({
-    required PeriodSummaryFamily super.from,
-    required DateRange super.argument,
-  }) : super(
-         retry: null,
-         name: r'periodSummaryProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
+  PeriodSummaryProvider._({required PeriodSummaryFamily super.from, required DateRange super.argument})
+    : super(
+        retry: null,
+        name: r'periodSummaryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$periodSummaryHash();
@@ -180,9 +151,7 @@ final class PeriodSummaryProvider
 
   @$internal
   @override
-  $FutureProviderElement<PeriodSummary> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<PeriodSummary> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<PeriodSummary> create(Ref ref) {
@@ -205,8 +174,7 @@ String _$periodSummaryHash() => r'48d16167087c501f5c72990f3ca488db6c3b30ed';
 
 /// Entrate, uscite e saldo del periodo (solo spese ed entrate confermate).
 
-final class PeriodSummaryFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<PeriodSummary>, DateRange> {
+final class PeriodSummaryFamily extends $Family with $FunctionalFamilyOverride<FutureOr<PeriodSummary>, DateRange> {
   PeriodSummaryFamily._()
     : super(
         retry: null,
@@ -218,8 +186,7 @@ final class PeriodSummaryFamily extends $Family
 
   /// Entrate, uscite e saldo del periodo (solo spese ed entrate confermate).
 
-  PeriodSummaryProvider call(DateRange range) =>
-      PeriodSummaryProvider._(argument: range, from: this);
+  PeriodSummaryProvider call(DateRange range) => PeriodSummaryProvider._(argument: range, from: this);
 
   @override
   String toString() => r'periodSummaryProvider';

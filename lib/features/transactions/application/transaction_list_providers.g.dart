@@ -14,8 +14,7 @@ part of 'transaction_list_providers.dart';
 final selectedPeriodProvider = SelectedPeriodProvider._();
 
 /// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
-final class SelectedPeriodProvider
-    extends $NotifierProvider<SelectedPeriod, Period> {
+final class SelectedPeriodProvider extends $NotifierProvider<SelectedPeriod, Period> {
   /// Periodo scelto, condiviso tra la tab Movimenti e la schermata Filtri. Parte dal mese corrente.
   SelectedPeriodProvider._()
     : super(
@@ -37,10 +36,7 @@ final class SelectedPeriodProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(Period value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<Period>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<Period>(value));
   }
 }
 
@@ -54,14 +50,7 @@ abstract class _$SelectedPeriod extends $Notifier<Period> {
   @override
   WhenComplete runBuild() {
     final ref = this.ref as $Ref<Period, Period>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<Period, Period>,
-              Period,
-              Object?,
-              Object?
-            >;
+    final element = ref.element as $ClassProviderElement<AnyNotifier<Period, Period>, Period, Object?, Object?>;
     return element.handleCreate(ref, build);
   }
 }
@@ -72,8 +61,7 @@ abstract class _$SelectedPeriod extends $Notifier<Period> {
 final activeFiltersProvider = ActiveFiltersProvider._();
 
 /// Filtri attivi, condivisi tra la tab Movimenti e la schermata Filtri.
-final class ActiveFiltersProvider
-    extends $NotifierProvider<ActiveFilters, TransactionFilters> {
+final class ActiveFiltersProvider extends $NotifierProvider<ActiveFilters, TransactionFilters> {
   /// Filtri attivi, condivisi tra la tab Movimenti e la schermata Filtri.
   ActiveFiltersProvider._()
     : super(
@@ -95,10 +83,7 @@ final class ActiveFiltersProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(TransactionFilters value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<TransactionFilters>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<TransactionFilters>(value));
   }
 }
 
@@ -134,15 +119,8 @@ final visibleTransactionsProvider = VisibleTransactionsProvider._();
 /// I `pending` sono esclusi: compariranno nella sezione "In arrivo".
 
 final class VisibleTransactionsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<Transaction>>,
-          List<Transaction>,
-          FutureOr<List<Transaction>>
-        >
-    with
-        $FutureModifier<List<Transaction>>,
-        $FutureProvider<List<Transaction>> {
+    extends $FunctionalProvider<AsyncValue<List<Transaction>>, List<Transaction>, FutureOr<List<Transaction>>>
+    with $FutureModifier<List<Transaction>>, $FutureProvider<List<Transaction>> {
   /// Movimenti confermati del periodo che passano i filtri, dal più recente.
   /// I `pending` sono esclusi: compariranno nella sezione "In arrivo".
   VisibleTransactionsProvider._()
@@ -161,9 +139,7 @@ final class VisibleTransactionsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<Transaction>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<List<Transaction>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<Transaction>> create(Ref ref) {
@@ -171,8 +147,7 @@ final class VisibleTransactionsProvider
   }
 }
 
-String _$visibleTransactionsHash() =>
-    r'73d99845c2e0700411cbd77cba2792dacf442703';
+String _$visibleTransactionsHash() => r'73d99845c2e0700411cbd77cba2792dacf442703';
 
 /// Riepilogo del periodo (entrate, uscite, saldo) sui movimenti visibili.
 
@@ -182,12 +157,7 @@ final visibleSummaryProvider = VisibleSummaryProvider._();
 /// Riepilogo del periodo (entrate, uscite, saldo) sui movimenti visibili.
 
 final class VisibleSummaryProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<PeriodSummary>,
-          PeriodSummary,
-          FutureOr<PeriodSummary>
-        >
+    extends $FunctionalProvider<AsyncValue<PeriodSummary>, PeriodSummary, FutureOr<PeriodSummary>>
     with $FutureModifier<PeriodSummary>, $FutureProvider<PeriodSummary> {
   /// Riepilogo del periodo (entrate, uscite, saldo) sui movimenti visibili.
   VisibleSummaryProvider._()
@@ -206,9 +176,7 @@ final class VisibleSummaryProvider
 
   @$internal
   @override
-  $FutureProviderElement<PeriodSummary> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<PeriodSummary> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<PeriodSummary> create(Ref ref) {
@@ -226,12 +194,7 @@ final visibleDayGroupsProvider = VisibleDayGroupsProvider._();
 /// Lista raggruppata per giorno con il totale giornaliero.
 
 final class VisibleDayGroupsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<DayGroup>>,
-          List<DayGroup>,
-          FutureOr<List<DayGroup>>
-        >
+    extends $FunctionalProvider<AsyncValue<List<DayGroup>>, List<DayGroup>, FutureOr<List<DayGroup>>>
     with $FutureModifier<List<DayGroup>>, $FutureProvider<List<DayGroup>> {
   /// Lista raggruppata per giorno con il totale giornaliero.
   VisibleDayGroupsProvider._()
@@ -250,9 +213,7 @@ final class VisibleDayGroupsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<DayGroup>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<List<DayGroup>> $createElement($ProviderPointer pointer) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<DayGroup>> create(Ref ref) {

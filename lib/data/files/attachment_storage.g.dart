@@ -13,12 +13,7 @@ part of 'attachment_storage.dart';
 final attachmentStorageProvider = AttachmentStorageProvider._();
 
 final class AttachmentStorageProvider
-    extends
-        $FunctionalProvider<
-          AttachmentStorage,
-          AttachmentStorage,
-          AttachmentStorage
-        >
+    extends $FunctionalProvider<AttachmentStorage, AttachmentStorage, AttachmentStorage>
     with $Provider<AttachmentStorage> {
   AttachmentStorageProvider._()
     : super(
@@ -36,9 +31,7 @@ final class AttachmentStorageProvider
 
   @$internal
   @override
-  $ProviderElement<AttachmentStorage> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<AttachmentStorage> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
 
   @override
   AttachmentStorage create(Ref ref) {
@@ -47,10 +40,7 @@ final class AttachmentStorageProvider
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(AttachmentStorage value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<AttachmentStorage>(value),
-    );
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<AttachmentStorage>(value));
   }
 }
 

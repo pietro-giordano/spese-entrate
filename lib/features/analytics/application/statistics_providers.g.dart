@@ -16,15 +16,8 @@ final categoryBreakdownProvider = CategoryBreakdownFamily._();
 /// Ciambella per categoria: spese o entrate ([kind]) del periodo.
 
 final class CategoryBreakdownProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<BreakdownItem>>,
-          List<BreakdownItem>,
-          FutureOr<List<BreakdownItem>>
-        >
-    with
-        $FutureModifier<List<BreakdownItem>>,
-        $FutureProvider<List<BreakdownItem>> {
+    extends $FunctionalProvider<AsyncValue<List<BreakdownItem>>, List<BreakdownItem>, FutureOr<List<BreakdownItem>>>
+    with $FutureModifier<List<BreakdownItem>>, $FutureProvider<List<BreakdownItem>> {
   /// Ciambella per categoria: spese o entrate ([kind]) del periodo.
   CategoryBreakdownProvider._({
     required CategoryBreakdownFamily super.from,
@@ -49,9 +42,8 @@ final class CategoryBreakdownProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<BreakdownItem>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<List<BreakdownItem>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<BreakdownItem>> create(Ref ref) {
@@ -75,11 +67,7 @@ String _$categoryBreakdownHash() => r'32ecc58b6fdfad7c14027a4bb09524aee6964f46';
 /// Ciambella per categoria: spese o entrate ([kind]) del periodo.
 
 final class CategoryBreakdownFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<List<BreakdownItem>>,
-          (DateRange, CategoryKind)
-        > {
+    with $FunctionalFamilyOverride<FutureOr<List<BreakdownItem>>, (DateRange, CategoryKind)> {
   CategoryBreakdownFamily._()
     : super(
         retry: null,
@@ -106,15 +94,8 @@ final labelBreakdownProvider = LabelBreakdownFamily._();
 /// Ciambella per label: un movimento con più label conta in ciascuna.
 
 final class LabelBreakdownProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<BreakdownItem>>,
-          List<BreakdownItem>,
-          FutureOr<List<BreakdownItem>>
-        >
-    with
-        $FutureModifier<List<BreakdownItem>>,
-        $FutureProvider<List<BreakdownItem>> {
+    extends $FunctionalProvider<AsyncValue<List<BreakdownItem>>, List<BreakdownItem>, FutureOr<List<BreakdownItem>>>
+    with $FutureModifier<List<BreakdownItem>>, $FutureProvider<List<BreakdownItem>> {
   /// Ciambella per label: un movimento con più label conta in ciascuna.
   LabelBreakdownProvider._({
     required LabelBreakdownFamily super.from,
@@ -139,9 +120,8 @@ final class LabelBreakdownProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<BreakdownItem>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  $FutureProviderElement<List<BreakdownItem>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<BreakdownItem>> create(Ref ref) {
@@ -165,11 +145,7 @@ String _$labelBreakdownHash() => r'b04c3b13a1d915d20115bc99db7bcb50c62a34cd';
 /// Ciambella per label: un movimento con più label conta in ciascuna.
 
 final class LabelBreakdownFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<List<BreakdownItem>>,
-          (DateRange, CategoryKind)
-        > {
+    with $FunctionalFamilyOverride<FutureOr<List<BreakdownItem>>, (DateRange, CategoryKind)> {
   LabelBreakdownFamily._()
     : super(
         retry: null,

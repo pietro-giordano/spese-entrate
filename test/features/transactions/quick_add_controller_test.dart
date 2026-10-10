@@ -10,7 +10,7 @@ import 'package:spese_entrate/data/db/database_provider.dart';
 import 'package:spese_entrate/data/repositories/repository_providers.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/domain/models/wallet.dart';
-import 'package:spese_entrate/features/transactions/application/quick_add_controller.dart';
+import 'package:spese_entrate/features/transactions/application/transaction_form_controller.dart';
 import 'package:spese_entrate/features/transactions/presentation/widgets/date_picker_sheet.dart';
 
 void main() {
@@ -73,10 +73,10 @@ void main() {
     });
   });
 
-  group('QuickAddController', () {
+  group('TransactionFormController', () {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     late ProviderContainer container;
-    final provider = quickAddControllerProvider(TransactionType.expense);
+    final provider = transactionFormControllerProvider(TransactionFormSeed.create(TransactionType.expense));
 
     setUp(() {
       final db = AppDatabase(NativeDatabase.memory(), now: () => DateTime.utc(2026, 10, 10, 8));
@@ -94,8 +94,8 @@ void main() {
       });
     });
 
-    QuickAddController controller() => container.read(provider.notifier);
-    QuickAddState state() => container.read(provider);
+    TransactionFormController controller() => container.read(provider.notifier);
+    TransactionFormState state() => container.read(provider);
 
     test('parte dal tipo scelto e dalla data di oggi', () {
       expect(state().type, TransactionType.expense);

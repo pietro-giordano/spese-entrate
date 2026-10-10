@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../application/quick_add_controller.dart';
+import '../../application/transaction_form_controller.dart';
 
 /// Tastierino 3×4: 1–9, 00, 0, cancella. Tenere premuto cancella azzera l'importo.
 class AmountKeypad extends StatelessWidget {

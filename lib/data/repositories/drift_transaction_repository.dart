@@ -32,12 +32,19 @@ class DriftTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<void> save(Transaction transaction, {List<Attachment> attachments = const []}) {
+  Future<void> save(
+    Transaction transaction, {
+    List<Attachment> attachments = const [],
+    List<String> removedAttachmentIds = const [],
+  }) {
     return _db.transaction(() async {
       await _db.upsertSynced(_db.transactions, transaction.id, transactionToCompanion(transaction));
       await _syncLabels(transaction.id, transaction.labelIds.toSet());
       for (final attachment in attachments) {
         await _db.upsertSynced(_db.attachments, attachment.id, attachmentToCompanion(attachment));
+      }
+      for (final id in removedAttachmentIds) {
+        await _db.softDelete(_db.attachments, id);
       }
     });
   }
@@ -53,6 +60,19 @@ class DriftTransactionRepository implements TransactionRepository {
 
   @override
   Future<void> delete(String id) => _db.softDelete(_db.transactions, id);
+
+  @override
+  Future<void> restore(String id) => _db.restoreSynced(_db.transactions, id);
+
+  @override
+  Future<({DateTime createdAt, DateTime updatedAt})?> getTimestamps(String id) async {
+    final row = await (_db.select(_db.transactions)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return null;
+    return (
+      createdAt: DateTime.fromMillisecondsSinceEpoch(row.createdAt, isUtc: true),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(row.updatedAt, isUtc: true),
+    );
+  }
 
   /// Movimenti non cancellati con le loro label attive, dal più recente.
   /// Il join fa sì che `watch()` emetta anche quando cambiano solo le label.

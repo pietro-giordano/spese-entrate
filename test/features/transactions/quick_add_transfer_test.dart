@@ -18,7 +18,7 @@ import 'package:spese_entrate/domain/models/attachment.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
 import 'package:spese_entrate/domain/models/wallet.dart';
-import 'package:spese_entrate/features/transactions/application/quick_add_controller.dart';
+import 'package:spese_entrate/features/transactions/application/transaction_form_controller.dart';
 
 PickedAttachment pdf(String name) =>
     PickedAttachment(name: name, mimeType: 'application/pdf', openRead: () => Stream.value(utf8.encode('%PDF-$name')));
@@ -28,8 +28,11 @@ class FailingTransactionRepository extends DriftTransactionRepository {
   FailingTransactionRepository(super.db);
 
   @override
-  Future<void> save(Transaction transaction, {List<Attachment> attachments = const []}) =>
-      Future.error(StateError('database non disponibile'));
+  Future<void> save(
+    Transaction transaction, {
+    List<Attachment> attachments = const [],
+    List<String> removedAttachmentIds = const [],
+  }) => Future.error(StateError('database non disponibile'));
 }
 
 void main() {
@@ -67,7 +70,7 @@ void main() {
     });
   });
 
-  group('QuickAddController', () {
+  group('TransactionFormController', () {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     late ProviderContainer container;
     late AppDatabase db;
@@ -82,7 +85,7 @@ void main() {
           ...extra,
         ],
       );
-      container.listen(quickAddControllerProvider(type), (_, _) {});
+      container.listen(transactionFormControllerProvider(TransactionFormSeed.create(type)), (_, _) {});
       addTearDown(container.dispose);
       return container;
     }
@@ -97,9 +100,9 @@ void main() {
     });
 
     group('trasferimento', () {
-      final provider = quickAddControllerProvider(TransactionType.transfer);
+      final provider = transactionFormControllerProvider(TransactionFormSeed.create(TransactionType.transfer));
       setUp(() => container = makeContainer(TransactionType.transfer));
-      QuickAddController controller() => container.read(provider.notifier);
+      TransactionFormController controller() => container.read(provider.notifier);
 
       test('non serve la categoria', () {
         expect(container.read(provider).isCategoryMissing, isFalse);
@@ -145,8 +148,8 @@ void main() {
     });
 
     group('allegati', () {
-      final provider = quickAddControllerProvider(TransactionType.expense);
-      QuickAddController controller() => container.read(provider.notifier);
+      final provider = transactionFormControllerProvider(TransactionFormSeed.create(TransactionType.expense));
+      TransactionFormController controller() => container.read(provider.notifier);
 
       test('al massimo 5', () {
         container = makeContainer(TransactionType.expense);
@@ -154,9 +157,9 @@ void main() {
           expect(controller().addAttachment(pdf('$i.pdf')), isTrue);
         }
         expect(controller().addAttachment(pdf('troppi.pdf')), isFalse);
-        expect(container.read(provider).attachments, hasLength(maxAttachments));
+        expect(container.read(provider).newAttachments, hasLength(maxAttachments));
 
-        controller().removeAttachment(container.read(provider).attachments.first);
+        controller().removeAttachment(container.read(provider).newAttachments.first);
         expect(container.read(provider).canAddAttachment, isTrue);
       });
 

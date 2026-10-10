@@ -11,14 +11,24 @@ abstract interface class TransactionRepository {
 
   Future<Transaction?> getById(String id);
 
-  /// Crea o aggiorna per ID, comprese le label del movimento.
-  /// [attachments] sono allegati da aggiungere (i file sono già nella cartella dell'app):
-  /// vengono scritti nella stessa transazione del movimento.
-  Future<void> save(Transaction transaction, {List<Attachment> attachments = const []});
+  /// Crea o aggiorna per ID, comprese le label del movimento, in un'unica transazione.
+  /// [attachments] sono allegati da aggiungere (i file sono già nella cartella dell'app);
+  /// [removedAttachmentIds] sono allegati da cancellare logicamente (i file restano).
+  Future<void> save(
+    Transaction transaction, {
+    List<Attachment> attachments = const [],
+    List<String> removedAttachmentIds = const [],
+  });
 
   /// Allegati non cancellati del movimento, dal primo aggiunto.
   Future<List<Attachment>> getAttachments(String transactionId);
 
   /// Cancellazione logica. Label e allegati restano, per poter annullare.
   Future<void> delete(String id);
+
+  /// Annulla una cancellazione logica (azzera `deleted_at`).
+  Future<void> restore(String id);
+
+  /// Quando il movimento è stato creato e modificato l'ultima volta; null se non esiste.
+  Future<({DateTime createdAt, DateTime updatedAt})?> getTimestamps(String id);
 }

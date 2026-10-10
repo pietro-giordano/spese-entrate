@@ -94,7 +94,7 @@ void main() {
       AppRoutes.charts: 'Grafici',
       AppRoutes.compare: 'Confronta',
       AppRoutes.add('income'): 'Salva entrata',
-      AppRoutes.transaction('t1'): 'Modifica movimento',
+      AppRoutes.transaction('t1'): 'Movimento', // non esiste: pagina di movimento mancante
       AppRoutes.filters: 'Filtri',
       AppRoutes.newWallet: 'Nuovo portafoglio',
       AppRoutes.wallet('w1'): 'Portafoglio',

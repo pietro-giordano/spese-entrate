@@ -143,6 +143,30 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Annulla una cancellazione logica: azzera `deleted_at`, imposta `updated_at` e `device_id`
+  /// e accoda un `upsert` nell'outbox. Restituisce false se il record non era cancellato.
+  Future<bool> restoreSynced<T extends Table, D>(TableInfo<T, D> table, String id) {
+    _requireSyncTable(table);
+    return transaction(() async {
+      final now = nowMs();
+      final query = update(table)
+        ..where((t) {
+          final columns = t as SyncColumns;
+          return columns.id.equals(id) & columns.deletedAt.isNotNull();
+        });
+      final changed = await query.write(
+        RawValuesInsertable<D>({
+          'deleted_at': const Variable<int>(null),
+          'updated_at': Variable<int>(now),
+          'device_id': Variable<String>(await deviceId()),
+        }),
+      );
+      if (changed == 0) return false;
+      await enqueueChange(table.actualTableName, id, OutboxOp.upsert, now);
+      return true;
+    });
+  }
+
   void _requireSyncTable(TableInfo<Table, dynamic> table) {
     if (table is! SyncColumns) {
       throw ArgumentError('${table.actualTableName} non è una tabella sincronizzabile');

@@ -1,28 +1,22 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/clock.dart';
 import '../../../core/money.dart';
-import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_segmented.dart';
-import '../../../core/widgets/section_label.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/transaction.dart';
 import '../../settings/application/settings_providers.dart';
-import '../../wallets/application/wallet_providers.dart';
-import '../application/quick_add_controller.dart';
+import '../application/transaction_form_controller.dart';
 import 'widgets/amount_keypad.dart';
 import 'widgets/attachments_sheet.dart';
 import 'widgets/date_picker_sheet.dart';
-import 'widgets/transfer_wallets_card.dart';
-import 'widgets/wallet_picker_sheet.dart';
+import 'widgets/transaction_form.dart';
 
 /// Inserimento rapido di una spesa, un'entrata o un trasferimento, aperto a schermo intero dal basso.
 class QuickAddScreen extends ConsumerStatefulWidget {
@@ -38,7 +32,8 @@ class QuickAddScreen extends ConsumerStatefulWidget {
 class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
   final _noteController = TextEditingController();
 
-  QuickAddControllerProvider get _provider => quickAddControllerProvider(widget.type);
+  TransactionFormSeed get _seed => TransactionFormSeed.create(widget.type);
+  TransactionFormControllerProvider get _provider => transactionFormControllerProvider(_seed);
 
   @override
   void dispose() {
@@ -50,61 +45,14 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(_provider);
     final controller = ref.read(_provider.notifier);
+    final wallets = ref.watch(formWalletsProvider(_seed));
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
     final isIncome = state.type == TransactionType.income;
-    final isTransfer = state.isTransfer;
-    final tone = switch (state.type) {
-      TransactionType.income => colors.income,
-      TransactionType.transfer => colors.neutral,
-      _ => colors.expense,
-    };
+    final tone = formTone(context, state.type);
     final today = ref.watch(todayProvider);
-
     final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
-    final wallets = (ref.watch(walletsProvider).value ?? const []).where((w) => !w.isArchived).toList();
-    final balances = ref.watch(walletBalancesProvider).value ?? const <String, int>{};
-    String nameOf(String? id) => wallets.firstWhereOrNull((w) => w.id == id)?.name ?? 'Nessun portafoglio';
-
-    final walletId = resolveWalletId(
-      chosenId: state.chosenWalletId,
-      defaultId: isIncome ? settings.defaultIncomeWalletId : settings.defaultExpenseWalletId,
-      wallets: wallets,
-    );
-    final transfer = resolveTransferWallets(
-      chosenFrom: state.fromWalletId,
-      chosenTo: state.toWalletId,
-      defaultFromId: settings.defaultExpenseWalletId,
-      wallets: wallets,
-    );
-    final transferWalletsInvalid = transfer.from == null || transfer.to == null || transfer.from == transfer.to;
-
-    final kind = isIncome ? CategoryKind.income : CategoryKind.expense;
-    final categories = (ref.watch(categoriesProvider).value ?? const [])
-        .where((c) => c.kind == kind && !c.isArchived)
-        .toList();
-    final labels = ref.watch(labelsProvider).value ?? const [];
     final dateLabel = dateChipLabel(state.date, today);
-
-    Future<String?> pickWallet({
-      required String title,
-      required String? selectedId,
-      String? otherId,
-      String? otherLabel,
-    }) {
-      return showWalletPickerSheet(
-        context,
-        title: title,
-        wallets: wallets,
-        balances: balances,
-        selectedId: selectedId,
-        otherSelectedId: otherId,
-        otherSelectedLabel: otherLabel,
-        hint: isTransfer
-            ? 'Scegli due portafogli diversi.'
-            : 'Questa scelta vale solo per questo movimento. Il portafoglio predefinito si cambia in Impostazioni.',
-      );
-    }
 
     // Con la tastiera di sistema aperta (nota) il tastierino numerico si nasconde.
     final systemKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
@@ -121,19 +69,11 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                   AppIconButton(icon: Icons.close_rounded, tooltip: 'Chiudi', onPressed: () => context.pop()),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
-                    child: isTransfer
+                    child: state.isTransfer
                         ? Text('Trasferimento', textAlign: TextAlign.center, style: textTheme.titleMedium)
                         : _HeaderChip(
-                            semanticLabel: 'Portafoglio: ${nameOf(walletId)}',
-                            onTap: wallets.isEmpty
-                                ? null
-                                : () async {
-                                    final picked = await pickWallet(
-                                      title: isIncome ? 'Ricevi su' : 'Paga da',
-                                      selectedId: walletId,
-                                    );
-                                    if (picked != null) controller.chooseWallet(picked);
-                                  },
+                            semanticLabel: 'Portafoglio: ${wallets.nameOf(wallets.walletId)}',
+                            onTap: wallets.available.isEmpty ? null : () => pickFormWallet(context, ref, _seed),
                             children: [
                               Text(
                                 isIncome ? 'su' : 'da',
@@ -145,7 +85,7 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  nameOf(walletId),
+                                  wallets.nameOf(wallets.walletId),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: textTheme.labelMedium,
@@ -176,16 +116,7 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-              AppSegmented<TransactionType>(
-                size: AppSegmentedSize.large,
-                segments: [
-                  AppSegment(value: TransactionType.expense, label: 'Spesa', selectedTone: colors.expense),
-                  AppSegment(value: TransactionType.income, label: 'Entrata', selectedTone: colors.income),
-                  AppSegment(value: TransactionType.transfer, label: 'Trasferimento', selectedTone: colors.neutral),
-                ],
-                selected: state.type,
-                onChanged: controller.setType,
-              ),
+              TransactionTypeSelector(seed: _seed, size: AppSegmentedSize.large),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -194,87 +125,14 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                       cents: state.amountCents,
                       sign: switch (state.type) {
                         TransactionType.income => '+',
-                        TransactionType.transfer => '',
-                        _ => minusSign,
+                        TransactionType.expense => minusSign,
+                        _ => '',
                       },
                       color: tone.text,
                     ),
-                    if (state.showErrors && state.isAmountMissing) const _ErrorText('Inserisci un importo'),
+                    if (state.showErrors && state.isAmountMissing) const FormErrorText('Inserisci un importo'),
                     const SizedBox(height: AppSpacing.md),
-                    if (isTransfer) ...[
-                      TransferWalletsCard(
-                        fromName: nameOf(transfer.from),
-                        fromBalanceCents: balances[transfer.from],
-                        toName: transfer.to == null ? 'Nessun altro portafoglio' : nameOf(transfer.to),
-                        toBalanceCents: balances[transfer.to],
-                        onTapFrom: () async {
-                          final picked = await pickWallet(
-                            title: 'Trasferisci da',
-                            selectedId: transfer.from,
-                            otherId: transfer.to,
-                            otherLabel: 'destinazione',
-                          );
-                          if (picked != null) {
-                            controller.chooseTransferSource(picked, from: transfer.from, to: transfer.to);
-                          }
-                        },
-                        onTapTo: () async {
-                          final picked = await pickWallet(
-                            title: 'Trasferisci a',
-                            selectedId: transfer.to,
-                            otherId: transfer.from,
-                            otherLabel: 'origine',
-                          );
-                          if (picked != null) {
-                            controller.chooseTransferDestination(picked, from: transfer.from, to: transfer.to);
-                          }
-                        },
-                        onSwap: transfer.to == null
-                            ? null
-                            : () => controller.swapTransferWallets(from: transfer.from, to: transfer.to),
-                      ),
-                      if (state.showErrors && transferWalletsInvalid) const _ErrorText('Scegli due portafogli diversi'),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'I trasferimenti non contano come spese o entrate nei grafici.',
-                        style: textTheme.bodySmall?.copyWith(height: 1.45),
-                      ),
-                    ] else ...[
-                      const SectionLabel('Categoria'),
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          for (final category in categories)
-                            AppChip(
-                              label: category.name,
-                              selected: category.id == state.categoryId,
-                              selectedTone: tone,
-                              onTap: () => controller.selectCategory(category.id),
-                            ),
-                        ],
-                      ),
-                      if (state.showErrors && state.isCategoryMissing) const _ErrorText('Scegli una categoria'),
-                      const SizedBox(height: AppSpacing.sm),
-                      const SectionLabel('Label · anche più di una'),
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          for (final label in labels)
-                            AppChip(
-                              label: '#${label.name}',
-                              shape: AppChipShape.label,
-                              selected: state.labelIds.contains(label.id),
-                              onTap: () => controller.toggleLabel(label.id),
-                            ),
-                          AppChip(
-                            label: '+ Gestisci',
-                            shape: AppChipShape.label,
-                            dashed: true,
-                            onTap: () => context.push(AppRoutes.categories),
-                          ),
-                        ],
-                      ),
-                    ],
+                    TransactionFormDetails(seed: _seed),
                     const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
@@ -287,10 +145,10 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                             decoration: const InputDecoration(hintText: 'Nota (facoltativa)'),
                           ),
                         ),
-                        if (state.attachments.isNotEmpty) ...[
+                        if (state.newAttachments.isNotEmpty) ...[
                           const SizedBox(width: AppSpacing.sm),
                           _AttachmentsCountButton(
-                            count: state.attachments.length,
+                            count: state.newAttachments.length,
                             onTap: () => showAttachmentsSheet(context, _provider),
                           ),
                         ],
@@ -319,7 +177,8 @@ class _QuickAddScreenState extends ConsumerState<QuickAddScreen> {
                 ),
                 onPressed: state.saving
                     ? null
-                    : () => isTransfer ? _save(transfer.from, toWalletId: transfer.to) : _save(walletId),
+                    : () =>
+                          state.isTransfer ? _save(wallets.fromId, toWalletId: wallets.toId) : _save(wallets.walletId),
                 child: Text(switch (state.type) {
                   TransactionType.income => 'Salva entrata',
                   TransactionType.transfer => 'Salva trasferimento',
@@ -500,27 +359,6 @@ class _AmountDisplay extends StatelessWidget {
               style: textTheme.displaySmall?.copyWith(color: color, fontFeatures: tabular),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorText extends StatelessWidget {
-  const _ErrorText(this.message);
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xs),
-      child: Semantics(
-        liveRegion: true,
-        child: Text(
-          message,
-          textAlign: TextAlign.left,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: context.colors.danger),
         ),
       ),
     );
