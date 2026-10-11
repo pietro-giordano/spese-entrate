@@ -18,11 +18,22 @@ class AnalyticsFilters extends _$AnalyticsFilters {
 
   void reset() => state = const TransactionFilters();
 
-  void removeWallet(String id) => state = state.copyWith(walletIds: {...state.walletIds}..remove(id));
+  /// Toglie il filtro su un portafoglio, una categoria o una label, che fosse un'inclusione
+  /// o un'esclusione.
+  void removeWallet(String id) => state = state.copyWith(
+    walletIds: {...state.walletIds}..remove(id),
+    excludedWalletIds: {...state.excludedWalletIds}..remove(id),
+  );
 
-  void removeCategory(String id) => state = state.copyWith(categoryIds: {...state.categoryIds}..remove(id));
+  void removeCategory(String id) => state = state.copyWith(
+    categoryIds: {...state.categoryIds}..remove(id),
+    excludedCategoryIds: {...state.excludedCategoryIds}..remove(id),
+  );
 
-  void removeLabel(String id) => state = state.copyWith(labelIds: {...state.labelIds}..remove(id));
+  void removeLabel(String id) => state = state.copyWith(
+    labelIds: {...state.labelIds}..remove(id),
+    excludedLabelIds: {...state.excludedLabelIds}..remove(id),
+  );
 
-  void removeWithoutLabels() => state = state.copyWith(withoutLabels: false);
+  void removeWithoutLabels() => state = state.copyWith(withoutLabels: false, excludeWithoutLabels: false);
 }

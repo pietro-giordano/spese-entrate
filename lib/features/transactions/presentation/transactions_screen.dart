@@ -57,7 +57,10 @@ class TransactionsScreen extends ConsumerWidget {
     final groupsAsync = ref.watch(visibleDayGroupsProvider);
     final search = ref.watch(transactionSearchProvider);
 
+    final excludedWallets = filters.excludedWalletIds;
     final walletsLabel = switch (filters.walletIds.length) {
+      0 when excludedWallets.length == 1 => 'Tutti tranne ${walletNames[excludedWallets.single] ?? '1 portafoglio'}',
+      0 when excludedWallets.isNotEmpty => 'Tutti tranne ${excludedWallets.length} portafogli',
       0 => 'Tutti i portafogli',
       1 => walletNames[filters.walletIds.single] ?? '1 portafoglio',
       final count => '$count portafogli',

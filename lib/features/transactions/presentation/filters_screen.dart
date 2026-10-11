@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_filter_chip.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/app_switch.dart';
@@ -49,8 +50,6 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
 
   void _update(TransactionFilters filters) => setState(() => _filters = filters);
 
-  Set<String> _toggle(Set<String> set, String id) => set.contains(id) ? ({...set}..remove(id)) : {...set, id};
-
   /// Il periodo si azzera solo in Movimenti: Grafici e Confronta hanno il loro selettore.
   void _reset(LocalDate today) {
     setState(() {
@@ -78,7 +77,13 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
       for (final c in categories)
         if (type == TypeFilter.all || c.kind.name == type.name) c.id,
     };
-    _update(_filters.copyWith(type: type, categoryIds: _filters.categoryIds.intersection(allowed)));
+    _update(
+      _filters.copyWith(
+        type: type,
+        categoryIds: _filters.categoryIds.intersection(allowed),
+        excludedCategoryIds: _filters.excludedCategoryIds.intersection(allowed),
+      ),
+    );
   }
 
   @override
@@ -98,11 +103,10 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
       spacing: 6,
       children: [
         for (final category in list)
-          AppChip(
+          AppFilterChip(
             label: category.name,
-            showCheck: true,
-            selected: _filters.categoryIds.contains(category.id),
-            onTap: () => _update(_filters.copyWith(categoryIds: _toggle(_filters.categoryIds, category.id))),
+            mode: _mode(_filters.categoryState(category.id)),
+            onTap: () => _update(_filters.cycleCategory(category.id)),
           ),
       ],
     );
@@ -143,6 +147,12 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 6, AppSpacing.screen, AppSpacing.xl),
                 children: [
+                  Text(
+                    'Tocca un portafoglio, una categoria o una label una volta per includerlo (✓), '
+                    'due per escluderlo (✕), tre per togliere il filtro. Un\'esclusione vince sempre.',
+                    style: textTheme.bodySmall?.copyWith(height: 1.45),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   if (_analytics) ...[
                     Text(
                       widget.scope == FiltersScope.charts
@@ -188,17 +198,23 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                       ),
                     const SizedBox(height: 22),
                   ],
-                  SectionLabel('Portafogli', trailing: _selectedLabel(_filters.walletIds.length, feminine: false)),
+                  SectionLabel(
+                    'Portafogli',
+                    trailing: _selectedLabel(
+                      _filters.walletIds.length,
+                      _filters.excludedWalletIds.length,
+                      feminine: false,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   Wrap(
                     spacing: 6,
                     children: [
                       for (final wallet in wallets)
-                        AppChip(
+                        AppFilterChip(
                           label: wallet.name,
-                          showCheck: true,
-                          selected: _filters.walletIds.contains(wallet.id),
-                          onTap: () => _update(_filters.copyWith(walletIds: _toggle(_filters.walletIds, wallet.id))),
+                          mode: _mode(_filters.walletState(wallet.id)),
+                          onTap: () => _update(_filters.cycleWallet(wallet.id)),
                         ),
                     ],
                   ),
@@ -226,7 +242,14 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                     ),
                   ],
                   const SizedBox(height: 22),
-                  SectionLabel('Categorie', trailing: _selectedLabel(_filters.categoryIds.length, feminine: true)),
+                  SectionLabel(
+                    'Categorie',
+                    trailing: _selectedLabel(
+                      _filters.categoryIds.length,
+                      _filters.excludedCategoryIds.length,
+                      feminine: true,
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   if (_filters.type == TypeFilter.all) ...[
                     Text('Spese', style: textTheme.labelSmall?.copyWith(color: colors.textMuted)),
@@ -241,6 +264,7 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                     'Label',
                     trailing: _selectedLabel(
                       _filters.labelIds.length + (_filters.withoutLabels ? 1 : 0),
+                      _filters.excludedLabelIds.length + (_filters.excludeWithoutLabels ? 1 : 0),
                       feminine: true,
                     ),
                   ),
@@ -249,17 +273,17 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                     spacing: 6,
                     children: [
                       for (final label in labels)
-                        AppChip(
+                        AppFilterChip(
                           label: '#${label.name}',
                           shape: AppChipShape.label,
-                          selected: _filters.labelIds.contains(label.id),
-                          onTap: () => _toggleLabel(label.id),
+                          mode: _mode(_filters.labelState(label.id)),
+                          onTap: () => _update(_filters.cycleLabel(label.id)),
                         ),
-                      AppChip(
+                      AppFilterChip(
                         label: 'Senza label',
                         shape: AppChipShape.label,
-                        selected: _filters.withoutLabels,
-                        onTap: _toggleWithoutLabels,
+                        mode: _mode(_filters.withoutLabelsState),
+                        onTap: () => _update(_filters.cycleWithoutLabels()),
                       ),
                     ],
                   ),
@@ -278,12 +302,14 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                         AppSegment(value: LabelMatch.all, label: 'Tutte'),
                       ],
                       selected: _filters.labelMatch,
-                      onChanged: _setLabelMatch,
+                      onChanged: (match) => _update(_filters.copyWith(labelMatch: match)),
                     ),
-                    if (_filters.labelMatch == LabelMatch.all) ...[
-                      const SizedBox(height: 6),
-                      Text('Con «Tutte», «Senza label» non si combina con altre label.', style: textTheme.bodySmall),
-                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      '«Almeno una» e «Tutte» valgono per le label incluse. «Senza label» incluso aggiunge i '
+                      'movimenti senza label; escluso li toglie.',
+                      style: textTheme.bodySmall,
+                    ),
                   ],
                 ],
               ),
@@ -294,31 +320,20 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
     );
   }
 
-  // Con «Almeno una» label e «Senza label» si sommano (OR). Con «Tutte» un movimento non può
-  // avere tutte le label scelte e insieme nessuna: le due scelte diventano esclusive.
+  static AppFilterChipMode _mode(FilterChipState state) => switch (state) {
+    FilterChipState.neutral => AppFilterChipMode.neutral,
+    FilterChipState.included => AppFilterChipMode.included,
+    FilterChipState.excluded => AppFilterChipMode.excluded,
+  };
 
-  void _toggleLabel(String id) {
-    final labelIds = _toggle(_filters.labelIds, id);
-    final exclusive = _filters.labelMatch == LabelMatch.all && labelIds.isNotEmpty;
-    _update(_filters.copyWith(labelIds: labelIds, withoutLabels: exclusive ? false : _filters.withoutLabels));
-  }
+  /// "1 incluso", "2 incluse · 1 esclusa"… null se non c'è nessun filtro nella sezione.
+  String? _selectedLabel(int included, int excluded, {required bool feminine}) {
+    String part(int count, String stem) {
+      final ending = feminine ? (count == 1 ? 'a' : 'e') : (count == 1 ? 'o' : 'i');
+      return '$count $stem$ending';
+    }
 
-  void _toggleWithoutLabels() {
-    final withoutLabels = !_filters.withoutLabels;
-    final exclusive = _filters.labelMatch == LabelMatch.all && withoutLabels;
-    _update(_filters.copyWith(withoutLabels: withoutLabels, labelIds: exclusive ? const {} : _filters.labelIds));
-  }
-
-  /// Passando a «Tutte» con entrambe le scelte si tengono le label, più specifiche.
-  void _setLabelMatch(LabelMatch match) {
-    final conflict = match == LabelMatch.all && _filters.withoutLabels && _filters.labelIds.isNotEmpty;
-    _update(_filters.copyWith(labelMatch: match, withoutLabels: conflict ? false : _filters.withoutLabels));
-  }
-
-  /// "1 selezionato", "2 selezionate"… null se non c'è selezione.
-  String? _selectedLabel(int count, {required bool feminine}) {
-    if (count == 0) return null;
-    final ending = feminine ? (count == 1 ? 'a' : 'e') : (count == 1 ? 'o' : 'i');
-    return '$count selezionat$ending';
+    final parts = [if (included > 0) part(included, 'inclus'), if (excluded > 0) part(excluded, 'esclus')];
+    return parts.isEmpty ? null : parts.join(' · ');
   }
 }

@@ -219,7 +219,29 @@ Al primo avvio, se il database è vuoto:
 - **Predefiniti**: un solo portafoglio predefinito per le spese e uno per le entrate.
 - **Grafico per label**: un movimento con più label conta in ciascuna; le percentuali sono sulla
   somma delle label. I movimenti senza label finiscono in "Senza label".
-- **Filtro label**: modalità "almeno una" (default) o "tutte".
+- **Filtro label**: modalità "almeno una" (default) o "tutte", che vale solo per le label incluse.
+- **Inclusioni ed esclusioni nei filtri** (portafogli, categorie, label e "Senza label"): ogni chip
+  ha tre stati, neutro → incluso → escluso → neutro (`cycleWallet`, `cycleCategory`, `cycleLabel`,
+  `cycleWithoutLabels`; campi `excludedWalletIds`, `excludedCategoryIds`, `excludedLabelIds`,
+  `excludeWithoutLabels`). Regole (`matchesFilters`):
+  - l'esclusione vince sempre sull'inclusione;
+  - **portafoglio escluso**: toglie ogni movimento che lo coinvolge (spese, entrate, rettifiche,
+    trasferimenti in origine o in destinazione), anche se l'altro portafoglio del trasferimento è incluso;
+  - **categoria esclusa** e **label esclusa**: tolgono i movimenti con quella categoria o con
+    **almeno una** label esclusa, a prescindere da "almeno una/tutte"; non nascondono trasferimenti e
+    rettifiche (le inclusioni di categorie e label invece sì, perché non hanno categoria né label);
+  - **"Senza label"** è una condizione sull'assenza di label, separata dalle label effettive.
+    Incluso: aggiunge (in OR) le spese e le entrate senza label alle label incluse, in entrambe le
+    modalità ("tutte le label incluse **oppure** nessuna label"); da solo mostra solo quelle senza
+    label e, come ogni inclusione, nasconde trasferimenti e rettifiche. Escluso: toglie le spese e le
+    entrate senza label (restano solo movimenti con label), non trasferimenti e rettifiche;
+  - il **conteggio** dei filtri attivi è per dimensione (tipo, portafogli, categorie, label compreso
+    "Senza label", trasferimenti), non per chip: inclusioni ed esclusioni della stessa dimensione
+    contano 1;
+  - **tutto escluso** (es. tutti i portafogli o tutte le categorie): risultato vuoto ma filtri attivi,
+    con badge, chip e stati vuoti che parlano dei filtri ("… con questi filtri"), mai del solo periodo;
+  - valgono in Movimenti, ricerca, Grafici e Confronta; il tap su una fetta (`sliceFilters`) mantiene
+    tutte le esclusioni del grafico.
 - **Filtri di Grafici e Confronta**: ogni tab ha il proprio stato (`activeFiltersProvider` per Movimenti,
   `analyticsFiltersProvider(AnalyticsTab.charts|compare)` per le altre due), indipendente dagli altri.
   In Grafici e Confronta contano solo portafogli, categorie e label (almeno una/tutte): tipo e
@@ -408,7 +430,9 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
-  `BottomActionBar`, `TabHeader` (intestazione delle tab).
+  `BottomActionBar`, `TabHeader` (intestazione delle tab), `AppFilterChip` (chip dei filtri a tre
+  stati: incluso con ✓ in inversione, escluso con ✕, testo barrato e bordo tratteggiato `danger`;
+  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco).
 - **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
   (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
   `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
@@ -454,7 +478,9 @@ Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestaz
 "Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
 quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
 Grafici e Confronta il pulsante Filtri con il numero di filtri attivi sull'icona. Sotto l'intestazione
-di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera".
+di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera"; le esclusioni
+come "− Contanti", "− #storico" o "− Senza label" in tinta spesa ("Rimuovi esclusione …"). In Movimenti il chip del
+riepilogo dice "Tutti tranne …" se ci sono solo portafogli esclusi.
 
 La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?scope=charts|compare`,
 `FiltersScope`): da Movimenti mostra tutte le sezioni; da Grafici e Confronta nasconde Tipo, Periodo e
@@ -476,7 +502,8 @@ Riepilogo delle schermate:
 - **Modifica movimento**: stessi campi in forma di form scorrevole, duplica in alto,
   elimina + salva in basso (salva disattivo senza modifiche).
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
-  "almeno una/tutte", interruttore trasferimenti; Azzera e Applica.
+  "almeno una/tutte" e "Senza label" (tutti chip a tre stati con `AppFilterChip`, conteggio
+  "2 incluse · 1 esclusa"), interruttore trasferimenti; Azzera e Applica.
 - **Portafogli**: intestazione con "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
   con saldo, ultimo aggiornamento e badge.
 - **Dettaglio portafoglio**: tipo, saldo, ultimo aggiornamento, "Aggiorna saldo" (pannello con

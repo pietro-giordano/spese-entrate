@@ -165,7 +165,7 @@ void main() {
       expect(find.text('Stipendio'), findsNothing, reason: 'il grafico era sulle spese');
     });
 
-    testWidgets('nei Filtri: con «Tutte» la scelta è esclusiva', (tester) async {
+    testWidgets('nei Filtri: «Senza label» a tre stati, separato da «Almeno una/Tutte»', (tester) async {
       // Come nell'app: i Filtri si aprono sopra la lista (push), così "Applica" può tornare indietro.
       await pumpTab(tester, AppRoutes.transactions);
       container.read(appRouterProvider).push(AppRoutes.filters);
@@ -173,27 +173,29 @@ void main() {
       expect(find.byType(FiltersScreen), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Senza label'), 200, scrollable: find.byType(Scrollable).first);
 
-      // «Almeno una»: si possono scegliere entrambe.
+      // Si possono includere entrambe, anche con «Tutte»: nessuna scelta toglie l'altra.
       await tester.tap(find.text('#casa'));
       await tester.tap(find.text('Senza label'));
       await tester.pump();
-      expect(find.text('2 selezionate'), findsOneWidget);
-
-      // Passando a «Tutte» restano le label, più specifiche.
+      expect(find.text('2 incluse'), findsOneWidget);
       await tester.tap(find.text('Tutte'));
       await tester.pump();
-      expect(find.text('1 selezionata'), findsOneWidget);
-      expect(find.textContaining('non si combina con altre label'), findsOneWidget);
+      expect(find.text('2 incluse'), findsOneWidget);
+      expect(find.textContaining('valgono per le label incluse'), findsOneWidget);
 
-      // Scegliere «Senza label» toglie #casa.
+      // Secondo tocco: «Senza label» escluso.
       await tester.tap(find.text('Senza label'));
       await tester.pump();
+      expect(find.text('1 inclusa · 1 esclusa'), findsOneWidget);
+      expect(tester.getSemantics(find.bySemanticsLabel('Senza label')).value, 'escluso');
       await tester.tap(find.text('Applica filtri'));
       await tester.pumpAndSettle();
       final filters = container.read(activeFiltersProvider);
-      expect(filters.withoutLabels, isTrue);
-      expect(filters.labelIds, isEmpty);
+      expect(filters.withoutLabels, isFalse);
+      expect(filters.excludeWithoutLabels, isTrue);
+      expect(filters.labelIds, hasLength(1));
       expect(filters.labelMatch, LabelMatch.all);
+      expect(filters.activeCount, 1, reason: 'una sola dimensione: le label');
     });
   });
 

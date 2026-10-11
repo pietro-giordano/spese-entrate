@@ -203,8 +203,8 @@ void main() {
 
     await tester.tap(find.descendant(of: find.byType(FiltersScreen), matching: find.text('Contanti')));
     await tester.pump();
-    expect(find.text('1 SELEZIONATO'), findsNothing, reason: 'il conteggio non è in maiuscolo');
-    expect(find.text('1 selezionato'), findsOneWidget);
+    expect(find.text('1 INCLUSO'), findsNothing, reason: 'il conteggio non è in maiuscolo');
+    expect(find.text('1 incluso'), findsOneWidget);
     await applyFilters(tester);
 
     expect(find.text('Contanti'), findsWidgets);
