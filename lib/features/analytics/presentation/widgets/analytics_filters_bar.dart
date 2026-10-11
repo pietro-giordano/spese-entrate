@@ -68,6 +68,15 @@ class AnalyticsFiltersBar extends ConsumerWidget {
           for (final id in filters.labelIds)
             _RemovableChip(label: '#${labelName(id)}', onRemove: () => notifier.removeLabel(id)),
           if (filters.withoutLabels) _RemovableChip(label: 'Senza label', onRemove: notifier.removeWithoutLabels),
+          // Esclusioni: "− Contanti", "− #storico", in stile diverso dalle inclusioni.
+          for (final id in filters.excludedWalletIds)
+            _RemovableChip(label: walletName(id), excluded: true, onRemove: () => notifier.removeWallet(id)),
+          for (final id in filters.excludedCategoryIds)
+            _RemovableChip(label: categoryName(id), excluded: true, onRemove: () => notifier.removeCategory(id)),
+          for (final id in filters.excludedLabelIds)
+            _RemovableChip(label: '#${labelName(id)}', excluded: true, onRemove: () => notifier.removeLabel(id)),
+          if (filters.excludeWithoutLabels)
+            _RemovableChip(label: 'Senza label', excluded: true, onRemove: notifier.removeWithoutLabels),
           if (filters.labelIds.length > 1 && filters.labelMatch == LabelMatch.all)
             Text('tutte le label', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.textMuted)),
           TextButton(
@@ -86,19 +95,25 @@ class AnalyticsFiltersBar extends ConsumerWidget {
 
 /// Chip di un filtro attivo: tocco = rimuove il filtro. Area di tocco alta 44.
 class _RemovableChip extends StatelessWidget {
-  const _RemovableChip({required this.label, required this.onRemove});
+  const _RemovableChip({required this.label, required this.onRemove, this.excluded = false});
 
   final String label;
   final VoidCallback onRemove;
+
+  /// Esclusione: "− nome", tinta di pericolo invece dell'inversione.
+  final bool excluded;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
+    final (background, foreground) = excluded
+        ? (colors.expense.tint, colors.expense.onTint)
+        : (colors.neutral.fill, colors.neutral.onFill);
     return Semantics(
       container: true,
       button: true,
-      label: 'Rimuovi filtro $label',
+      label: excluded ? 'Rimuovi esclusione $label' : 'Rimuovi filtro $label',
       excludeSemantics: true,
       child: InkWell(
         onTap: onRemove,
@@ -109,23 +124,20 @@ class _RemovableChip extends StatelessWidget {
             widthFactor: 1,
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
-              decoration: BoxDecoration(
-                color: colors.neutral.fill,
-                borderRadius: BorderRadius.circular(AppRadius.labelChip),
-              ),
+              decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(AppRadius.labelChip)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
                     child: Text(
-                      label,
+                      excluded ? '− $label' : label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: textTheme.labelMedium?.copyWith(color: colors.neutral.onFill),
+                      style: textTheme.labelMedium?.copyWith(color: foreground),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.close_rounded, size: 16, color: colors.neutral.onFill),
+                  Icon(Icons.close_rounded, size: 16, color: foreground),
                 ],
               ),
             ),

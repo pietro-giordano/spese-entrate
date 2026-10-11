@@ -68,6 +68,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
     final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
     final period = ref.watch(chartsPeriodProvider);
+    final filtered = ref.watch(analyticsFiltersProvider(AnalyticsTab.charts)).isActive;
     final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
     final summary = ref.watch(chartsSummaryProvider(period.range)).value;
     final itemsAsync = _grouping == _Grouping.category
@@ -178,9 +179,12 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Text(
-                  _kind == CategoryKind.expense
-                      ? 'Nessuna spesa in questo periodo.'
-                      : 'Nessuna entrata in questo periodo.',
+                  switch ((_kind, filtered)) {
+                    (CategoryKind.expense, false) => 'Nessuna spesa in questo periodo.',
+                    (CategoryKind.income, false) => 'Nessuna entrata in questo periodo.',
+                    (CategoryKind.expense, true) => 'Nessuna spesa con questi filtri in questo periodo.',
+                    (CategoryKind.income, true) => 'Nessuna entrata con questi filtri in questo periodo.',
+                  },
                   textAlign: TextAlign.center,
                   style: textTheme.bodyMedium?.copyWith(color: colors.textMuted),
                 ),

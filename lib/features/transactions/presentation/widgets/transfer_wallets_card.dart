@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../wallets/presentation/widgets/balance_text.dart';
 
 /// Scheda Da/A del trasferimento con il pulsante per invertire i portafogli.
 class TransferWalletsCard extends StatelessWidget {
@@ -44,14 +44,16 @@ class TransferWalletsCard extends StatelessWidget {
               _WalletRow(
                 prefix: 'Da',
                 name: fromName,
-                detail: fromBalanceCents == null ? null : 'Disponibile ${formatCents(fromBalanceCents!)}',
+                balanceCents: fromBalanceCents,
+                balancePrefix: 'Disponibile ',
                 onTap: onTapFrom,
               ),
               const Divider(indent: 14, endIndent: 14),
               _WalletRow(
                 prefix: 'A',
                 name: toName,
-                detail: toBalanceCents == null ? null : 'Saldo ${formatCents(toBalanceCents!)}',
+                balanceCents: toBalanceCents,
+                balancePrefix: 'Saldo ',
                 onTap: onTapTo,
               ),
             ],
@@ -81,11 +83,20 @@ class TransferWalletsCard extends StatelessWidget {
 }
 
 class _WalletRow extends StatelessWidget {
-  const _WalletRow({required this.prefix, required this.name, required this.detail, required this.onTap});
+  const _WalletRow({
+    required this.prefix,
+    required this.name,
+    required this.balanceCents,
+    required this.balancePrefix,
+    required this.onTap,
+  });
 
   final String prefix;
   final String name;
-  final String? detail;
+
+  /// Saldo sotto il nome ("Disponibile € …"), nascondibile. Null = non mostrato.
+  final int? balanceCents;
+  final String balancePrefix;
   final VoidCallback onTap;
 
   @override
@@ -122,7 +133,10 @@ class _WalletRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleMedium),
-                      if (detail != null) ...[const SizedBox(height: 2), Text(detail!, style: textTheme.bodySmall)],
+                      if (balanceCents != null) ...[
+                        const SizedBox(height: 2),
+                        BalanceText(balanceCents!, prefix: balancePrefix, style: textTheme.bodySmall),
+                      ],
                     ],
                   ),
                 ),

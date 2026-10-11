@@ -131,7 +131,7 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Da: Conto corrente'));
     await tester.pumpAndSettle();
     expect(find.text('Trasferisci da'), findsOneWidget);
-    expect(find.text('€ 0,00 · già selezionato come destinazione'), findsOneWidget);
+    expect(find.text(' · già selezionato come destinazione'), findsOneWidget);
 
     await tester.tap(find.descendant(of: find.byType(BottomSheet), matching: find.text('Contanti')));
     await tester.pumpAndSettle();

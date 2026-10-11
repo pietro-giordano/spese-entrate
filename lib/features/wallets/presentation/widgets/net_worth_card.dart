@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../domain/models/wallet.dart';
+import 'balance_text.dart';
 import 'wallet_visuals.dart';
 
 /// Patrimonio totale con la barra divisa per gruppi e la legenda.
@@ -44,8 +44,8 @@ class NetWorthCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              formatCents(totalCents),
+            child: BalanceText(
+              totalCents,
               style: textTheme.displaySmall?.copyWith(
                 fontSize: 34,
                 letterSpacing: -0.7,
@@ -98,8 +98,9 @@ class NetWorthCard extends StatelessWidget {
                       style: textTheme.labelMedium?.copyWith(color: colors.neutral.onTint, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  Text(
-                    formatCents(total),
+                  BalanceText(
+                    total,
+                    textAlign: TextAlign.end,
                     style: textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       fontFeatures: const [FontFeature.tabularFigures()],

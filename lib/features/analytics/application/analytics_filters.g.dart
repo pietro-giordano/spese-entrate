@@ -58,7 +58,7 @@ final class AnalyticsFiltersProvider extends $NotifierProvider<AnalyticsFilters,
   }
 }
 
-String _$analyticsFiltersHash() => r'3208d0b1c03a7062dae9d473957cd8f8e61509ec';
+String _$analyticsFiltersHash() => r'f77a478cbb19e8aa1d9ca8f903ec4235981d44e4';
 
 /// Filtri di Grafici o Confronta: ogni tab ha il suo stato, indipendente da Movimenti.
 /// Contano solo portafogli, categorie e label (vedi `analyticsScope`).

@@ -196,6 +196,8 @@ abstract final class AppMetaKeys {
   static const deviceId = 'device_id';
   static const themeMode = 'theme_mode';
   static const biometricLock = 'biometric_lock';
+  static const balancesOnOpen = 'balances_on_open';
+  static const balancesHidden = 'balances_hidden';
   static const profileName = 'profile_name';
   static const profileEmail = 'profile_email';
 }

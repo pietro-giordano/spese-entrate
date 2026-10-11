@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 mixin _$LocalPreferences {
 
  AppThemeMode get themeMode;/// Chiede la biometria all'apertura e al ritorno dopo 1 minuto in background.
- bool get biometricLock;/// Profilo facoltativo, solo locale.
+ bool get biometricLock;/// Saldi visibili o nascosti all'apertura (sezione Privacy delle Impostazioni).
+ BalancesOnOpen get balancesOnOpen;/// Ultima scelta dell'occhio in Portafogli: serve con [BalancesOnOpen.remember].
+ bool get balancesHidden;/// Profilo facoltativo, solo locale.
  String? get profileName; String? get profileEmail;
 /// Create a copy of LocalPreferences
 /// with the given fields replaced by the non-null parameter values.
@@ -29,20 +31,20 @@ $LocalPreferencesCopyWith<LocalPreferences> get copyWith => _$LocalPreferencesCo
 @override
 bool operator ==(Object other) {
   final _this = this as LocalPreferences;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalPreferences&&(identical(other.themeMode, _this.themeMode) || other.themeMode == _this.themeMode)&&(identical(other.biometricLock, _this.biometricLock) || other.biometricLock == _this.biometricLock)&&(identical(other.profileName, _this.profileName) || other.profileName == _this.profileName)&&(identical(other.profileEmail, _this.profileEmail) || other.profileEmail == _this.profileEmail));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LocalPreferences&&(identical(other.themeMode, _this.themeMode) || other.themeMode == _this.themeMode)&&(identical(other.biometricLock, _this.biometricLock) || other.biometricLock == _this.biometricLock)&&(identical(other.balancesOnOpen, _this.balancesOnOpen) || other.balancesOnOpen == _this.balancesOnOpen)&&(identical(other.balancesHidden, _this.balancesHidden) || other.balancesHidden == _this.balancesHidden)&&(identical(other.profileName, _this.profileName) || other.profileName == _this.profileName)&&(identical(other.profileEmail, _this.profileEmail) || other.profileEmail == _this.profileEmail));
 }
 
 
 @override
 int get hashCode {
   final _this = this as LocalPreferences;
-  return Object.hash(runtimeType,_this.themeMode,_this.biometricLock,_this.profileName,_this.profileEmail);
+  return Object.hash(runtimeType,_this.themeMode,_this.biometricLock,_this.balancesOnOpen,_this.balancesHidden,_this.profileName,_this.profileEmail);
 }
 
 @override
 String toString() {
   final _this = this as LocalPreferences;
-  return 'LocalPreferences(themeMode: ${_this.themeMode}, biometricLock: ${_this.biometricLock}, profileName: ${_this.profileName}, profileEmail: ${_this.profileEmail})';
+  return 'LocalPreferences(themeMode: ${_this.themeMode}, biometricLock: ${_this.biometricLock}, balancesOnOpen: ${_this.balancesOnOpen}, balancesHidden: ${_this.balancesHidden}, profileName: ${_this.profileName}, profileEmail: ${_this.profileEmail})';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $LocalPreferencesCopyWith<$Res>  {
   factory $LocalPreferencesCopyWith(LocalPreferences value, $Res Function(LocalPreferences) _then) = _$LocalPreferencesCopyWithImpl;
 @useResult
 $Res call({
- AppThemeMode themeMode, bool biometricLock, String? profileName, String? profileEmail
+ AppThemeMode themeMode, bool biometricLock, BalancesOnOpen balancesOnOpen, bool balancesHidden, String? profileName, String? profileEmail
 });
 
 
@@ -70,10 +72,12 @@ class _$LocalPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of LocalPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? biometricLock = null,Object? profileName = freezed,Object? profileEmail = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? themeMode = null,Object? biometricLock = null,Object? balancesOnOpen = null,Object? balancesHidden = null,Object? profileName = freezed,Object? profileEmail = freezed,}) {
   return _then(LocalPreferences(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
 as AppThemeMode,biometricLock: null == biometricLock ? _self.biometricLock : biometricLock // ignore: cast_nullable_to_non_nullable
+as bool,balancesOnOpen: null == balancesOnOpen ? _self.balancesOnOpen : balancesOnOpen // ignore: cast_nullable_to_non_nullable
+as BalancesOnOpen,balancesHidden: null == balancesHidden ? _self.balancesHidden : balancesHidden // ignore: cast_nullable_to_non_nullable
 as bool,profileName: freezed == profileName ? _self.profileName : profileName // ignore: cast_nullable_to_non_nullable
 as String?,profileEmail: freezed == profileEmail ? _self.profileEmail : profileEmail // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -161,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppThemeMode themeMode,  bool biometricLock,  String? profileName,  String? profileEmail)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AppThemeMode themeMode,  bool biometricLock,  BalancesOnOpen balancesOnOpen,  bool balancesHidden,  String? profileName,  String? profileEmail)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LocalPreferences() when $default != null:
-return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.profileEmail);case _:
+return $default(_that.themeMode,_that.biometricLock,_that.balancesOnOpen,_that.balancesHidden,_that.profileName,_that.profileEmail);case _:
   return orElse();
 
 }
@@ -182,10 +186,10 @@ return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.prof
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppThemeMode themeMode,  bool biometricLock,  String? profileName,  String? profileEmail)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AppThemeMode themeMode,  bool biometricLock,  BalancesOnOpen balancesOnOpen,  bool balancesHidden,  String? profileName,  String? profileEmail)  $default,) {final _that = this;
 switch (_that) {
 case _LocalPreferences():
-return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.profileEmail);case _:
+return $default(_that.themeMode,_that.biometricLock,_that.balancesOnOpen,_that.balancesHidden,_that.profileName,_that.profileEmail);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +206,10 @@ return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.prof
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppThemeMode themeMode,  bool biometricLock,  String? profileName,  String? profileEmail)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AppThemeMode themeMode,  bool biometricLock,  BalancesOnOpen balancesOnOpen,  bool balancesHidden,  String? profileName,  String? profileEmail)?  $default,) {final _that = this;
 switch (_that) {
 case _LocalPreferences() when $default != null:
-return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.profileEmail);case _:
+return $default(_that.themeMode,_that.biometricLock,_that.balancesOnOpen,_that.balancesHidden,_that.profileName,_that.profileEmail);case _:
   return null;
 
 }
@@ -217,12 +221,16 @@ return $default(_that.themeMode,_that.biometricLock,_that.profileName,_that.prof
 
 
 class _LocalPreferences implements LocalPreferences {
-  const _LocalPreferences({this.themeMode = AppThemeMode.system, this.biometricLock = false, this.profileName, this.profileEmail});
+  const _LocalPreferences({this.themeMode = AppThemeMode.system, this.biometricLock = false, this.balancesOnOpen = BalancesOnOpen.visible, this.balancesHidden = false, this.profileName, this.profileEmail});
   
 
 @override@JsonKey() final  AppThemeMode themeMode;
 /// Chiede la biometria all'apertura e al ritorno dopo 1 minuto in background.
 @override@JsonKey() final  bool biometricLock;
+/// Saldi visibili o nascosti all'apertura (sezione Privacy delle Impostazioni).
+@override@JsonKey() final  BalancesOnOpen balancesOnOpen;
+/// Ultima scelta dell'occhio in Portafogli: serve con [BalancesOnOpen.remember].
+@override@JsonKey() final  bool balancesHidden;
 /// Profilo facoltativo, solo locale.
 @override final  String? profileName;
 @override final  String? profileEmail;
@@ -237,18 +245,18 @@ _$LocalPreferencesCopyWith<_LocalPreferences> get copyWith => __$LocalPreference
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalPreferences&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.biometricLock, biometricLock) || other.biometricLock == biometricLock)&&(identical(other.profileName, profileName) || other.profileName == profileName)&&(identical(other.profileEmail, profileEmail) || other.profileEmail == profileEmail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LocalPreferences&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.biometricLock, biometricLock) || other.biometricLock == biometricLock)&&(identical(other.balancesOnOpen, balancesOnOpen) || other.balancesOnOpen == balancesOnOpen)&&(identical(other.balancesHidden, balancesHidden) || other.balancesHidden == balancesHidden)&&(identical(other.profileName, profileName) || other.profileName == profileName)&&(identical(other.profileEmail, profileEmail) || other.profileEmail == profileEmail));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,themeMode,biometricLock,profileName,profileEmail);
+    return Object.hash(runtimeType,themeMode,biometricLock,balancesOnOpen,balancesHidden,profileName,profileEmail);
 }
 
 @override
 String toString() {
-    return 'LocalPreferences(themeMode: $themeMode, biometricLock: $biometricLock, profileName: $profileName, profileEmail: $profileEmail)';
+    return 'LocalPreferences(themeMode: $themeMode, biometricLock: $biometricLock, balancesOnOpen: $balancesOnOpen, balancesHidden: $balancesHidden, profileName: $profileName, profileEmail: $profileEmail)';
 }
 
 
@@ -259,7 +267,7 @@ abstract mixin class _$LocalPreferencesCopyWith<$Res> implements $LocalPreferenc
   factory _$LocalPreferencesCopyWith(_LocalPreferences value, $Res Function(_LocalPreferences) _then) = __$LocalPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
- AppThemeMode themeMode, bool biometricLock, String? profileName, String? profileEmail
+ AppThemeMode themeMode, bool biometricLock, BalancesOnOpen balancesOnOpen, bool balancesHidden, String? profileName, String? profileEmail
 });
 
 
@@ -276,10 +284,12 @@ class __$LocalPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of LocalPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,Object? biometricLock = null,Object? profileName = freezed,Object? profileEmail = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? themeMode = null,Object? biometricLock = null,Object? balancesOnOpen = null,Object? balancesHidden = null,Object? profileName = freezed,Object? profileEmail = freezed,}) {
   return _then(_LocalPreferences(
 themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
 as AppThemeMode,biometricLock: null == biometricLock ? _self.biometricLock : biometricLock // ignore: cast_nullable_to_non_nullable
+as bool,balancesOnOpen: null == balancesOnOpen ? _self.balancesOnOpen : balancesOnOpen // ignore: cast_nullable_to_non_nullable
+as BalancesOnOpen,balancesHidden: null == balancesHidden ? _self.balancesHidden : balancesHidden // ignore: cast_nullable_to_non_nullable
 as bool,profileName: freezed == profileName ? _self.profileName : profileName // ignore: cast_nullable_to_non_nullable
 as String?,profileEmail: freezed == profileEmail ? _self.profileEmail : profileEmail // ignore: cast_nullable_to_non_nullable
 as String?,

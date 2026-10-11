@@ -16,6 +16,7 @@ import '../../../../domain/models/wallet.dart';
 import '../../../../domain/services/balances.dart';
 import '../../../settings/application/settings_providers.dart';
 import '../../../transactions/presentation/widgets/date_picker_sheet.dart';
+import '../../application/balance_visibility.dart';
 import '../../application/wallet_providers.dart';
 
 /// Apre "Aggiorna saldo". Restituisce true se l'aggiornamento è stato salvato.
@@ -42,11 +43,14 @@ class _UpdateBalanceBody extends ConsumerStatefulWidget {
 
 class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
   late LocalDate _date = ref.read(todayProvider);
+  // Con i saldi nascosti il campo parte vuoto: il saldo attuale non compare.
   late final _balanceController = TextEditingController(
-    text: formatCents(
-      walletBalance(widget.wallet, ref.read(walletTransactionsProvider(widget.wallet.id)).value ?? const []),
-      withSymbol: false,
-    ),
+    text: ref.read(balancesHiddenProvider)
+        ? ''
+        : formatCents(
+            walletBalance(widget.wallet, ref.read(walletTransactionsProvider(widget.wallet.id)).value ?? const []),
+            withSymbol: false,
+          ),
   );
   var _mode = BalanceUpdateMode.adjustment;
   String? _categoryId;
@@ -59,8 +63,8 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
     super.dispose();
   }
 
-  Future<void> _save({required int? newBalance, required int difference}) async {
-    final needsCategory = _mode == BalanceUpdateMode.movement && difference != 0;
+  Future<void> _save({required BalanceUpdateMode mode, required int? newBalance, required int difference}) async {
+    final needsCategory = mode == BalanceUpdateMode.movement && difference != 0;
     if (newBalance == null || (needsCategory && _categoryId == null)) {
       setState(() => _showErrors = true);
       return;
@@ -73,7 +77,7 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
             wallet: widget.wallet,
             newBalanceCents: newBalance,
             date: _date,
-            mode: _mode,
+            mode: mode,
             categoryId: needsCategory ? _categoryId : null,
           );
       if (mounted) Navigator.pop(context, true);
@@ -90,6 +94,11 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
     final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
     final transactions = ref.watch(walletTransactionsProvider(widget.wallet.id)).value ?? const [];
 
+    // Con i saldi nascosti non si mostra nulla che derivi dal saldo registrato: né la differenza,
+    // né "il saldo coincide", né la categoria (entrata o spesa ne direbbe il segno). Per questo
+    // si può registrare solo come rettifica.
+    final hidden = ref.watch(balancesHiddenProvider);
+    final mode = hidden ? BalanceUpdateMode.adjustment : _mode;
     final recorded = walletBalance(widget.wallet, transactions, upTo: _date);
     final newBalance = parseCents(_balanceController.text);
     final difference = (newBalance ?? recorded) - recorded;
@@ -110,7 +119,8 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Saldo registrato: ${formatCents(recorded)} · ${dateLabel.toLowerCase()}',
+          'Saldo registrato: ${hidden ? hiddenBalanceText : formatCents(recorded)} · ${dateLabel.toLowerCase()}',
+          semanticsLabel: hidden ? 'Saldo registrato: saldo nascosto, ${dateLabel.toLowerCase()}' : null,
           style: textTheme.labelMedium?.copyWith(color: colors.neutral.onTint, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 14),
@@ -208,9 +218,10 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
                   child: Text('Differenza', style: textTheme.labelMedium?.copyWith(color: colors.neutral.onTint)),
                 ),
                 Text(
-                  differenceText,
+                  hidden ? hiddenBalanceText : differenceText,
+                  semanticsLabel: hidden ? 'nascosta' : null,
                   style: textTheme.titleMedium?.copyWith(
-                    color: differenceColor,
+                    color: hidden ? colors.textMuted : differenceColor,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -225,17 +236,19 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
           title: 'Rettifica di valore',
           subtitle:
               'Consigliato per investimenti e conteggi di cassa: aggiorna il saldo senza contare come entrata o spesa.',
-          selected: _mode == BalanceUpdateMode.adjustment,
+          selected: mode == BalanceUpdateMode.adjustment,
           onTap: () => setState(() => _mode = BalanceUpdateMode.adjustment),
         ),
         const SizedBox(height: AppSpacing.sm),
         _ModeOption(
           title: 'Registra come entrata o spesa',
-          subtitle: 'Crea un movimento con la differenza, che comparirà nei grafici e nei totali.',
-          selected: _mode == BalanceUpdateMode.movement,
-          onTap: () => setState(() => _mode = BalanceUpdateMode.movement),
+          subtitle: hidden
+              ? 'Mostra i saldi per usarla: serve conoscere la differenza.'
+              : 'Crea un movimento con la differenza, che comparirà nei grafici e nei totali.',
+          selected: mode == BalanceUpdateMode.movement,
+          onTap: hidden ? null : () => setState(() => _mode = BalanceUpdateMode.movement),
         ),
-        if (_mode == BalanceUpdateMode.movement && difference != 0) ...[
+        if (mode == BalanceUpdateMode.movement && difference != 0) ...[
           const SizedBox(height: 14),
           SectionLabel(difference > 0 ? 'Categoria dell\'entrata' : 'Categoria della spesa'),
           Wrap(
@@ -253,7 +266,7 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
           if (_showErrors && _categoryId == null)
             Text('Scegli una categoria', style: textTheme.labelMedium?.copyWith(color: colors.danger)),
         ],
-        if (difference == 0 && newBalance != null) ...[
+        if (!hidden && difference == 0 && newBalance != null) ...[
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Il saldo coincide: nessun movimento, verrà registrata solo la data di verifica.',
@@ -263,7 +276,7 @@ class _UpdateBalanceBodyState extends ConsumerState<_UpdateBalanceBody> {
         const SizedBox(height: 18),
         FilledButton(
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)),
-          onPressed: _saving ? null : () => _save(newBalance: newBalance, difference: difference),
+          onPressed: _saving ? null : () => _save(mode: mode, newBalance: newBalance, difference: difference),
           child: const Text('Salva aggiornamento'),
         ),
       ],
@@ -278,7 +291,9 @@ class _ModeOption extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// null = non disponibile (in grigio).
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -291,42 +306,46 @@ class _ModeOption extends StatelessWidget {
       inMutuallyExclusiveGroup: true,
       checked: selected,
       button: true,
-      child: Material(
-        color: colors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: borderRadius,
-          side: BorderSide(color: selected ? colors.text : colors.borderStrong, width: selected ? 2 : 1),
-        ),
-        child: InkWell(
-          borderRadius: borderRadius,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  margin: const EdgeInsets.only(top: 1),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.surface,
-                    border: Border.all(color: selected ? colors.text : colors.textMuted, width: selected ? 6 : 2),
+      enabled: onTap != null,
+      child: Opacity(
+        opacity: onTap == null ? 0.55 : 1,
+        child: Material(
+          color: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: borderRadius,
+            side: BorderSide(color: selected ? colors.text : colors.borderStrong, width: selected ? 2 : 1),
+          ),
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    margin: const EdgeInsets.only(top: 1),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.surface,
+                      border: Border.all(color: selected ? colors.text : colors.textMuted, width: selected ? 6 : 2),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: textTheme.bodySmall?.copyWith(color: colors.neutral.onTint, height: 1.4)),
-                    ],
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 2),
+                        Text(subtitle, style: textTheme.bodySmall?.copyWith(color: colors.neutral.onTint, height: 1.4)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

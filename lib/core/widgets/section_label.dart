@@ -5,10 +5,14 @@ import '../theme/app_colors.dart';
 /// Titoletto di sezione in maiuscolo (es. "CATEGORIA"), con testo opzionale a destra
 /// (es. "2 selezionate").
 class SectionLabel extends StatelessWidget {
-  const SectionLabel(this.text, {super.key, this.trailing, this.indent = false});
+  const SectionLabel(this.text, {super.key, this.trailing, this.trailingWidget, this.indent = false});
 
   final String text;
   final String? trailing;
+
+  /// Al posto di [trailing], quando il testo a destra è un widget (es. un saldo nascondibile).
+  /// Riceve già lo stile del testo a destra.
+  final Widget? trailingWidget;
 
   /// Rientro di 4 px, usato sopra le card (es. Impostazioni).
   final bool indent;
@@ -30,7 +34,13 @@ class SectionLabel extends StatelessWidget {
               child: Text(text.toUpperCase(), style: style?.copyWith(color: colors.textMuted, letterSpacing: 0.72)),
             ),
           ),
-          if (trailing != null) Text(trailing!, style: style?.copyWith(color: colors.neutral.onTint)),
+          if (trailingWidget != null)
+            DefaultTextStyle.merge(
+              style: style?.copyWith(color: colors.neutral.onTint),
+              child: trailingWidget!,
+            )
+          else if (trailing != null)
+            Text(trailing!, style: style?.copyWith(color: colors.neutral.onTint)),
         ],
       ),
     );

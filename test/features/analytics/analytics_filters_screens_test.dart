@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -14,6 +15,7 @@ import 'package:spese_entrate/data/db/app_database.dart';
 import 'package:spese_entrate/data/db/database_provider.dart';
 import 'package:spese_entrate/data/repositories/repository_providers.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
+import 'package:spese_entrate/domain/models/label.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
 import 'package:spese_entrate/domain/models/transaction_filters.dart';
 import 'package:spese_entrate/domain/services/comparison.dart';
@@ -203,6 +205,171 @@ void main() {
       expect(data.first.cumulative.last, 450, reason: 'linee cumulate filtrate');
       expect(data[1].byCategory, {categoryIds['expense:Spesa alimentare']: 5000}, reason: 'tabella per categoria');
       expect(container.read(analyticsFiltersProvider(AnalyticsTab.charts)).isActive, isFalse);
+      await finish(tester);
+    });
+  });
+  group('Esclusioni', () {
+    SemanticsNode chip(WidgetTester tester, String label) => tester.getSemantics(
+      find.descendant(of: find.byType(FiltersScreen), matching: find.bySemanticsLabel(label)).first,
+    );
+
+    testWidgets('chip a tre stati nei Filtri: neutro → incluso → escluso → neutro, con Semantics', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      await tester.tap(find.byTooltip('Filtri'));
+      await tester.pumpAndSettle();
+      final contanti = find.descendant(of: find.byType(FiltersScreen), matching: find.text('Contanti')).first;
+
+      expect(chip(tester, 'Contanti').value, 'non filtrato');
+      expect(chip(tester, 'Contanti').hint, 'tocca per includere');
+      await tester.tap(contanti);
+      await tester.pump();
+      expect(chip(tester, 'Contanti').value, 'incluso');
+      expect(chip(tester, 'Contanti').hint, 'tocca per escludere');
+      expect(find.text('1 incluso'), findsOneWidget);
+      await tester.tap(contanti);
+      await tester.pump();
+      expect(chip(tester, 'Contanti').value, 'escluso');
+      expect(chip(tester, 'Contanti').hint, 'tocca per togliere il filtro');
+      expect(find.text('1 escluso'), findsOneWidget);
+      await tester.tap(contanti);
+      await tester.pump();
+      expect(chip(tester, 'Contanti').value, 'non filtrato');
+      await finish(tester);
+    });
+
+    testWidgets('Grafici: categoria esclusa con due tocchi, chip "− …" che la toglie', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      await tester.tap(find.byTooltip('Filtri'));
+      await tester.pumpAndSettle();
+      final food = find.descendant(of: find.byType(FiltersScreen), matching: find.text('Spesa alimentare')).first;
+      await tester.tap(food);
+      await tester.pump();
+      await tester.tap(food);
+      await tester.pump();
+      await tester.tap(find.text('Applica filtri'));
+      await tester.pumpAndSettle();
+
+      final filters = container.read(analyticsFiltersProvider(AnalyticsTab.charts));
+      expect(filters.categoryIds, isEmpty);
+      expect(filters.excludedCategoryIds, {categoryIds['expense:Spesa alimentare']});
+      expect(find.byTooltip('Filtri, 1 attivi'), findsOneWidget);
+      expect(find.text('$_minus Spesa alimentare'), findsOneWidget);
+      expect(find.bySemanticsLabel('Rimuovi esclusione Spesa alimentare'), findsOneWidget);
+      expect(find.text('€ 68,70'), findsNothing);
+      expect(find.text('Ristoranti'), findsOneWidget, reason: 'resta solo Ristoranti, 4,50');
+
+      await tester.tap(find.bySemanticsLabel('Rimuovi esclusione Spesa alimentare'));
+      await tester.pumpAndSettle();
+      expect(container.read(analyticsFiltersProvider(AnalyticsTab.charts)).isActive, isFalse);
+      expect(find.text('€ 68,70'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('Confronta: label esclusa "− #storico" accanto a un portafoglio incluso', (tester) async {
+      await pumpTab(tester, AppRoutes.compare);
+      const label = Label(id: 'storico-id', name: 'storico', color: 0xFF7C3AED);
+      await tester.runAsync(() => container.read(labelRepositoryProvider).save(label));
+      container
+          .read(analyticsFiltersProvider(AnalyticsTab.compare).notifier)
+          .apply(TransactionFilters(walletIds: {walletIds['Contanti']!}, excludedLabelIds: {label.id}));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Filtri, 2 attivi'), findsOneWidget);
+      expect(find.bySemanticsLabel('Rimuovi filtro Contanti'), findsOneWidget);
+      expect(find.text('$_minus #storico'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('Rimuovi esclusione #storico'));
+      await tester.pumpAndSettle();
+      final filters = container.read(analyticsFiltersProvider(AnalyticsTab.compare));
+      expect(filters.excludedLabelIds, isEmpty);
+      expect(filters.walletIds, {walletIds['Contanti']}, reason: 'le inclusioni restano');
+      await finish(tester);
+    });
+
+    testWidgets('tap su una fetta: in Movimenti arrivano tutte le esclusioni del grafico', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      const label = Label(id: 'storico-id', name: 'storico', color: 0xFF7C3AED);
+      await tester.runAsync(() => container.read(labelRepositoryProvider).save(label));
+      final chart = TransactionFilters(
+        excludedWalletIds: {walletIds['Contanti']!},
+        excludedCategoryIds: {categoryIds['expense:Casa']!},
+        excludedLabelIds: {label.id},
+      );
+      container.read(analyticsFiltersProvider(AnalyticsTab.charts).notifier).apply(chart);
+      await tester.pumpAndSettle();
+      expect(find.text('$_minus Contanti'), findsOneWidget);
+      expect(find.text('$_minus #storico'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel(RegExp('^Spesa alimentare, .*mostra i movimenti')));
+      await tester.pumpAndSettle();
+      expect(find.byType(TransactionsScreen), findsOneWidget);
+      final filters = container.read(activeFiltersProvider);
+      expect(filters.categoryIds, {categoryIds['expense:Spesa alimentare']});
+      expect(filters.excludedWalletIds, chart.excludedWalletIds);
+      expect(filters.excludedCategoryIds, chart.excludedCategoryIds);
+      expect(filters.excludedLabelIds, chart.excludedLabelIds);
+      expect(find.text('Tutti tranne Contanti'), findsOneWidget);
+      expect(find.text('$_minus € 64,20'), findsWidgets);
+      expect(find.text('$_minus € 4,50'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('tutti i portafogli esclusi: stati vuoti che parlano dei filtri, non del periodo', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      final everything = TransactionFilters(excludedWalletIds: walletIds.values.toSet());
+      container.read(analyticsFiltersProvider(AnalyticsTab.charts).notifier).apply(everything);
+      container.read(analyticsFiltersProvider(AnalyticsTab.compare).notifier).apply(everything);
+      container.read(activeFiltersProvider.notifier).apply(everything);
+      await tester.pumpAndSettle();
+      expect(find.text('Nessuna spesa con questi filtri in questo periodo.'), findsOneWidget);
+      expect(find.byTooltip('Filtri, 1 attivi'), findsOneWidget);
+      expect(find.text('Azzera'), findsOneWidget);
+
+      container.read(appRouterProvider).go(AppRoutes.compare);
+      await tester.pumpAndSettle();
+      expect(find.text('Nessun movimento con questi filtri nei periodi scelti.'), findsOneWidget);
+      expect(find.byTooltip('Filtri, 1 attivi'), findsOneWidget);
+
+      container.read(appRouterProvider).go(AppRoutes.transactions);
+      await tester.pumpAndSettle();
+      expect(find.text('Nessun movimento con questi filtri'), findsOneWidget);
+      expect(find.byTooltip('Filtri, 1 attivi'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('tutte le categorie di spesa escluse: Grafici vuoto ma filtrato', (tester) async {
+      await pumpTab(tester, AppRoutes.charts);
+      container
+          .read(analyticsFiltersProvider(AnalyticsTab.charts).notifier)
+          .apply(
+            TransactionFilters(
+              excludedCategoryIds: {
+                for (final e in categoryIds.entries)
+                  if (e.key.startsWith('expense:')) e.value,
+              },
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Filtri, 1 attivi'), findsOneWidget, reason: 'otto esclusioni, una dimensione');
+      await tester.scrollUntilVisible(
+        find.text('Nessuna spesa con questi filtri in questo periodo.'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Nessuna spesa con questi filtri in questo periodo.'), findsOneWidget);
+      expect(find.text('Nessuna spesa in questo periodo.'), findsNothing);
+
+      await finish(tester);
+    });
+
+    testWidgets('Movimenti: il riepilogo dice "Tutti tranne Contanti"', (tester) async {
+      await pumpTab(tester, AppRoutes.transactions);
+      container
+          .read(activeFiltersProvider.notifier)
+          .apply(TransactionFilters(excludedWalletIds: {walletIds['Contanti']!}));
+      await tester.pumpAndSettle();
+      expect(find.text('Tutti tranne Contanti'), findsOneWidget);
+      expect(find.text('Ristoranti'), findsNothing, reason: 'il movimento in contanti è escluso');
+      expect(find.text('Spesa alimentare'), findsWidgets);
       await finish(tester);
     });
   });

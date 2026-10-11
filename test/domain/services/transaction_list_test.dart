@@ -77,10 +77,10 @@ void main() {
         expect(pick(const TransactionFilters(withoutLabels: true, labelIds: {'work'})), [both, none]);
       });
 
-      test('«Tutte» con altre label: nessun movimento può soddisfarlo', () {
+      test('«Tutte» vale solo per le label incluse; «Senza label» si aggiunge', () {
         expect(
-          pick(const TransactionFilters(withoutLabels: true, labelIds: {'home'}, labelMatch: LabelMatch.all)),
-          isEmpty,
+          pick(const TransactionFilters(withoutLabels: true, labelIds: {'home', 'work'}, labelMatch: LabelMatch.all)),
+          [both, none],
         );
       });
 

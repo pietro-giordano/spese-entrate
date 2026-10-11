@@ -103,6 +103,7 @@ class CompareScreen extends ConsumerWidget {
     final state = ref.watch(compareControllerProvider);
     final controller = ref.read(compareControllerProvider.notifier);
     final dataAsync = ref.watch(comparisonProvider);
+    final filtered = ref.watch(analyticsFiltersProvider(AnalyticsTab.compare)).isActive;
     final data = dataAsync.value;
     final categoryNames = {for (final c in ref.watch(categoriesProvider).value ?? const <Category>[]) c.id: c.name};
 
@@ -227,11 +228,14 @@ class CompareScreen extends ConsumerWidget {
                   else if (data == null)
                     const SizedBox(height: 190)
                   else if (chartRows.isEmpty || rows.every((r) => r.values.every((v) => v == 0)))
-                    SizedBox(
-                      height: 120,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 120),
                       child: Center(
                         child: Text(
-                          'Nessun movimento nei periodi scelti.',
+                          filtered
+                              ? 'Nessun movimento con questi filtri nei periodi scelti.'
+                              : 'Nessun movimento nei periodi scelti.',
+                          textAlign: TextAlign.center,
                           style: textTheme.bodyMedium?.copyWith(color: colors.textMuted),
                         ),
                       ),

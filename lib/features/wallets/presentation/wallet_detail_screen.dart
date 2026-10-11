@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/clock.dart';
-import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
@@ -19,7 +18,9 @@ import '../../../domain/models/wallet.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../transactions/presentation/widgets/transaction_tile.dart';
 import '../application/wallet_providers.dart';
+import '../application/balance_visibility.dart';
 import 'widgets/balance_chart.dart';
+import 'widgets/balance_text.dart';
 import 'widgets/update_balance_sheet.dart';
 import 'widgets/wallet_visuals.dart';
 
@@ -50,6 +51,7 @@ class WalletDetailScreen extends ConsumerWidget {
     final tone = walletGroupTone(context, wallet.type.group);
     final today = ref.watch(todayProvider);
     final history = ref.watch(walletBalanceHistoryProvider(walletId)).value ?? const [];
+    final balancesHidden = ref.watch(balancesHiddenProvider);
     final transactions = ref.watch(walletTransactionsProvider(walletId)).value ?? const [];
     final walletNames = {for (final w in ref.watch(walletsProvider).value ?? const <Wallet>[]) w.id: w.name};
     final categoryNames = {for (final c in ref.watch(categoriesProvider).value ?? const <Category>[]) c.id: c.name};
@@ -133,8 +135,8 @@ class WalletDetailScreen extends ConsumerWidget {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            formatCents(overview.balanceCents),
+                          child: BalanceText(
+                            overview.balanceCents,
                             style: textTheme.displaySmall?.copyWith(
                               fontSize: 34,
                               letterSpacing: -0.7,
@@ -178,7 +180,15 @@ class WalletDetailScreen extends ConsumerWidget {
                   ),
                   if (history.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    BalanceChart(points: history, color: tone.text),
+                    // Con i saldi nascosti anche la forma della linea direbbe troppo: niente grafico.
+                    if (balancesHidden)
+                      Text(
+                        'Mostra i saldi per visualizzare l\'andamento',
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodySmall?.copyWith(color: colors.textMuted),
+                      )
+                    else
+                      BalanceChart(points: history, color: tone.text),
                   ],
                   const SizedBox(height: AppSpacing.lg),
                   const SectionLabel('Movimenti di questo portafoglio'),

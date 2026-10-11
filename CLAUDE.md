@@ -160,6 +160,7 @@ Chiavi: `default_expense_wallet_id`, `default_income_wallet_id`, `week_start` (1
 
 **app_meta** (solo locale, non sincronizzata) — `key TEXT PK`, `value TEXT`.
 Chiavi: `device_id`, `theme_mode` (system | light | dark), `biometric_lock` (bool),
+`balances_on_open` (visible | hidden | remember), `balances_hidden` (bool, ultima scelta dell'occhio),
 `profile_name`, `profile_email`.
 
 **outbox** (solo locale) — `id INT PK AUTOINCREMENT`, `entity TEXT`, `entity_id TEXT`,
@@ -219,12 +220,41 @@ Al primo avvio, se il database è vuoto:
 - **Predefiniti**: un solo portafoglio predefinito per le spese e uno per le entrate.
 - **Grafico per label**: un movimento con più label conta in ciascuna; le percentuali sono sulla
   somma delle label. I movimenti senza label finiscono in "Senza label".
-- **Filtro label**: modalità "almeno una" (default) o "tutte".
+- **Filtro label**: modalità "almeno una" (default) o "tutte", che vale solo per le label incluse.
+- **Inclusioni ed esclusioni nei filtri** (portafogli, categorie, label e "Senza label"): ogni chip
+  ha tre stati, neutro → incluso → escluso → neutro (`cycleWallet`, `cycleCategory`, `cycleLabel`,
+  `cycleWithoutLabels`; campi `excludedWalletIds`, `excludedCategoryIds`, `excludedLabelIds`,
+  `excludeWithoutLabels`). Regole (`matchesFilters`):
+  - l'esclusione vince sempre sull'inclusione;
+  - **portafoglio escluso**: toglie ogni movimento che lo coinvolge (spese, entrate, rettifiche,
+    trasferimenti in origine o in destinazione), anche se l'altro portafoglio del trasferimento è incluso;
+  - **categoria esclusa** e **label esclusa**: tolgono i movimenti con quella categoria o con
+    **almeno una** label esclusa, a prescindere da "almeno una/tutte"; non nascondono trasferimenti e
+    rettifiche (le inclusioni di categorie e label invece sì, perché non hanno categoria né label);
+  - **"Senza label"** è una condizione sull'assenza di label, separata dalle label effettive.
+    Incluso: aggiunge (in OR) le spese e le entrate senza label alle label incluse, in entrambe le
+    modalità ("tutte le label incluse **oppure** nessuna label"); da solo mostra solo quelle senza
+    label e, come ogni inclusione, nasconde trasferimenti e rettifiche. Escluso: toglie le spese e le
+    entrate senza label (restano solo movimenti con label), non trasferimenti e rettifiche;
+  - il **conteggio** dei filtri attivi è per dimensione (tipo, portafogli, categorie, label compreso
+    "Senza label", trasferimenti), non per chip: inclusioni ed esclusioni della stessa dimensione
+    contano 1;
+  - **tutto escluso** (es. tutti i portafogli o tutte le categorie): risultato vuoto ma filtri attivi,
+    con badge, chip e stati vuoti che parlano dei filtri ("… con questi filtri"), mai del solo periodo;
+  - valgono in Movimenti, ricerca, Grafici e Confronta; il tap su una fetta (`sliceFilters`) mantiene
+    tutte le esclusioni del grafico.
 - **Filtri di Grafici e Confronta**: ogni tab ha il proprio stato (`activeFiltersProvider` per Movimenti,
   `analyticsFiltersProvider(AnalyticsTab.charts|compare)` per le altre due), indipendente dagli altri.
   In Grafici e Confronta contano solo portafogli, categorie e label (almeno una/tutte): tipo e
   trasferimenti si ignorano (`analyticsScope`). I filtri si applicano prima di ogni calcolo
   (`filterForAnalytics`): torte, totale al centro, barre, linee cumulate e tabella delle variazioni.
+- **Ricerca** (Movimenti, `transaction_search.dart`, logica pura): su tutto lo storico (non solo il
+  periodo), solo movimenti confermati, con i filtri attivi applicati. Cerca in nota, nome della
+  categoria, label e portafogli (anche la destinazione), senza distinzione di maiuscole e accenti
+  (`foldForSearch`); con più parole devono esserci tutte. Un numero cerca l'importo: con decimali
+  (`64,20`) l'importo esatto, intero (`64`) gli importi da 64,00 a 64,99; il segno non conta.
+  Filtro in memoria sui movimenti già caricati: ~25 ms su 10.000 movimenti, quindi niente FTS5 (da
+  rivalutare con una tabella FTS e una migrazione se lo storico crescesse di molto).
 - **Tap su una fetta** (Grafici): apre Movimenti con il periodo del grafico, il tipo (Spese/Entrate),
   la voce toccata e i filtri del grafico (`sliceFilters`): la voce sostituisce i filtri della sua
   dimensione (una categoria toccata sostituisce le categorie, una label le label, in modalità
@@ -315,6 +345,27 @@ Ciclo di vita:
   su `UIScene.willDeactivateNotification` in `AppDelegate` (non si sovrascrivono i metodi di
   `FlutterSceneDelegate`); in Flutter un velo in `AppLockGate` quando lo stato non è `resumed`.
 - Il velo è indipendente dal blocco con biometria: non cambia né il timer né lo sblocco.
+- **Saldi nascosti** (`balancesHiddenProvider`, `features/wallets/application/balance_visibility.dart`):
+  l'occhio nell'header di Portafogli ("Nascondi saldi" / "Mostra saldi") nasconde in tutta l'app
+  patrimonio totale, totali dei gruppi, saldi dei portafogli, saldo nel dettaglio, saldi nel pannello
+  di scelta del portafoglio e nella scheda Da/A dell'inserimento rapido, "Saldo del periodo" nella
+  card di Movimenti. Ogni saldo passa da `BalanceText`: nascosto mostra "€ ••••" nello spazio
+  dell'importo vero (invisibile, così l'impaginazione non salta) con Semantics "Saldo nascosto".
+  Restano **sempre visibili** gli importi dei movimenti e i totali Entrate/Uscite della card.
+  - **Dettaglio portafoglio**: il grafico dell'andamento non si mostra (nemmeno la linea), al suo
+    posto "Mostra i saldi per visualizzare l'andamento".
+  - **Aggiorna saldo**: nessun valore derivato dal saldo registrato. "Saldo registrato: € ••••", campo
+    vuoto, differenza "€ ••••", niente "Il saldo coincide". Si registra solo come rettifica:
+    "Registra come entrata o spesa" è disattivato, perché la categoria di entrata o di spesa direbbe
+    il segno della differenza.
+- **Saldi all'apertura** (Impostazioni › Privacy, `balances_on_open` in `app_meta`): sempre visibili
+  (predefinito), sempre nascosti, ricorda l'ultima scelta (`balances_hidden`, salvata a ogni tocco
+  dell'occhio).
+  - Il cambio ha **effetto immediato** (`BalancesHidden.setMode`): "sempre visibili" li mostra,
+    "sempre nascosti" li nasconde, "ricorda" conserva lo stato corrente, che diventa l'ultima scelta.
+  - Con "sempre nascosti" si nascondono di nuovo quando l'app torna in primo piano dopo almeno 1 minuto
+    effettivo in background (`hidden`/`paused`; `inactive` da solo non conta), indipendentemente dal
+    blocco con biometria. Gli eventi arrivano da `AppLockGate`, come per il blocco.
 
 ## Export e import CSV
 
@@ -401,7 +452,9 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
-  `BottomActionBar`, `TabHeader` (intestazione delle tab).
+  `BottomActionBar`, `TabHeader` (intestazione delle tab), `AppFilterChip` (chip dei filtri a tre
+  stati: incluso con ✓ in inversione, escluso con ✕, testo barrato e bordo tratteggiato `danger`;
+  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco).
 - **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
   (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
   `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
@@ -445,9 +498,11 @@ In caso di conflitto tra un mockup e questo file, vale questo file.
 Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestazione è `TabHeader`
 (`core/widgets/`), con titolo, le azioni della schermata e **sempre ultimo a destra** l'avatar
 "Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
-quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
+quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli occhio dei saldi e "+",
 Grafici e Confronta il pulsante Filtri con il numero di filtri attivi sull'icona. Sotto l'intestazione
-di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera".
+di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera"; le esclusioni
+come "− Contanti", "− #storico" o "− Senza label" in tinta spesa ("Rimuovi esclusione …"). In Movimenti il chip del
+riepilogo dice "Tutti tranne …" se ci sono solo portafogli esclusi.
 
 La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?scope=charts|compare`,
 `FiltersScope`): da Movimenti mostra tutte le sezioni; da Grafici e Confronta nasconde Tipo, Periodo e
@@ -455,7 +510,10 @@ La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?
 
 Riepilogo delle schermate:
 
-- **Movimenti**: header con avatar (impostazioni), cerca e filtri; selettore
+- **Movimenti**: header con avatar (impostazioni), cerca e filtri. "Cerca" sostituisce l'intestazione
+  con un campo (debounce 300 ms, ✕ per cancellare, "Chiudi ricerca" o indietro per uscire): al posto di
+  periodo e riepilogo compaiono "N risultati · totale · con N filtri" e i risultati per giorno, oppure
+  uno stato vuoto con suggerimento (e "Azzera filtri" se ci sono filtri attivi); selettore
   Giorno/Sett./Mese/Anno/Periodo (default Mese) con frecce; card riepilogo (saldo, entrate,
   uscite, % speso, chip "Tutti i portafogli"); sezione "In arrivo" (pending dei prossimi 7 giorni);
   lista per giorno con totale; pulsanti fissi "− Spesa" e "+ Entrata".
@@ -466,8 +524,9 @@ Riepilogo delle schermate:
 - **Modifica movimento**: stessi campi in forma di form scorrevole, duplica in alto,
   elimina + salva in basso (salva disattivo senza modifiche).
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
-  "almeno una/tutte", interruttore trasferimenti; Azzera e Applica.
-- **Portafogli**: intestazione con "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
+  "almeno una/tutte" e "Senza label" (tutti chip a tre stati con `AppFilterChip`, conteggio
+  "2 incluse · 1 esclusa"), interruttore trasferimenti; Azzera e Applica.
+- **Portafogli**: intestazione con occhio (nascondi/mostra saldi), "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
   con saldo, ultimo aggiornamento e badge.
 - **Dettaglio portafoglio**: tipo, saldo, ultimo aggiornamento, "Aggiorna saldo" (pannello con
   nuovo saldo, data, differenza, scelta rettifica/movimento), andamento 6 mesi, movimenti.
@@ -480,7 +539,7 @@ Riepilogo delle schermate:
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e
-  sicurezza (biometria); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
+  sicurezza (biometria); Privacy (saldi all'apertura); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza**: totali fissi mensili, Attive/In pausa,

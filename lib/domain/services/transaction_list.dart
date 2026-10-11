@@ -12,9 +12,22 @@ import 'statistics.dart';
 /// - Portafogli: conta il portafoglio del movimento e, per i trasferimenti, anche la destinazione.
 /// - Spese ed entrate seguono il filtro per tipo.
 /// - I trasferimenti dipendono dall'interruttore; le rettifiche compaiono solo con tipo "Tutti".
-///   Entrambi non hanno categoria né label, quindi spariscono se quei filtri sono attivi
-///   (anche con "Senza label": per loro le label non si applicano).
+///   Entrambi non hanno categoria né label, quindi spariscono se si **includono** categorie o label
+///   (anche "Senza label": per loro le label non si applicano).
+///
+/// Esclusioni (vincono sempre sulle inclusioni): un movimento non compare se usa un portafoglio
+/// escluso (origine, destinazione o rettifica, anche se l'altro portafoglio è incluso), se ha una
+/// categoria esclusa, se ha **almeno una** label esclusa o, con "Senza label" escluso, se è una
+/// spesa o un'entrata senza label. Le esclusioni di categorie e label non nascondono trasferimenti
+/// e rettifiche.
 bool matchesFilters(Transaction tx, TransactionFilters filters) {
+  if (filters.excludedWalletIds.contains(tx.walletId) ||
+      (tx.toWalletId != null && filters.excludedWalletIds.contains(tx.toWalletId))) {
+    return false;
+  }
+  if (tx.categoryId != null && filters.excludedCategoryIds.contains(tx.categoryId)) return false;
+  if (tx.labelIds.any(filters.excludedLabelIds.contains)) return false;
+
   if (filters.walletIds.isNotEmpty &&
       !filters.walletIds.contains(tx.walletId) &&
       !(tx.toWalletId != null && filters.walletIds.contains(tx.toWalletId))) {
@@ -35,6 +48,7 @@ bool matchesFilters(Transaction tx, TransactionFilters filters) {
       break;
   }
 
+  if (filters.excludeWithoutLabels && tx.labelIds.isEmpty) return false;
   if (filters.categoryIds.isNotEmpty && !filters.categoryIds.contains(tx.categoryId)) return false;
 
   if (filters.hasLabelFilter) return matchesLabelFilter(tx.labelIds.toSet(), filters);
@@ -71,21 +85,27 @@ TransactionFilters sliceFilters(
   final base = analyticsScope(chart)
       .copyWith(type: kind == CategoryKind.expense ? TypeFilter.expense : TypeFilter.income);
   return byLabel
-      ? base.copyWith(labelIds: {?id}, withoutLabels: id == null, labelMatch: LabelMatch.any)
+      ? base.copyWith(
+          labelIds: {?id},
+          withoutLabels: id == null,
+          excludeWithoutLabels: id != null && chart.excludeWithoutLabels,
+          labelMatch: LabelMatch.any,
+        )
       : base.copyWith(categoryIds: {?id});
 }
 
-/// Condizione sulle label di un movimento.
+/// Condizione di inclusione sulle label di un movimento.
 ///
-/// - "Almeno una": il movimento ha una delle label scelte, oppure non ne ha nessuna se è
-///   selezionato "Senza label".
-/// - "Tutte": il movimento ha tutte le label scelte. "Senza label" da solo vuol dire nessuna label;
-///   insieme ad altre label nessun movimento può soddisfarlo (la schermata Filtri lo evita).
+/// "Senza label" incluso è un'alternativa separata: il movimento passa se non ha label **oppure**
+/// se soddisfa le label incluse. "Almeno una/Tutte" vale solo per le label incluse:
+/// - "Almeno una": il movimento ha una delle label incluse;
+/// - "Tutte": il movimento le ha tutte.
 bool matchesLabelFilter(Set<String> labels, TransactionFilters filters) {
+  if (filters.withoutLabels && labels.isEmpty) return true;
   final selected = filters.labelIds;
+  if (selected.isEmpty) return false;
   return switch (filters.labelMatch) {
-    LabelMatch.any => labels.any(selected.contains) || (filters.withoutLabels && labels.isEmpty),
-    LabelMatch.all when filters.withoutLabels => selected.isEmpty && labels.isEmpty,
+    LabelMatch.any => labels.any(selected.contains),
     LabelMatch.all => labels.containsAll(selected),
   };
 }
