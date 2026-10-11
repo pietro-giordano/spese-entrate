@@ -187,6 +187,15 @@ Al primo avvio, se il database è vuoto:
 - **Grafico per label**: un movimento con più label conta in ciascuna; le percentuali sono sulla
   somma delle label. I movimenti senza label finiscono in "Senza label".
 - **Filtro label**: modalità "almeno una" (default) o "tutte".
+- **Filtri di Grafici e Confronta**: ogni tab ha il proprio stato (`activeFiltersProvider` per Movimenti,
+  `analyticsFiltersProvider(AnalyticsTab.charts|compare)` per le altre due), indipendente dagli altri.
+  In Grafici e Confronta contano solo portafogli, categorie e label (almeno una/tutte): tipo e
+  trasferimenti si ignorano (`analyticsScope`). I filtri si applicano prima di ogni calcolo
+  (`filterForAnalytics`): torte, totale al centro, barre, linee cumulate e tabella delle variazioni.
+- **Tap su una fetta** (Grafici): apre Movimenti con il periodo del grafico, il tipo (Spese/Entrate),
+  la voce toccata e i filtri del grafico (`sliceFilters`): la voce sostituisce i filtri della sua
+  dimensione (una categoria toccata sostituisce le categorie, una label le label, in modalità
+  "almeno una"). La lista mostra così gli stessi movimenti della fetta.
 
 ## Ricorrenze
 
@@ -367,7 +376,12 @@ Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestaz
 (`core/widgets/`), con titolo, le azioni della schermata e **sempre ultimo a destra** l'avatar
 "Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
 quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
-Grafici e Confronta nessuna (il pulsante Filtri dei mockup arriverà in un passo dedicato).
+Grafici e Confronta il pulsante Filtri con il numero di filtri attivi sull'icona. Sotto l'intestazione
+di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera".
+
+La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?scope=charts|compare`,
+`FiltersScope`): da Movimenti mostra tutte le sezioni; da Grafici e Confronta nasconde Tipo, Periodo e
+"Mostra trasferimenti" e lascia Portafogli, Categorie e Label con almeno una/tutte.
 
 Riepilogo delle schermate:
 
@@ -389,9 +403,10 @@ Riepilogo delle schermate:
   nuovo saldo, data, differenza, scelta rettifica/movimento), andamento 6 mesi, movimenti.
 - **Nuovo/Modifica portafoglio**: nome, tipo (griglia 3×2), saldo iniziale e data, interruttori
   predefinito spese, predefinito entrate, includi nel patrimonio.
-- **Grafici**: intestazione con avatar; periodo, Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
+- **Grafici**: intestazione con Filtri e avatar, chip dei filtri attivi; selettore
+  Giorno/Sett./Mese/Anno/Periodo come Movimenti (con "Periodo" le date Dal/Al compaiono sotto); Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
   con importo, percentuale e barra.
-- **Confronta**: intestazione con avatar; preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
+- **Confronta**: intestazione con Filtri e avatar, chip dei filtri attivi; preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e

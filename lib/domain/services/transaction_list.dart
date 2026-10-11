@@ -41,6 +41,40 @@ bool matchesFilters(Transaction tx, TransactionFilters filters) {
   return true;
 }
 
+/// Filtri di Grafici e Confronta: contano solo portafogli, categorie e label (con «almeno una» o
+/// «tutte»). Tipo e trasferimenti si ignorano: le statistiche contano già solo spese ed entrate
+/// confermate, e il tipo lo sceglie il grafico (Spese/Entrate).
+TransactionFilters analyticsScope(TransactionFilters filters) =>
+    filters.copyWith(type: TypeFilter.all, showTransfers: true);
+
+/// Movimenti che passano i filtri di Grafici e Confronta (vedi [analyticsScope]).
+/// Si applica prima di ogni calcolo: torte, barre, linee cumulate e tabella delle variazioni.
+List<Transaction> filterForAnalytics(Iterable<Transaction> transactions, TransactionFilters filters) {
+  final scoped = analyticsScope(filters);
+  return [
+    for (final tx in transactions)
+      if (matchesFilters(tx, scoped)) tx,
+  ];
+}
+
+/// Filtri della lista Movimenti per una fetta toccata in Grafici: tipo del grafico ([kind]),
+/// voce toccata ([id] è una categoria o, con [byLabel], una label; null = "Senza label") e i
+/// filtri del grafico ([chart]). La voce sostituisce i filtri della sua stessa dimensione:
+/// con una categoria toccata restano portafogli e label del grafico, con una label restano
+/// portafogli e categorie.
+TransactionFilters sliceFilters(
+  TransactionFilters chart, {
+  required CategoryKind kind,
+  required bool byLabel,
+  required String? id,
+}) {
+  final base = analyticsScope(chart)
+      .copyWith(type: kind == CategoryKind.expense ? TypeFilter.expense : TypeFilter.income);
+  return byLabel
+      ? base.copyWith(labelIds: {?id}, withoutLabels: id == null, labelMatch: LabelMatch.any)
+      : base.copyWith(categoryIds: {?id});
+}
+
 /// Condizione sulle label di un movimento.
 ///
 /// - "Almeno una": il movimento ha una delle label scelte, oppure non ne ha nessuna se è

@@ -7,7 +7,9 @@ import '../../../domain/models/enums.dart';
 import '../../../domain/models/statistics.dart';
 import '../../../domain/services/comparison.dart';
 import '../../../domain/services/statistics.dart';
+import '../../../domain/services/transaction_list.dart';
 import '../../transactions/application/transaction_providers.dart';
+import 'analytics_filters.dart';
 
 part 'compare_providers.freezed.dart';
 part 'compare_providers.g.dart';
@@ -97,10 +99,12 @@ class ComparedPeriod {
 @riverpod
 Future<List<ComparedPeriod>> comparison(Ref ref) async {
   final state = ref.watch(compareControllerProvider);
+  // Filtri della tab Confronta: valgono per barre, linee, totali e tabella delle variazioni.
+  final filters = ref.watch(analyticsFiltersProvider(AnalyticsTab.compare));
   final kind = state.metric == CompareMetric.income ? CategoryKind.income : CategoryKind.expense;
   final result = <ComparedPeriod>[];
   for (final period in state.periods) {
-    final transactions = await ref.watch(transactionsInRangeProvider(period.range).future);
+    final transactions = filterForAnalytics(await ref.watch(transactionsInRangeProvider(period.range).future), filters);
     result.add(
       ComparedPeriod(
         period: period,

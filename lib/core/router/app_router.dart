@@ -12,6 +12,7 @@ import '../../features/settings/presentation/backup_screen.dart';
 import '../../features/settings/presentation/categories_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/transactions/presentation/filters_screen.dart';
+import '../../features/transactions/application/filters_scope.dart';
 import '../../features/transactions/application/transaction_form_controller.dart' show EditScope;
 import '../../features/transactions/presentation/quick_add_screen.dart';
 import '../../features/transactions/presentation/transaction_detail_screen.dart';
@@ -100,7 +101,10 @@ GoRouter appRouter(Ref ref) {
           scope: state.uri.queryParameters['scope'] == 'following' ? EditScope.following : null,
         ),
       ),
-      GoRoute(path: AppRoutes.filters, builder: (context, state) => const FiltersScreen()),
+      GoRoute(
+        path: AppRoutes.filters,
+        builder: (context, state) => FiltersScreen(scope: FiltersScope.fromQuery(state.uri.queryParameters['scope'])),
+      ),
       GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => const SettingsScreen(),

@@ -92,4 +92,4 @@ final class ComparisonProvider
   }
 }
 
-String _$comparisonHash() => r'2f9f83d51228ca9e48370ecc032cb8d31b8fd973';
+String _$comparisonHash() => r'b639553175bb58d2cd47e79d0947e1c1ab769a50';

@@ -16,7 +16,9 @@ import '../../../domain/services/comparison.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../transactions/presentation/period_labels.dart';
 import '../../transactions/presentation/widgets/period_selector.dart';
+import '../application/analytics_filters.dart';
 import '../application/compare_providers.dart';
+import 'widgets/analytics_filters_bar.dart';
 import 'widgets/compare_charts.dart';
 
 /// Righe del confronto: per spese ed entrate una per categoria (dalla più grande nel primo periodo)
@@ -133,7 +135,11 @@ class CompareScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.lg),
           children: [
-            const TabHeader(title: 'Confronta'),
+            const TabHeader(
+              title: 'Confronta',
+              actions: [AnalyticsFiltersButton(tab: AnalyticsTab.compare)],
+            ),
+            const AnalyticsFiltersBar(tab: AnalyticsTab.compare),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,

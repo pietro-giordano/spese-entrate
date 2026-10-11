@@ -8,14 +8,17 @@ part of 'charts_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Mese mostrato nella tab Grafici (indipendente dal periodo della lista Movimenti).
+/// Periodo della tab Grafici (indipendente da quello della lista Movimenti). Parte dal mese di oggi;
+/// si cambia con lo stesso selettore Giorno/Sett./Mese/Anno/Periodo di Movimenti.
 
 @ProviderFor(ChartsPeriod)
 final chartsPeriodProvider = ChartsPeriodProvider._();
 
-/// Mese mostrato nella tab Grafici (indipendente dal periodo della lista Movimenti).
+/// Periodo della tab Grafici (indipendente da quello della lista Movimenti). Parte dal mese di oggi;
+/// si cambia con lo stesso selettore Giorno/Sett./Mese/Anno/Periodo di Movimenti.
 final class ChartsPeriodProvider extends $NotifierProvider<ChartsPeriod, Period> {
-  /// Mese mostrato nella tab Grafici (indipendente dal periodo della lista Movimenti).
+  /// Periodo della tab Grafici (indipendente da quello della lista Movimenti). Parte dal mese di oggi;
+  /// si cambia con lo stesso selettore Giorno/Sett./Mese/Anno/Periodo di Movimenti.
   ChartsPeriodProvider._()
     : super(
         from: null,
@@ -40,9 +43,10 @@ final class ChartsPeriodProvider extends $NotifierProvider<ChartsPeriod, Period>
   }
 }
 
-String _$chartsPeriodHash() => r'dcdf54147901e6140f29e3813de972eca09c3532';
+String _$chartsPeriodHash() => r'2da6e2a3e6f8c4f482559a51e56f45cffacc0cda';
 
-/// Mese mostrato nella tab Grafici (indipendente dal periodo della lista Movimenti).
+/// Periodo della tab Grafici (indipendente da quello della lista Movimenti). Parte dal mese di oggi;
+/// si cambia con lo stesso selettore Giorno/Sett./Mese/Anno/Periodo di Movimenti.
 
 abstract class _$ChartsPeriod extends $Notifier<Period> {
   Period build();

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/clock.dart';
+import '../../../core/dates.dart';
 import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
@@ -13,17 +14,21 @@ import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/tab_header.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/state_message.dart';
+import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/label.dart';
 import '../../../domain/models/statistics.dart';
-import '../../../domain/models/transaction_filters.dart';
+import '../../../domain/services/transaction_list.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../transactions/application/transaction_list_providers.dart';
 import '../../transactions/application/transaction_providers.dart';
-import '../../transactions/presentation/period_labels.dart';
+import '../../transactions/presentation/widgets/custom_period_fields.dart';
+import '../../transactions/presentation/widgets/period_selector.dart';
+import '../application/analytics_filters.dart';
 import '../application/charts_providers.dart';
 import '../application/statistics_providers.dart';
+import 'widgets/analytics_filters_bar.dart';
 
 enum _Grouping { category, label }
 
@@ -39,19 +44,19 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
   var _kind = CategoryKind.expense;
   var _grouping = _Grouping.category;
 
-  /// Apre la lista Movimenti sul periodo del grafico, filtrata sulla voce toccata.
-  /// [id] null è la voce "Senza label".
+  /// Apre la lista Movimenti sul periodo del grafico, con il tipo (Spese/Entrate) e la voce
+  /// toccata come filtri, più i filtri del grafico (portafogli e, per l'altra dimensione,
+  /// categorie o label). [id] null è la voce "Senza label".
   void _openFilteredList(String? id) {
-    final period = ref.read(chartsPeriodProvider);
-    ref.read(selectedPeriodProvider.notifier).set(period);
+    ref.read(selectedPeriodProvider.notifier).set(ref.read(chartsPeriodProvider));
     ref
         .read(activeFiltersProvider.notifier)
         .apply(
-          TransactionFilters(
-            type: _kind == CategoryKind.expense ? TypeFilter.expense : TypeFilter.income,
-            categoryIds: _grouping == _Grouping.category && id != null ? {id} : const {},
-            labelIds: _grouping == _Grouping.label && id != null ? {id} : const {},
-            withoutLabels: _grouping == _Grouping.label && id == null,
+          sliceFilters(
+            ref.read(analyticsFiltersProvider(AnalyticsTab.charts)),
+            kind: _kind,
+            byLabel: _grouping == _Grouping.label,
+            id: id,
           ),
         );
     context.go(AppRoutes.transactions);
@@ -63,7 +68,8 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
     final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
     final period = ref.watch(chartsPeriodProvider);
-    final summary = ref.watch(periodSummaryProvider(period.range)).value;
+    final settings = ref.watch(appSettingsProvider).value ?? const AppSettings();
+    final summary = ref.watch(chartsSummaryProvider(period.range)).value;
     final itemsAsync = _grouping == _Grouping.category
         ? ref.watch(categoryBreakdownProvider(period.range, _kind))
         : ref.watch(labelBreakdownProvider(period.range, _kind));
@@ -94,9 +100,28 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.lg),
           children: [
-            const TabHeader(title: 'Grafici'),
+            const TabHeader(
+              title: 'Grafici',
+              actions: [AnalyticsFiltersButton(tab: AnalyticsTab.charts)],
+            ),
+            const AnalyticsFiltersBar(tab: AnalyticsTab.charts),
             const SizedBox(height: 14),
-            _MonthNavigator(title: periodTitle(period, today), onShift: ref.read(chartsPeriodProvider.notifier).shift),
+            // Stesso selettore di Movimenti; con "Periodo" le date si scelgono qui sotto.
+            PeriodTypeSelector(
+              selected: period.type,
+              onChanged: (type) =>
+                  ref.read(chartsPeriodProvider.notifier).changeType(type, today: today, weekStart: settings.weekStart),
+            ),
+            periodSelectorGap,
+            if (period.type == PeriodType.custom)
+              CustomPeriodFields(
+                period: period,
+                today: today,
+                weekStart: settings.weekStart,
+                onChanged: ref.read(chartsPeriodProvider.notifier).set,
+              )
+            else
+              PeriodNavigator(period: period, today: today, onShift: ref.read(chartsPeriodProvider.notifier).shift),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -201,52 +226,6 @@ class _Card extends StatelessWidget {
   }
 }
 
-/// Mese con le frecce, in una card bianca come nel mockup.
-class _MonthNavigator extends StatelessWidget {
-  const _MonthNavigator({required this.title, required this.onShift});
-
-  final String title;
-  final ValueChanged<int> onShift;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left_rounded),
-            tooltip: 'Mese precedente',
-            onPressed: () => onShift(-1),
-          ),
-          Expanded(
-            child: Semantics(
-              liveRegion: true,
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right_rounded),
-            tooltip: 'Mese successivo',
-            onPressed: () => onShift(1),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Ciambella con il totale al centro.
 class _Donut extends StatelessWidget {
   const _Donut({required this.sections, required this.centerLabel, required this.total});
 

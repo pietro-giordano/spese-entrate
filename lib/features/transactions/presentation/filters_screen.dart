@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/clock.dart';
 import '../../../core/dates.dart';
@@ -17,39 +16,59 @@ import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/transaction_filters.dart';
+import '../../../domain/services/transaction_list.dart';
+import '../../analytics/application/analytics_filters.dart';
 import '../../settings/application/settings_providers.dart';
 import '../../wallets/application/wallet_providers.dart';
+import '../application/filters_scope.dart';
 import '../application/transaction_list_providers.dart';
-import 'widgets/date_picker_sheet.dart';
+import 'widgets/custom_period_fields.dart';
 import 'widgets/period_selector.dart';
 
-/// Filtri della lista movimenti. Le modifiche restano in una bozza finché non si tocca
-/// "Applica filtri"; chiudere con la ✕ le scarta.
+/// Filtri di una tab: Movimenti (tutte le sezioni), Grafici o Confronta (solo portafogli,
+/// categorie e label), secondo [scope]. Ogni tab ha il suo stato. Le modifiche restano in una
+/// bozza finché non si tocca "Applica filtri"; chiudere con la ✕ le scarta.
 class FiltersScreen extends ConsumerStatefulWidget {
-  const FiltersScreen({super.key});
+  const FiltersScreen({super.key, this.scope = FiltersScope.transactions});
+
+  final FiltersScope scope;
 
   @override
   ConsumerState<FiltersScreen> createState() => _FiltersScreenState();
 }
 
 class _FiltersScreenState extends ConsumerState<FiltersScreen> {
-  late TransactionFilters _filters = ref.read(activeFiltersProvider);
+  late TransactionFilters _filters = switch (widget.scope) {
+    FiltersScope.transactions => ref.read(activeFiltersProvider),
+    FiltersScope.charts => ref.read(analyticsFiltersProvider(AnalyticsTab.charts)),
+    FiltersScope.compare => ref.read(analyticsFiltersProvider(AnalyticsTab.compare)),
+  };
   late Period _period = ref.read(selectedPeriodProvider);
+
+  bool get _analytics => widget.scope.isAnalytics;
 
   void _update(TransactionFilters filters) => setState(() => _filters = filters);
 
   Set<String> _toggle(Set<String> set, String id) => set.contains(id) ? ({...set}..remove(id)) : {...set, id};
 
+  /// Il periodo si azzera solo in Movimenti: Grafici e Confronta hanno il loro selettore.
   void _reset(LocalDate today) {
     setState(() {
       _filters = const TransactionFilters();
-      _period = Period.containing(PeriodType.month, today);
+      if (!_analytics) _period = Period.containing(PeriodType.month, today);
     });
   }
 
   void _apply() {
-    ref.read(activeFiltersProvider.notifier).apply(_filters);
-    ref.read(selectedPeriodProvider.notifier).set(_period);
+    switch (widget.scope) {
+      case FiltersScope.transactions:
+        ref.read(activeFiltersProvider.notifier).apply(_filters);
+        ref.read(selectedPeriodProvider.notifier).set(_period);
+      case FiltersScope.charts:
+        ref.read(analyticsFiltersProvider(AnalyticsTab.charts).notifier).apply(analyticsScope(_filters));
+      case FiltersScope.compare:
+        ref.read(analyticsFiltersProvider(AnalyticsTab.compare).notifier).apply(analyticsScope(_filters));
+    }
     context.pop();
   }
 
@@ -124,41 +143,51 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 6, AppSpacing.screen, AppSpacing.xl),
                 children: [
-                  const SectionLabel('Tipo'),
-                  const SizedBox(height: 10),
-                  AppSegmented<TypeFilter>(
-                    segments: const [
-                      AppSegment(value: TypeFilter.all, label: 'Tutti'),
-                      AppSegment(value: TypeFilter.expense, label: 'Spese'),
-                      AppSegment(value: TypeFilter.income, label: 'Entrate'),
-                    ],
-                    selected: _filters.type,
-                    onChanged: (type) => _setType(type, categories),
-                  ),
-                  const SizedBox(height: 22),
-                  const SectionLabel('Periodo'),
-                  const SizedBox(height: 10),
-                  PeriodTypeSelector(
-                    selected: _period.type,
-                    onChanged: (type) => setState(
-                      () => _period = changePeriodType(_period, type, today: today, weekStart: settings.weekStart),
+                  if (_analytics) ...[
+                    Text(
+                      widget.scope == FiltersScope.charts
+                          ? 'Valgono solo per i grafici. Periodo e Spese/Entrate si scelgono nella tab.'
+                          : 'Valgono solo per il confronto. Periodi e grandezza si scelgono nella tab.',
+                      style: textTheme.bodySmall?.copyWith(height: 1.45),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (_period.type == PeriodType.custom)
-                    _CustomPeriodFields(
-                      period: _period,
-                      today: today,
-                      weekStart: settings.weekStart,
-                      onChanged: (period) => setState(() => _period = period),
-                    )
-                  else
-                    PeriodNavigator(
-                      period: _period,
-                      today: today,
-                      onShift: (steps) => setState(() => _period = _period.shift(steps)),
+                    const SizedBox(height: 18),
+                  ] else ...[
+                    const SectionLabel('Tipo'),
+                    const SizedBox(height: 10),
+                    AppSegmented<TypeFilter>(
+                      segments: const [
+                        AppSegment(value: TypeFilter.all, label: 'Tutti'),
+                        AppSegment(value: TypeFilter.expense, label: 'Spese'),
+                        AppSegment(value: TypeFilter.income, label: 'Entrate'),
+                      ],
+                      selected: _filters.type,
+                      onChanged: (type) => _setType(type, categories),
                     ),
-                  const SizedBox(height: 22),
+                    const SizedBox(height: 22),
+                    const SectionLabel('Periodo'),
+                    const SizedBox(height: 10),
+                    PeriodTypeSelector(
+                      selected: _period.type,
+                      onChanged: (type) => setState(
+                        () => _period = changePeriodType(_period, type, today: today, weekStart: settings.weekStart),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (_period.type == PeriodType.custom)
+                      CustomPeriodFields(
+                        period: _period,
+                        today: today,
+                        weekStart: settings.weekStart,
+                        onChanged: (period) => setState(() => _period = period),
+                      )
+                    else
+                      PeriodNavigator(
+                        period: _period,
+                        today: today,
+                        onShift: (steps) => setState(() => _period = _period.shift(steps)),
+                      ),
+                    const SizedBox(height: 22),
+                  ],
                   SectionLabel('Portafogli', trailing: _selectedLabel(_filters.walletIds.length, feminine: false)),
                   const SizedBox(height: AppSpacing.xs),
                   Wrap(
@@ -173,27 +202,29 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  MergeSemantics(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Mostra anche i trasferimenti tra portafogli',
-                            style: textTheme.labelMedium?.copyWith(
-                              color: colors.neutral.onTint,
-                              fontWeight: FontWeight.w600,
+                  if (!_analytics) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    MergeSemantics(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Mostra anche i trasferimenti tra portafogli',
+                              style: textTheme.labelMedium?.copyWith(
+                                color: colors.neutral.onTint,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        AppSwitch(
-                          value: _filters.showTransfers,
-                          onChanged: (value) => _update(_filters.copyWith(showTransfers: value)),
-                        ),
-                      ],
+                          const SizedBox(width: AppSpacing.md),
+                          AppSwitch(
+                            value: _filters.showTransfers,
+                            onChanged: (value) => _update(_filters.copyWith(showTransfers: value)),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 22),
                   SectionLabel('Categorie', trailing: _selectedLabel(_filters.categoryIds.length, feminine: true)),
                   const SizedBox(height: AppSpacing.xs),
@@ -289,133 +320,5 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
     if (count == 0) return null;
     final ending = feminine ? (count == 1 ? 'a' : 'e') : (count == 1 ? 'o' : 'i');
     return '$count selezionat$ending';
-  }
-}
-
-/// Date "Dal"/"Al" e scorciatoie del periodo personalizzato.
-class _CustomPeriodFields extends StatelessWidget {
-  const _CustomPeriodFields({
-    required this.period,
-    required this.today,
-    required this.weekStart,
-    required this.onChanged,
-  });
-
-  final Period period;
-  final LocalDate today;
-  final int weekStart;
-  final ValueChanged<Period> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final presets = {
-      'Ultimi 30 gg': Period.custom(today.addDays(-29), today),
-      'Ultimi 3 mesi': Period.custom(today.addMonths(-3).addDays(1), today),
-      'Da inizio anno': Period.custom(LocalDate(today.year, 1, 1), today),
-    };
-
-    Future<void> pick({required bool start}) async {
-      final picked = await showDatePickerSheet(
-        context,
-        selected: start ? period.start : period.end,
-        today: today,
-        weekStart: weekStart,
-      );
-      if (picked == null) return;
-      // Se le date si incrociano, l'altra si allinea a quella scelta.
-      if (start) {
-        onChanged(Period.custom(picked, picked.isAfter(period.end) ? picked : period.end));
-      } else {
-        onChanged(Period.custom(picked.isBefore(period.start) ? picked : period.start, picked));
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _DateField(label: 'Dal', date: period.start, onTap: () => pick(start: true)),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _DateField(label: 'Al', date: period.end, onTap: () => pick(start: false)),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Wrap(
-          spacing: 6,
-          children: [
-            for (final MapEntry(key: label, value: preset) in presets.entries)
-              AppChip(
-                label: label,
-                shape: AppChipShape.label,
-                selected: preset == period,
-                onTap: () => onChanged(preset),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({required this.label, required this.date, required this.onTap});
-
-  final String label;
-  final LocalDate date;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final textTheme = Theme.of(context).textTheme;
-    final value = DateFormat('dd/MM/yyyy', 'it_IT').format(date.toDateTime());
-    final borderRadius = BorderRadius.circular(AppRadius.field);
-
-    return Semantics(
-      container: true,
-      button: true,
-      label: '$label $value',
-      excludeSemantics: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: textTheme.labelSmall?.copyWith(color: colors.textMuted)),
-          const SizedBox(height: AppSpacing.xs),
-          Material(
-            color: colors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius,
-              side: BorderSide(color: colors.borderStrong),
-            ),
-            child: InkWell(
-              borderRadius: borderRadius,
-              onTap: onTap,
-              child: SizedBox(
-                height: 46,
-                width: double.infinity,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      value,
-                      style: textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

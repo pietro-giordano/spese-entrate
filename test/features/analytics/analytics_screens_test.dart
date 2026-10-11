@@ -118,7 +118,7 @@ void main() {
       expect(find.text('Stipendio'), findsOneWidget);
 
       await tester.tap(find.descendant(of: find.byType(AppSegmented<CategoryKind>), matching: find.text('Spese')));
-      await tester.tap(find.byTooltip('Mese precedente'));
+      await tester.tap(find.byTooltip('Periodo precedente'));
       await tester.pumpAndSettle();
       expect(find.text('Settembre 2026'), findsOneWidget);
       expect(find.text('€ 800,00'), findsOneWidget);

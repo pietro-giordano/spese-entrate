@@ -25,6 +25,9 @@ abstract final class AppRoutes {
   /// Inserimento rapido già compilato con il movimento da confermare [id].
   static String confirm(String id) => Uri(path: '/add', queryParameters: {'confirm': id}).toString();
 
+  /// Filtri di una tab con filtri propri: [scope] è `charts` o `compare` (vedi `FiltersScope`).
+  static String filtersOf(String scope) => Uri(path: filters, queryParameters: {'scope': scope}).toString();
+
   static String transaction(String id) => '/transactions/$id';
 
   /// Modifica movimento che al salvataggio applica "questa e le successive".

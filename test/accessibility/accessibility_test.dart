@@ -140,6 +140,7 @@ void main() {
     'Trasferimento': () => AppRoutes.add('transfer'),
     'Modifica movimento': () => AppRoutes.transaction(txId),
     'Filtri': () => AppRoutes.filters,
+    'Filtri di Grafici': () => AppRoutes.filtersOf('charts'),
     'Portafogli': () => AppRoutes.wallets,
     'Dettaglio portafoglio': () => AppRoutes.wallet(walletId),
     'Nuovo portafoglio': () => AppRoutes.newWallet,
