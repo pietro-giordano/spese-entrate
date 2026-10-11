@@ -5,29 +5,8 @@ import 'package:csv/csv.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/money.dart';
-import '../models/enums.dart';
 import '../models/transaction.dart';
-
-/// Intestazioni delle colonne, nell'ordine della sezione Export.
-const csvHeaders = [
-  'data',
-  'tipo',
-  'importo',
-  'valuta',
-  'portafoglio',
-  'portafoglio destinazione',
-  'categoria',
-  'label',
-  'nota',
-  'id',
-];
-
-String _typeLabel(TransactionType type) => switch (type) {
-  TransactionType.expense => 'spesa',
-  TransactionType.income => 'entrata',
-  TransactionType.transfer => 'trasferimento',
-  TransactionType.adjustment => 'rettifica',
-};
+import 'csv_format.dart';
 
 /// CSV con separatore `;`, BOM UTF-8 (così Excel riconosce gli accenti) e importi con la virgola.
 /// I movimenti sono in ordine cronologico; le label sono separate da `|`.
@@ -45,13 +24,13 @@ String transactionsToCsv(
     for (final tx in sorted)
       [
         dateFormat.format(tx.date.toDateTime()),
-        _typeLabel(tx.type),
+        csvTypeLabel(tx.type),
         formatCentsForSpreadsheet(tx.amountCents),
         tx.currency,
         walletNames[tx.walletId] ?? '',
         tx.toWalletId == null ? '' : (walletNames[tx.toWalletId] ?? ''),
         tx.categoryId == null ? '' : (categoryNames[tx.categoryId] ?? ''),
-        tx.labelIds.map((id) => labelNames[id]).nonNulls.join('|'),
+        tx.labelIds.map((id) => labelNames[id]).nonNulls.join(csvLabelSeparator),
         tx.note ?? '',
         tx.id,
       ],

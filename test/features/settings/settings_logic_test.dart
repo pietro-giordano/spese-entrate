@@ -256,7 +256,7 @@ void main() {
 
       expect(csv.startsWith('﻿'), isTrue, reason: 'BOM per Excel');
       final lines = csv.substring(1).split('\r\n');
-      expect(lines[0], 'data;tipo;importo;valuta;portafoglio;portafoglio destinazione;categoria;label;nota;id');
+      expect(lines[0], 'data;tipo;importo;valuta;portafoglio;portafoglio_destinazione;categoria;label;nota;id');
       expect(
         lines[1],
         '01/10/2026;spesa;1234,56;EUR;Conto corrente;;Spesa alimentare;casa|lavoro;"Spesa; ""grande""";a',

@@ -313,12 +313,30 @@ Ciclo di vita:
   `FlutterSceneDelegate`); in Flutter un velo in `AppLockGate` quando lo stato non è `resumed`.
 - Il velo è indipendente dal blocco con biometria: non cambia né il timer né lo sblocco.
 
-## Export
+## Export e import CSV
 
-- CSV con separatore `;`, UTF-8 con BOM (Excel italiano), importi con virgola decimale.
-- Colonne: data, tipo, importo, valuta, portafoglio, portafoglio destinazione, categoria, label
-  (separate da `|`), nota, id.
-- Rispetta periodo e filtri scelti; condivisione tramite `share_plus`.
+Formato unico per export e import (`domain/services/csv_format.dart`), intestazioni esatte:
+`data;tipo;importo;valuta;portafoglio;portafoglio_destinazione;categoria;label;nota;id`.
+Tipi: spesa | entrata | trasferimento | rettifica. Label separate da `|`.
+
+- **Export**: separatore `;`, UTF-8 con BOM (Excel italiano), date GG/MM/AAAA, importi con virgola
+  decimale (positivi, le rettifiche con segno). Rispetta periodo e filtri scelti; condivisione con
+  `share_plus`. Un file esportato si reimporta identico.
+- **Import** (`csv_import.dart`, logica pura): `planCsvImport` legge il file e restituisce un
+  `ImportPlan` (righe valide, errori e avvisi con numero di riga, portafogli/categorie/label da creare,
+  righe che aggiornano movimenti esistenti) senza scrivere nulla. Regole:
+  - separatore `;` o `,` riconosciuto dalle intestazioni; BOM facoltativo; righe vuote ignorate;
+  - data AAAA-MM-GG o GG/MM/AAAA; tipo senza distinzione di maiuscole; importo `1.234,56` o `1234.56`;
+  - spesa/entrata con importo negativo → positivo con avviso; rettifica con segno; trasferimento
+    negativo o importo zero → errore; valuta vuota = EUR, altre → errore;
+  - portafogli, categorie e label abbinati per nome senza distinzione di maiuscole e spazi; categoria
+    obbligatoria e del tipo giusto per spesa/entrata; destinazione obbligatoria e diversa per i
+    trasferimenti; i dati che non servono al tipo sono ignorati con un avviso;
+  - nomi sconosciuti → da creare (solo dalle righe valide);
+  - `id`: UUID esistente → aggiorna; UUID nuovo → si usa; di un movimento eliminato → errore (lapide);
+    vuoto → UUID v5 (`importedRowId`, namespace fisso `importNamespace`) della riga normalizzata più un
+    contatore per le righe identiche: reimportare lo stesso file aggiorna invece di duplicare.
+- `csvImportTemplate` genera il modello con intestazioni e 3 righe di esempio.
 
 ## Design
 
