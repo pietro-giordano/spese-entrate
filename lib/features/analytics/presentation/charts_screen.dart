@@ -10,6 +10,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_list_row.dart';
+import '../../../core/widgets/tab_header.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/category.dart';
@@ -93,7 +94,7 @@ class _ChartsScreenState extends ConsumerState<ChartsScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.lg),
           children: [
-            Semantics(header: true, child: Text('Grafici', style: textTheme.headlineLarge)),
+            const TabHeader(title: 'Grafici'),
             const SizedBox(height: 14),
             _MonthNavigator(title: periodTitle(period, today), onShift: ref.read(chartsPeriodProvider.notifier).shift),
             const SizedBox(height: 14),

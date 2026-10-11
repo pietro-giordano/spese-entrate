@@ -7,6 +7,7 @@ import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/tab_header.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../core/widgets/state_message.dart';
@@ -65,11 +66,9 @@ class WalletsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.xl),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Semantics(header: true, child: Text('Portafogli', style: textTheme.headlineLarge)),
-                ),
+            TabHeader(
+              title: 'Portafogli',
+              actions: [
                 AppIconButton(
                   icon: Icons.add_rounded,
                   tooltip: 'Nuovo portafoglio',

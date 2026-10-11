@@ -321,7 +321,8 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
 - Chip selezionati: categoria = colore del tipo (spesa/entrata); label e filtri = inversione
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
-  `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori).
+  `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
+  `BottomActionBar`, `TabHeader` (intestazione delle tab).
 - **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
   (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
   `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
@@ -362,6 +363,12 @@ con widget Flutter e i componenti di `core/widgets/`. Non copiare l'HTML e non u
 Il tema scuro si ottiene dai token della sezione Design. I dati nei mockup sono solo esempi.
 In caso di conflitto tra un mockup e questo file, vale questo file.
 
+Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestazione è `TabHeader`
+(`core/widgets/`), con titolo, le azioni della schermata e **sempre ultimo a destra** l'avatar
+"Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
+quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
+Grafici e Confronta nessuna (il pulsante Filtri dei mockup arriverà in un passo dedicato).
+
 Riepilogo delle schermate:
 
 - **Movimenti**: header con avatar (impostazioni), cerca e filtri; selettore
@@ -376,15 +383,15 @@ Riepilogo delle schermate:
   elimina + salva in basso (salva disattivo senza modifiche).
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
   "almeno una/tutte", interruttore trasferimenti; Azzera e Applica.
-- **Portafogli**: patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
+- **Portafogli**: intestazione con "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
   con saldo, ultimo aggiornamento e badge.
 - **Dettaglio portafoglio**: tipo, saldo, ultimo aggiornamento, "Aggiorna saldo" (pannello con
   nuovo saldo, data, differenza, scelta rettifica/movimento), andamento 6 mesi, movimenti.
 - **Nuovo/Modifica portafoglio**: nome, tipo (griglia 3×2), saldo iniziale e data, interruttori
   predefinito spese, predefinito entrate, includi nel patrimonio.
-- **Grafici**: periodo, Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
+- **Grafici**: intestazione con avatar; periodo, Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
   con importo, percentuale e barra.
-- **Confronta**: preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
+- **Confronta**: intestazione con avatar; preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e

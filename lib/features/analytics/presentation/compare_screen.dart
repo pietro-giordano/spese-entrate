@@ -7,6 +7,7 @@ import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
+import '../../../core/widgets/tab_header.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/state_message.dart';
@@ -132,7 +133,7 @@ class CompareScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xl, AppSpacing.screen, AppSpacing.lg),
           children: [
-            Semantics(header: true, child: Text('Confronta', style: textTheme.headlineLarge)),
+            const TabHeader(title: 'Confronta'),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,

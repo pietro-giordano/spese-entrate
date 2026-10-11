@@ -9,6 +9,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/tab_header.dart';
 import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
@@ -35,7 +36,6 @@ class TransactionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
     final period = ref.watch(selectedPeriodProvider);
     final filters = ref.watch(activeFiltersProvider);
@@ -71,25 +71,15 @@ class TransactionsScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Semantics(header: true, child: Text('Movimenti', style: textTheme.headlineLarge)),
-                      ),
+                  TabHeader(
+                    title: 'Movimenti',
+                    actions: [
                       const AppIconButton(icon: Icons.search_rounded, tooltip: 'Cerca', onPressed: null),
-                      const SizedBox(width: AppSpacing.sm),
                       AppIconButton(
                         icon: Icons.tune_rounded,
                         tooltip: filters.isActive ? 'Filtri, ${filters.activeCount} attivi' : 'Filtri',
                         badgeCount: filters.activeCount,
                         onPressed: () => context.push(AppRoutes.filters),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      AppIconButton(
-                        icon: Icons.person_outline_rounded,
-                        tooltip: 'Profilo e impostazioni',
-                        round: true,
-                        onPressed: () => context.push(AppRoutes.settings),
                       ),
                     ],
                   ),
