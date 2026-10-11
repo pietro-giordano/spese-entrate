@@ -63,8 +63,7 @@ void main() {
         csvExporterProvider.overrideWithValue(CsvExporter(sharer: sharer, directory: () async => exportDir)),
         // Metadati finti dell'app installata: la versione non è scritta nel codice.
         packageInfoProvider.overrideWith(
-          (ref) async =>
-              PackageInfo(appName: 'Spese & Entrate', packageName: 'test', version: '2.3.4', buildNumber: '56'),
+          (ref) async => PackageInfo(appName: 'Finanze', packageName: 'test', version: '2.3.4', buildNumber: '56'),
         ),
       ],
     );
@@ -355,7 +354,7 @@ void main() {
   testWidgets('blocco attivo: all\'apertura serve la biometria', (tester) async {
     await pumpAt(tester, AppRoutes.transactions, lockEnabled: true);
     // Il primo tentativo automatico riesce con la biometria finta.
-    expect(find.text('Spese & Entrate è bloccata'), findsNothing);
+    expect(find.text('Finanze è bloccata'), findsNothing);
     expect(biometric.calls, 1);
     await finish(tester);
   });
@@ -381,12 +380,12 @@ void main() {
     await tester.pumpWidget(UncontrolledProviderScope(container: scoped, child: const App()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Spese & Entrate è bloccata'), findsOneWidget);
+    expect(find.text('Finanze è bloccata'), findsOneWidget);
     expect(find.text('Sblocco non riuscito. Riprova.'), findsOneWidget);
     failing.succeeds = true;
     await tester.tap(find.text('Sblocca'));
     await tester.pumpAndSettle();
-    expect(find.text('Spese & Entrate è bloccata'), findsNothing);
+    expect(find.text('Finanze è bloccata'), findsNothing);
     await finish(tester);
   });
 }

@@ -1,4 +1,4 @@
-package com.pietro.spese_entrate
+package io.github.pietrogiordano.finanze
 
 import android.os.Build
 import android.os.Bundle
