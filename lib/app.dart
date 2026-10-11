@@ -1,64 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class App extends StatelessWidget {
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'domain/models/local_preferences.dart';
+import 'features/settings/application/settings_providers.dart';
+import 'features/settings/presentation/app_lock_gate.dart';
+
+class App extends ConsumerWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
       title: 'Spese & Entrate',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'Manrope'),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: switch (ref.watch(localPreferencesProvider).value?.themeMode) {
+        AppThemeMode.light => ThemeMode.light,
+        AppThemeMode.dark => ThemeMode.dark,
+        _ => ThemeMode.system,
+      },
       locale: const Locale('it', 'IT'),
       supportedLocales: const [Locale('it', 'IT')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: const FontPreviewScreen(),
-    );
-  }
-}
-
-/// Schermata di prova temporanea: verifica font Manrope e formati italiani.
-class FontPreviewScreen extends StatelessWidget {
-  const FontPreviewScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final currency = NumberFormat.currency(locale: 'it_IT', symbol: '€');
-    final today = DateFormat.yMMMMEEEEd().format(DateTime.now());
-
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text('Spese & Entrate', style: textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(today, style: textTheme.bodyLarge),
-            const SizedBox(height: 24),
-            for (final weight in [FontWeight.w400, FontWeight.w500, FontWeight.w600, FontWeight.w700, FontWeight.w800])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Manrope ${weight.value} — Portafogli e movimenti',
-                  style: textTheme.titleMedium?.copyWith(fontWeight: weight),
-                ),
-              ),
-            const SizedBox(height: 24),
-            for (final amount in [1234.56, 89.9, 11111.11])
-              Text(
-                currency.format(amount),
-                textAlign: TextAlign.right,
-                style: textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-          ],
-        ),
-      ),
+      routerConfig: ref.watch(appRouterProvider),
+      // Sopra tutte le schermate: la schermata di sblocco quando l'app è bloccata.
+      builder: (context, child) => AppLockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

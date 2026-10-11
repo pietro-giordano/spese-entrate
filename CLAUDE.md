@@ -35,8 +35,8 @@ Alla fine di ogni passo, sempre, in quest'ordine:
 - Modelli: `freezed`, `freezed_annotation`, `json_annotation`, `json_serializable` (dev).
 - ID e hash: `uuid`, `crypto`.
 - Grafici: `fl_chart`.
-- File e media: `image_picker`, `file_picker`, `path_provider`, `path`.
-- Sistema: `local_auth`, `share_plus`.
+- File e media: `image_picker`, `file_picker`, `path_provider`, `path`, `open_filex` (PDF con un'app esterna).
+- Sistema: `local_auth`, `share_plus`, `package_info_plus` (versione e build nelle Impostazioni).
 - Formati: `intl`, `flutter_localizations` (sdk), `csv`, `collection`.
 - Lint: `flutter_lints`.
 - Solo al passo 16: `flutter_launcher_icons`, `flutter_native_splash` (dev).
@@ -95,6 +95,13 @@ La logica di dominio sta in `domain/services/` come funzioni pure, testabili sen
 - **Duplica** crea sempre un nuovo ID. Un futuro **ripristino** aggiorna i record esistenti per ID,
   non li ricrea.
 - `device_id` generato al primo avvio e salvato in `app_meta`.
+- **Lapidi definitive**: un record cancellato (`deleted_at`) non torna mai attivo con un salvataggio
+  o un collegamento (es. `save` di una label cancellata → `DeletedLabelException`; i movimenti
+  non si ricollegano a label cancellate; non si unisce verso/da record cancellati). Per riusare
+  un nome si crea un record nuovo con un nuovo ID.
+- **Operazioni composte** (unisci, elimina con collegamenti, aggiorna saldo): una sola transazione
+  Drift nel repository, outbox compreso. Se servono più repository si usa `AtomicWrites`.
+  I test di rollback simulano l'errore con un trigger SQLite `RAISE(ABORT)`.
 
 ## Schema
 
@@ -103,7 +110,8 @@ Colonne in snake_case. "Comuni" = `id TEXT PK, created_at INT, updated_at INT, d
 **wallets** — comuni +
 `name TEXT`, `type TEXT` (cash | checking | card | savings | investment | other),
 `currency TEXT DEFAULT 'EUR'`, `initial_balance_cents INT`, `initial_balance_date TEXT`,
-`include_in_total BOOL DEFAULT true`, `sort_order INT`, `archived_at INT NULL`.
+`include_in_total BOOL DEFAULT true`, `sort_order INT`, `archived_at INT NULL`,
+`last_balance_verified_date TEXT NULL` (data dell'ultima verifica con "Aggiorna saldo", dalla versione 2 dello schema).
 
 **categories** — comuni +
 `name TEXT`, `kind TEXT` (expense | income), `color INT`, `sort_order INT`, `archived_at INT NULL`.
@@ -118,7 +126,8 @@ Nome unico tra le label non cancellate (controllo nel repository).
 `currency TEXT`, `date TEXT`, `wallet_id TEXT` (origine per i trasferimenti),
 `to_wallet_id TEXT NULL` (solo transfer), `category_id TEXT NULL` (obbligatoria per expense/income),
 `note TEXT NULL`, `recurrence_id TEXT NULL`, `occurrence_date TEXT NULL`.
-Indici: `date`, `wallet_id`, `category_id`. Vincolo unico: `(recurrence_id, occurrence_date)`.
+`import_batch_id TEXT NULL` (import da cui viene il movimento, dalla v3).
+Indici: `date`, `wallet_id`, `category_id`, `import_batch_id`. Vincolo unico: `(recurrence_id, occurrence_date)`.
 
 **transaction_labels** — comuni + `transaction_id TEXT`, `label_id TEXT`.
 Vincolo unico: `(transaction_id, label_id)`.
@@ -138,6 +147,10 @@ Vincolo unico: `(transaction_id, label_id)`.
 **recurrence_exceptions** — comuni + `rule_id TEXT`, `occurrence_date TEXT`, `kind TEXT` (skip).
 Vincolo unico: `(rule_id, occurrence_date)`.
 
+**imports** (dalla v3) — comuni +
+`file_name TEXT`, `row_count INT`, `inserted_count INT`, `updated_count INT` (conteggi ≥ 0),
+`undone_at INT NULL` (quando l'import è stato annullato).
+
 **settings** (sincronizzabile) — comuni + `key TEXT UNIQUE`, `value TEXT`.
 Chiavi: `default_expense_wallet_id`, `default_income_wallet_id`, `week_start` (1 = lunedì),
 `default_period` (month), `currency` (EUR).
@@ -148,6 +161,31 @@ Chiavi: `device_id`, `theme_mode` (system | light | dark), `biometric_lock` (boo
 
 **outbox** (solo locale) — `id INT PK AUTOINCREMENT`, `entity TEXT`, `entity_id TEXT`,
 `op TEXT` (upsert | delete), `changed_at INT`.
+
+## Migrazioni dello schema
+
+Versione attuale: **3**. Storico: v1 schema iniziale; v2 `wallets.last_balance_verified_date`;
+v3 tabella `imports` e `transactions.import_batch_id` (con indice).
+
+Ogni modifica dello schema (tabelle, colonne, indici, vincoli) segue sempre questi passi:
+
+1. Modifica le tabelle in `lib/data/db/tables.dart` (e l'elenco in `@DriftDatabase` se la tabella
+   è nuova). Le colonne nuove su tabelle esistenti sono `nullable` o hanno un default.
+2. Incrementa `schemaVersion` in `AppDatabase`.
+3. `dart run build_runner build --delete-conflicting-outputs`.
+4. `dart run drift_dev make-migrations`: salva `drift_schemas/app_database/drift_schema_vN.json`,
+   rigenera `lib/data/db/app_database.steps.dart` e `test/drift/app_database/generated/` (schema_vN).
+5. In `migration` aggiungi il passo `fromXToY` a `stepByStep` (`createTable`, `addColumn`,
+   `createIndex`, …; le trasformazioni di dati con `customStatement` nello stesso passo).
+6. Di nuovo `build_runner`, poi `dart format lib test`.
+7. In `test/drift/app_database/migration_test.dart` aggiungi un test con dati (`testWithDataIntegrity`)
+   dalla versione precedente alla nuova: righe esistenti identiche, colonne nuove al valore atteso.
+   I test "simple" verificano già lo schema per ogni coppia di versioni.
+8. `flutter test test/drift` e tutti gli altri test; aggiorna la sezione Schema e lo storico qui sopra.
+
+Regole: gli schemi salvati in `drift_schemas/` e i passi già rilasciati non si modificano mai (si
+aggiunge sempre una versione nuova); `drift_schemas/` e i file generati dei test si committano;
+rinominare un valore di un enum salvato come testo richiede una migrazione dei dati.
 
 ## Dati iniziali
 
@@ -169,14 +207,25 @@ Al primo avvio, se il database è vuoto:
 - **Statistiche** (riepiloghi, grafici, confronti): solo `expense` e `income` con `status = confirmed`.
   Trasferimenti e rettifiche **non contano mai** come spese o entrate.
 - **Patrimonio totale**: somma dei saldi dei portafogli con `include_in_total` e non archiviati.
-- **Ultimo aggiornamento** di un portafoglio = data dell'ultima rettifica, altrimenti
-  `initial_balance_date`. Badge "Da aggiornare" se è più vecchia di 30 giorni.
+- **Ultimo aggiornamento** di un portafoglio = la data più recente tra `initial_balance_date`,
+  `last_balance_verified_date` e l'ultima rettifica. Badge "Da aggiornare" se è più vecchia di 30 giorni.
 - **Aggiorna saldo**: l'utente inserisce il nuovo saldo e la data; la differenza si registra come
   `adjustment` (default, consigliato per investimenti) oppure come `expense`/`income` con categoria.
+  Con differenza zero non si crea nessun movimento. In ogni caso si aggiorna
+  `last_balance_verified_date` (mai all'indietro), nella stessa transazione del movimento.
 - **Predefiniti**: un solo portafoglio predefinito per le spese e uno per le entrate.
 - **Grafico per label**: un movimento con più label conta in ciascuna; le percentuali sono sulla
   somma delle label. I movimenti senza label finiscono in "Senza label".
 - **Filtro label**: modalità "almeno una" (default) o "tutte".
+- **Filtri di Grafici e Confronta**: ogni tab ha il proprio stato (`activeFiltersProvider` per Movimenti,
+  `analyticsFiltersProvider(AnalyticsTab.charts|compare)` per le altre due), indipendente dagli altri.
+  In Grafici e Confronta contano solo portafogli, categorie e label (almeno una/tutte): tipo e
+  trasferimenti si ignorano (`analyticsScope`). I filtri si applicano prima di ogni calcolo
+  (`filterForAnalytics`): torte, totale al centro, barre, linee cumulate e tabella delle variazioni.
+- **Tap su una fetta** (Grafici): apre Movimenti con il periodo del grafico, il tipo (Spese/Entrate),
+  la voce toccata e i filtri del grafico (`sliceFilters`): la voce sostituisce i filtri della sua
+  dimensione (una categoria toccata sostituisce le categorie, una label le label, in modalità
+  "almeno una"). La lista mostra così gli stessi movimenti della fetta.
 
 ## Ricorrenze
 
@@ -192,8 +241,40 @@ Al primo avvio, se il database è vuoto:
 - Il calcolo delle occorrenze è una **funzione pura** in `domain/services/` con test dedicati.
 - Creare una ricorrenza da "Ripeti" salva la regola e il movimento corrente come prima occorrenza
   (`recurrence_id` + `occurrence_date` = data scelta).
-- Modifica "solo questa": si modifica il movimento. "Questa e le successive": la regola esistente
-  termina il giorno prima e se ne crea una nuova dalla data dell'occorrenza.
+- Modifica "solo questa": si modifica il movimento (`occurrence_date` resta quella originale).
+  "Questa e le successive": la regola esistente termina il giorno prima della data **originale**
+  dell'occorrenza (o della nuova data, se è precedente) e se ne crea una nuova dalla data scelta nel form,
+  con giorno fisso ricavato da quella data e `max_count` ridotto delle occorrenze già passate.
+  La nuova data deve venire dopo l'occorrenza precedente (`SplitDateException`), così le regole
+  non si sovrappongono. Tutto in una transazione con il salvataggio del movimento (`AtomicWrites`).
+- **Storico intoccabile**: dividere una regola non modifica i movimenti successivi già confermati
+  (né quelli eliminati o le date saltate). La n-esima occorrenza dopo il confine corrisponde
+  alla n-esima della regola nuova, che viene saltata; i soli `pending` successivi si cancellano
+  e si rigenerano con i valori nuovi.
+- **Arretrati**: se una regola nuova parte nel passato, l'inserimento rapido chiede se registrare
+  le occorrenze passate; se no, diventano eccezioni `skip`. Ogni movimento generato ha la data
+  dell'occorrenza, mai quella del giorno in cui gira il generatore.
+- **Pausa**: `paused_at` ferma il generatore e nasconde i `pending` da "In arrivo". Alla ripresa
+  tutte le occorrenze dal giorno della pausa a ieri diventano eccezioni `skip`, comprese quelle già
+  generate come `pending` prima della pausa (che si cancellano); i confermati restano. Quelle dal
+  giorno della ripresa in poi restano valide. Vale anche dopo un riavvio.
+- **Salta**: eccezione `skip` + cancellazione logica del `pending` di quella data.
+  **Elimina regola**: regola e `pending` cancellati, i confermati restano.
+- Un'occorrenza futura non è mai `confirmed` prima della sua data: sia la prima occorrenza di una
+  regola nuova con data futura, sia un'occorrenza modificata prima del tempo (creata con l'ID
+  deterministico) restano `pending`, fuori da saldi e statistiche. Per le regole `auto` il generatore
+  le conferma quando arriva la data; per quelle `confirm` serve l'utente. (I movimenti non ricorrenti
+  con data futura, per ora, restano confermati.)
+- **Conferma manuale** solo per i `pending` delle regole `confirm` (`canConfirmManually`). Le occorrenze
+  automatiche future compaiono in "In arrivo" come "Automatica · <data>", senza pulsante; la rotta di
+  conferma e il form le rifiutano (`AutomaticOccurrenceException`). Le conferma solo il generatore.
+- Nel dettaglio, le occorrenze il cui movimento è stato eliminato appaiono come "Eliminata"
+  (barrate, senza azioni) e non si rigenerano.
+- Nome della regola: la nota, altrimenti la categoria, altrimenti "Trasferimento".
+- **Totali fissi** (Movimenti ricorrenti): l'effettivo del mese (importi registrati o della regola,
+  senza saltate e pause) e, se ci sono regole non mensili, la "Media mensile prevista"
+  (settimanali × 52 / 12, giornaliere × 365 / 12, annuali / 12, sempre diviso l'intervallo).
+- "In arrivo" mostra solo i `pending` fino a oggi + 7 (compresi gli scaduti), non le prossime automatiche.
 
 ## Allegati
 
@@ -201,15 +282,76 @@ Al primo avvio, se il database è vuoto:
 - Foto: `imageQuality: 75`, `maxWidth/maxHeight: 2048`. PDF via `file_picker`.
 - Massimo 5 allegati per movimento. Calcola `sha256` e `size_bytes` al salvataggio.
 - La cancellazione logica del movimento non elimina i file (servono per l'annullamento).
+
+Ciclo di vita:
+
+- **Salvataggio**: i file si copiano prima della transazione; se la copia o la scrittura nel
+  database fallisce, le copie (anche quelle a metà) si eliminano subito. Nessun file orfano.
+- **Rimozione** di un allegato (Modifica movimento): sparisce dal form, al salvataggio il record
+  si cancella logicamente con `delete` nell'outbox. Il file resta su disco.
+- **Eliminazione del movimento**: solo il movimento è cancellato logicamente; allegati e file
+  restano invariati, e "Annulla" li rende di nuovo disponibili.
+- **Nessuna cancellazione fisica automatica** dei file di record cancellati logicamente finché non
+  esiste la sincronizzazione (serviranno per annullare e per sincronizzare).
+- **Orfani** = file senza alcun record in `attachments`, nemmeno cancellato. `OrphanAttachmentCleaner`
+  li trova (solo se più vecchi di un giorno, per non toccare salvataggi in corso) ma l'app non
+  lo chiama mai da sola per ora.
+- **Apertura**: prima si controlla il file (esiste, dimensione e SHA-256): mancante o danneggiato →
+  messaggio. Immagini nel visualizzatore a schermo intero (scorrimento, pinch-to-zoom, doppio tocco
+  per tornare normale); PDF con un'app esterna (`open_filex`: su Android URI del FileProvider con
+  permesso di lettura temporaneo, su iOS Quick Look) oppure "Condividi" (`share_plus`).
+- Android: i permessi `READ_EXTERNAL_STORAGE` / `READ_MEDIA_*` dichiarati da `open_filex` sono rimossi
+  dal manifest (`tools:node="remove"`): i file sono nella cartella privata e non servono.
 - Info.plist: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSFaceIDUsageDescription`
   con testi in italiano.
 
-## Export
+## Privacy
 
-- CSV con separatore `;`, UTF-8 con BOM (Excel italiano), importi con virgola decimale.
-- Colonne: data, tipo, importo, valuta, portafoglio, portafoglio destinazione, categoria, label
-  (separate da `|`), nota, id.
-- Rispetta periodo e filtri scelti; condivisione tramite `share_plus`.
+- Nel selettore delle app non si vedono importi: Android 13+ `setRecentsScreenshotEnabled(false)`,
+  prima di Android 13 `FLAG_SECURE` (blocca anche gli screenshot); iOS vista di copertura nativa
+  su `UIScene.willDeactivateNotification` in `AppDelegate` (non si sovrascrivono i metodi di
+  `FlutterSceneDelegate`); in Flutter un velo in `AppLockGate` quando lo stato non è `resumed`.
+- Il velo è indipendente dal blocco con biometria: non cambia né il timer né lo sblocco.
+
+## Export e import CSV
+
+Formato unico per export e import (`domain/services/csv_format.dart`), intestazioni esatte:
+`data;tipo;importo;valuta;portafoglio;portafoglio_destinazione;categoria;label;nota;id`.
+Tipi: spesa | entrata | trasferimento | rettifica. Label separate da `|`.
+
+- **Export**: separatore `;`, UTF-8 con BOM (Excel italiano), date GG/MM/AAAA, importi con virgola
+  decimale (positivi, le rettifiche con segno). Rispetta periodo e filtri scelti; condivisione con
+  `share_plus`. Un file esportato si reimporta identico.
+- **Import** (`csv_import.dart`, logica pura): `planCsvImport` legge il file e restituisce un
+  `ImportPlan` (righe valide, errori e avvisi con numero di riga, portafogli/categorie/label da creare,
+  righe che aggiornano movimenti esistenti) senza scrivere nulla. Regole:
+  - separatore `;` o `,` riconosciuto dalle intestazioni; BOM facoltativo; righe vuote ignorate;
+  - data AAAA-MM-GG o GG/MM/AAAA; tipo senza distinzione di maiuscole; importo `1.234,56` o `1234.56`;
+  - spesa/entrata con importo negativo → positivo con avviso; rettifica con segno; trasferimento
+    negativo o importo zero → errore; valuta vuota = EUR, altre → errore;
+  - portafogli, categorie e label abbinati per nome senza distinzione di maiuscole e spazi; categoria
+    obbligatoria e del tipo giusto per spesa/entrata; destinazione obbligatoria e diversa per i
+    trasferimenti; i dati che non servono al tipo sono ignorati con un avviso;
+  - nomi sconosciuti → da creare (solo dalle righe valide);
+  - `id`: UUID esistente → aggiorna; UUID nuovo → si usa; di un movimento eliminato → errore (lapide);
+    vuoto → UUID v5 (`importedRowId`, namespace fisso `importNamespace`) della riga normalizzata più un
+    contatore per le righe identiche: reimportare lo stesso file aggiorna invece di duplicare.
+  - `id` calcolato (riga senza id) di un movimento eliminato, es. dopo un annullamento: si passa
+    in modo deterministico a una "generazione" successiva dell'id, così la lapide resta e il file si
+    può reimportare (un `id` scritto nel file e cancellato resta invece un errore).
+- `csvImportTemplate` genera il modello con intestazioni e 3 righe di esempio.
+- **Esecuzione** (`buildImportOperations`, pura, poi `ImportRepository.execute`): un'unica transazione,
+  movimenti salvati a blocchi con l'avanzamento; o tutto o niente. Le righe con errori sono saltate,
+  mai importate a metà. Portafogli e categorie sconosciuti: "Crea nuovo" (portafoglio di tipo Altro,
+  saldo 0 a oggi) o "Abbina a…" uno esistente (categorie dello stesso tipo); label sconosciute create.
+  Opzioni: portafoglio per le righe con la colonna vuota, label aggiuntiva su spese ed entrate.
+  I movimenti nuovi hanno `import_batch_id`; quelli aggiornati tengono stato, ricorrenza e il loro
+  `import_batch_id`. Una riga che con gli abbinamenti diventa un trasferimento sullo stesso
+  portafoglio è scartata.
+- **Annulla importazione** (Storico importazioni): cancella logicamente solo i movimenti con quel
+  `import_batch_id` e imposta `undone_at`. I movimenti aggiornati non si ripristinano e l'anteprima e
+  lo storico lo dicono prima di confermare. Portafogli, categorie e label creati restano. "Duplica"
+  di un movimento importato non copia `import_batch_id`.
 
 ## Design
 
@@ -229,12 +371,21 @@ Formati: locale `it_IT`, importi `€ 1.234,56`, settimana da lunedì.
 | textMuted | #5B5F66 | #A3A8B0 |
 | expense (sfondo pieno) | #C2410C | #C2410C |
 | expense (testo) | #C2410C | #F28C55 |
+| expense (tinta / testo su tinta) | #FCE9DF / #9A3412 | #3A2219 / #F28C55 |
 | income (sfondo pieno) | #1D4ED8 | #1D4ED8 |
 | income (testo) | #1D4ED8 | #7DA0F7 |
+| income (tinta / testo su tinta) | #DCE5FB / #1E3A8A | #1E2A4D / #7DA0F7 |
+| neutral (trasferimenti, azioni neutre) | pieno #16181D, tinta #F1F1EE / #3D4148 | pieno #EDEEF0, tinta #23272D / #A3A8B0 |
 | danger (testo) | #B4410C | #F28C55 |
+| switchTrackOff (interruttore spento) | #C9CBC4 | #4A4F58 |
+| switchThumb (pallino interruttore) | #FFFFFF + ombra | #FFFFFF + ombra |
+| scrim (velo dietro i pannelli) | #111316 al 45% | #000000 al 60% |
+| chartSeries (periodi di Confronta, in ordine) | #1D4ED8, #F08A4B, #0F5F58 | #7DA0F7, #F08A4B, #4FB3A8 |
 | gruppo Liquidità | #1D4ED8 / tinta #DCE5FB | tinta #1E2A4D |
 | gruppo Risparmi | #0F5F58 / tinta #D5ECE9 | #4FB3A8 / tinta #163A36 |
 | gruppo Investimenti | #7C3AED / tinta #EAE2FB | #A78BFA / tinta #2E2448 |
+
+I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano colori scritti a mano.
 
 - Raggi: card 18–20, campi e pulsanti 12–16, chip 8 (label) o pillola (categorie).
 - Spaziatura base 4; margini laterali schermata 20.
@@ -242,7 +393,27 @@ Formati: locale `it_IT`, importi `€ 1.234,56`, settimana da lunedì.
 - Chip selezionati: categoria = colore del tipo (spesa/entrata); label e filtri = inversione
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
-  `AppBottomSheet`, `AmountText`, `SectionLabel`.
+  `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
+  `BottomActionBar`, `TabHeader` (intestazione delle tab).
+- **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
+  (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
+  `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
+  tastiera copre la barra). Mai `SafeArea(minimum:)`, che prende il massimo e lascia il pulsante
+  attaccato alla barra. I pannelli passano da `AppBottomSheet` (navigator principale, `useSafeArea`,
+  stesso spazio in basso, contenuto che scorre col campo attivo visibile). Le liste fuori dalle tab
+  con `SafeArea(bottom: false)` aggiungono `bottomSystemInset` al padding finale.
+  Verificato da `test/core/bottom_insets_test.dart`.
+- **Errori**: un errore di caricamento non si mostra mai come uno stato vuoto. Le schermate principali
+  usano `StateMessage.error` ("Non è stato possibile caricare …" + "Riprova"); i dettagli distinguono
+  "non esiste più" da "non è stato possibile caricare".
+- **Accessibilità** (verificata da `test/accessibility/`): ogni controllo toccabile ha un'etichetta
+  (`tooltip`, `semanticLabel` o `Semantics`); target ≥ 44×44 anche quando c'è un bordo; niente altezze
+  fisse dove c'è testo (si usa un'altezza minima), così il testo al 130% non va in overflow.
+- **Contrasti** (verificati da `test/core/theme/contrast_test.dart`): testo ≥ 4.5:1 in entrambi i temi.
+  Eccezione nota: la serie arancio dei grafici nel tema chiaro (#F08A4B) è 2,5:1 su bianco; i valori
+  sono comunque scritti in legenda e tabella.
+- **Icona e splash**: sorgenti in `assets/icon/` e `assets/splash/`, generate da `tool/generate_icon.py`;
+  configurazione in `flutter_launcher_icons.yaml` e `flutter_native_splash.yaml`.
 
 ## Navigazione
 
@@ -252,7 +423,7 @@ Tab (StatefulShellRoute): **Movimenti** `/`, **Portafogli** `/wallets`, **Grafic
 Altre rotte: `/add?type=expense|income|transfer` (modale a schermo intero),
 `/transactions/:id`, `/filters`, `/wallets/new`, `/wallets/:id`, `/wallets/:id/edit`,
 `/settings`, `/settings/categories`, `/settings/recurring`, `/settings/recurring/:id`,
-`/settings/backup`.
+`/settings/backup`, `/settings/import` (Importa da CSV), `/settings/imports` (Storico importazioni).
 
 ## Schermate
 
@@ -263,6 +434,17 @@ riproducine layout, gerarchia, spaziature, testi e stati (pannelli, dialog, stat
 con widget Flutter e i componenti di `core/widgets/`. Non copiare l'HTML e non usare WebView.
 Il tema scuro si ottiene dai token della sezione Design. I dati nei mockup sono solo esempi.
 In caso di conflitto tra un mockup e questo file, vale questo file.
+
+Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestazione è `TabHeader`
+(`core/widgets/`), con titolo, le azioni della schermata e **sempre ultimo a destra** l'avatar
+"Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
+quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
+Grafici e Confronta il pulsante Filtri con il numero di filtri attivi sull'icona. Sotto l'intestazione
+di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera".
+
+La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?scope=charts|compare`,
+`FiltersScope`): da Movimenti mostra tutte le sezioni; da Grafici e Confronta nasconde Tipo, Periodo e
+"Mostra trasferimenti" e lascia Portafogli, Categorie e Label con almeno una/tutte.
 
 Riepilogo delle schermate:
 
@@ -278,19 +460,20 @@ Riepilogo delle schermate:
   elimina + salva in basso (salva disattivo senza modifiche).
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
   "almeno una/tutte", interruttore trasferimenti; Azzera e Applica.
-- **Portafogli**: patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
+- **Portafogli**: intestazione con "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
   con saldo, ultimo aggiornamento e badge.
 - **Dettaglio portafoglio**: tipo, saldo, ultimo aggiornamento, "Aggiorna saldo" (pannello con
   nuovo saldo, data, differenza, scelta rettifica/movimento), andamento 6 mesi, movimenti.
 - **Nuovo/Modifica portafoglio**: nome, tipo (griglia 3×2), saldo iniziale e data, interruttori
   predefinito spese, predefinito entrate, includi nel patrimonio.
-- **Grafici**: periodo, Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
+- **Grafici**: intestazione con Filtri e avatar, chip dei filtri attivi; selettore
+  Giorno/Sett./Mese/Anno/Periodo come Movimenti (con "Periodo" le date Dal/Al compaiono sotto); Spese/Entrate, Categoria/Label, ciambella con totale al centro, legenda
   con importo, percentuale e barra.
-- **Confronta**: preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
+- **Confronta**: intestazione con Filtri e avatar, chip dei filtri attivi; preset, periodi (max 3, con colore), Spese/Entrate/Saldo, Barre/Linee,
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e
-  sicurezza (biometria); Dati (backup ed esportazione); Esci / Elimina dati; versione.
+  sicurezza (biometria); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza**: totali fissi mensili, Attive/In pausa,

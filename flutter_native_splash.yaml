@@ -1,0 +1,15 @@
+# Splash all'avvio: dart run flutter_native_splash:create
+# Colori = token background del tema chiaro e scuro (CLAUDE.md).
+flutter_native_splash:
+  color: "#F7F7F5"
+  color_dark: "#111316"
+  image: assets/splash/splash.png
+  image_dark: assets/splash/splash.png
+  android_12:
+    image: assets/splash/splash_android12.png
+    image_dark: assets/splash/splash_android12.png
+    color: "#F7F7F5"
+    color_dark: "#111316"
+  android: true
+  ios: true
+  web: false
