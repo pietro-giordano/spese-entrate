@@ -124,7 +124,7 @@ class _LockScreenState extends ConsumerState<_LockScreen> {
             children: [
               Icon(Icons.lock_outline_rounded, size: 48, color: colors.text),
               const SizedBox(height: AppSpacing.lg),
-              Text('Spese & Entrate è bloccata', textAlign: TextAlign.center, style: textTheme.titleLarge),
+              Text('Finanze è bloccata', textAlign: TextAlign.center, style: textTheme.titleLarge),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 _failed ? 'Sblocco non riuscito. Riprova.' : 'Usa Face ID, l\'impronta o il codice del telefono.',

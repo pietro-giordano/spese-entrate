@@ -63,8 +63,7 @@ void main() {
         csvExporterProvider.overrideWithValue(CsvExporter(sharer: sharer, directory: () async => exportDir)),
         // Metadati finti dell'app installata: la versione non è scritta nel codice.
         packageInfoProvider.overrideWith(
-          (ref) async =>
-              PackageInfo(appName: 'Spese & Entrate', packageName: 'test', version: '2.3.4', buildNumber: '56'),
+          (ref) async => PackageInfo(appName: 'Finanze', packageName: 'test', version: '2.3.4', buildNumber: '56'),
         ),
       ],
     );
@@ -212,6 +211,25 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('nome già usato nello stesso tipo: errore; nell\'altro tipo è ammesso', (tester) async {
+      await pumpAt(tester, AppRoutes.categories);
+      await tester.scrollUntilVisible(find.text('+ Nuova categoria'), 200, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('+ Nuova categoria'));
+      await tester.pumpAndSettle();
+      // "Casa" esiste già tra le spese (anche scritto diversamente).
+      await tester.enterText(find.byType(TextField), ' casa ');
+      await tester.tap(find.text('Salva'));
+      await waitFor(tester, () => find.text('Esiste già una categoria di spesa con questo nome').evaluate().isNotEmpty);
+      expect(find.text('Esiste già una categoria di spesa con questo nome'), findsOneWidget);
+
+      // "Regali" esiste solo tra le entrate: come spesa si può creare.
+      await tester.enterText(find.byType(TextField), 'Regali');
+      await tester.tap(find.text('Salva'));
+      await waitFor(tester, () => find.text('Nuova categoria').evaluate().isEmpty);
+      expect((await expenses(tester)).last.name, 'Regali');
+      await finish(tester);
+    });
+
     testWidgets('riordino trascinando: l\'ordine si salva', (tester) async {
       await pumpAt(tester, AppRoutes.categories);
       final before = await expenses(tester);
@@ -355,7 +373,7 @@ void main() {
   testWidgets('blocco attivo: all\'apertura serve la biometria', (tester) async {
     await pumpAt(tester, AppRoutes.transactions, lockEnabled: true);
     // Il primo tentativo automatico riesce con la biometria finta.
-    expect(find.text('Spese & Entrate è bloccata'), findsNothing);
+    expect(find.text('Finanze è bloccata'), findsNothing);
     expect(biometric.calls, 1);
     await finish(tester);
   });
@@ -381,12 +399,12 @@ void main() {
     await tester.pumpWidget(UncontrolledProviderScope(container: scoped, child: const App()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Spese & Entrate è bloccata'), findsOneWidget);
+    expect(find.text('Finanze è bloccata'), findsOneWidget);
     expect(find.text('Sblocco non riuscito. Riprova.'), findsOneWidget);
     failing.succeeds = true;
     await tester.tap(find.text('Sblocca'));
     await tester.pumpAndSettle();
-    expect(find.text('Spese & Entrate è bloccata'), findsNothing);
+    expect(find.text('Finanze è bloccata'), findsNothing);
     await finish(tester);
   });
 }

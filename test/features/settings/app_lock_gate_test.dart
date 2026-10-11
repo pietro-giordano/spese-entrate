@@ -35,7 +35,7 @@ class _FailingBiometricAuth extends BiometricAuth {
 void main() {
   final cover = find.byKey(const Key('privacy-cover'));
   final balance = find.text('€ 1.234,56');
-  final lockScreen = find.text('Spese & Entrate è bloccata');
+  final lockScreen = find.text('Finanze è bloccata');
 
   Future<_RecordingAppLock> pumpGate(WidgetTester tester, {bool locked = false}) async {
     final lock = _RecordingAppLock(locked);

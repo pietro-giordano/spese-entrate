@@ -36,7 +36,7 @@ class AppLock extends _$AppLock {
 
   /// Chiede la biometria; sblocca se riesce.
   Future<bool> unlock() async {
-    final ok = await ref.read(biometricAuthProvider).authenticate('Sblocca Spese & Entrate');
+    final ok = await ref.read(biometricAuthProvider).authenticate('Sblocca Finanze');
     if (ok) state = false;
     return ok;
   }

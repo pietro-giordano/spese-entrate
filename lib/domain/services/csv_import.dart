@@ -156,7 +156,8 @@ class ImportPlan {
 /// Legge [content] (UTF-8, con o senza BOM; separatore `;` o `,` riconosciuto dalle intestazioni)
 /// e prepara il piano di importazione.
 ///
-/// Portafogli, categorie e label si abbinano per nome senza distinzione tra maiuscole e minuscole;
+/// Portafogli, categorie e label si abbinano per nome senza distinzione tra maiuscole e minuscole
+/// (le categorie anche per tipo: spesa → categorie di spesa, entrata → categorie di entrata);
 /// quelli che non esistono finiscono negli elenchi "da creare". [activeIds] sono gli id dei
 /// movimenti esistenti (una riga con uno di questi id lo aggiorna); [deletedIds] quelli cancellati,
 /// che non si reimportano (lapide definitiva). [fallbackWallet] è il portafoglio delle righe con la
@@ -410,7 +411,7 @@ class _Planner {
       if (categoryText.isEmpty) {
         errors.add('categoria mancante: è obbligatoria per ${csvTypeLabel(type!)}');
       } else {
-        category = _categoryRef(categoryText, kind, errors);
+        category = _categoryRef(categoryText, kind);
       }
       final seen = <String>{};
       rowLabels = [
@@ -508,16 +509,12 @@ class _Planner {
   }
 
   /// Categoria del tipo giusto. Se esiste solo dell'altro tipo è un errore; se non esiste va creata.
-  ImportRef? _categoryRef(String name, CategoryKind kind, List<String> errors) {
+  /// Categoria abbinata per nome (senza distinzione di maiuscole) **e** tipo della riga. Una
+  /// categoria con lo stesso nome ma dell'altro tipo non conta: quella della riga è sconosciuta e
+  /// va creata (o abbinata) come categoria del tipo della riga.
+  ImportRef _categoryRef(String name, CategoryKind kind) {
     final existing = _categories[(kind, _key(name))];
     if (existing != null) return ImportRef(existing.name, existing.id);
-    final other = kind == CategoryKind.expense ? CategoryKind.income : CategoryKind.expense;
-    if (_categories.containsKey((other, _key(name)))) {
-      final otherLabel = other == CategoryKind.expense ? 'di spesa' : 'di entrata';
-      final needed = kind == CategoryKind.expense ? 'di spesa' : 'di entrata';
-      errors.add('la categoria «$name» è $otherLabel: qui ne serve una $needed');
-      return null;
-    }
     return ImportRef(_unknownCategories[(kind, _key(name))] ?? name);
   }
 

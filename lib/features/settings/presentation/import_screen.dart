@@ -20,6 +20,9 @@ import '../../wallets/application/wallet_providers.dart';
 import '../application/import_controller.dart';
 import '../application/settings_providers.dart';
 
+/// "Regali (spesa)" / "Regali (entrata)".
+String _categoryTitle(UnknownCategory c) => '${c.name} (${c.kind == CategoryKind.expense ? 'spesa' : 'entrata'})';
+
 /// "1 movimento" / "3 movimenti".
 String _count(int n, String one, String many) => '$n ${n == 1 ? one : many}';
 
@@ -232,10 +235,16 @@ class ImportScreen extends ConsumerWidget {
     Future<void> pickCategory(UnknownCategory unknown) async {
       final chosen = await showChoiceSheet<String>(
         context,
-        title: 'Categoria «${unknown.name}»',
+        title: 'Categoria ${_categoryTitle(unknown)}',
         selected: state.choices.categoryMatches[unknown] ?? '',
         choices: [
-          Choice(value: '', label: 'Crea nuova', subtitle: 'Categoria «${unknown.name}»'),
+          Choice(
+            value: '',
+            label: 'Crea nuova',
+            subtitle: unknown.kind == CategoryKind.expense
+                ? 'Categoria di spesa «${unknown.name}»'
+                : 'Categoria di entrata «${unknown.name}»',
+          ),
           for (final c in categoriesForMatching(categories, unknown)) Choice(value: c.id, label: 'Abbina a ${c.name}'),
         ],
       );
@@ -269,27 +278,28 @@ class ImportScreen extends ConsumerWidget {
           ],
         ),
       ],
-      for (final kind in CategoryKind.values)
-        if (plan.unknownCategories.where((c) => c.kind == kind).toList() case final unknowns
-            when unknowns.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.lg),
-          SectionLabel(kind == CategoryKind.expense ? 'Categorie di spesa' : 'Categorie di entrata', indent: true),
-          const SizedBox(height: AppSpacing.sm),
-          AppListGroup(
-            children: [
-              for (final unknown in unknowns)
-                AppListRow(
-                  title: unknown.name,
-                  subtitle: status(
-                    state.choices.categoryMatches[unknown],
-                    (id) => categories.firstWhereOrNull((c) => c.id == id)?.name ?? '?',
-                    'Verrà creata',
-                  ),
-                  onTap: () => pickCategory(unknown),
+      // Nome + tipo: "Regali (spesa)" e "Regali (entrata)" sono due categorie distinte.
+      if (plan.unknownCategories.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.lg),
+        const SectionLabel('Categorie', indent: true),
+        const SizedBox(height: AppSpacing.sm),
+        AppListGroup(
+          children: [
+            for (final unknown in plan.unknownCategories)
+              AppListRow(
+                title: _categoryTitle(unknown),
+                subtitle: status(
+                  state.choices.categoryMatches[unknown],
+                  (id) => categories.firstWhereOrNull((c) => c.id == id)?.name ?? '?',
+                  unknown.kind == CategoryKind.expense
+                      ? 'Verrà creata come categoria di spesa'
+                      : 'Verrà creata come categoria di entrata',
                 ),
-            ],
-          ),
-        ],
+                onTap: () => pickCategory(unknown),
+              ),
+          ],
+        ),
+      ],
     ];
   }
 

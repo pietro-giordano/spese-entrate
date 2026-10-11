@@ -19,7 +19,21 @@ class DriftCategoryRepository implements CategoryRepository {
   }
 
   @override
-  Future<void> save(Category category) => _db.upsertSynced(_db.categories, category.id, categoryToCompanion(category));
+  Future<void> save(Category category) {
+    return _db.transaction(() async {
+      // Confronto in Dart: lower() di SQLite non gestisce le lettere accentate.
+      final name = category.name.trim().toLowerCase();
+      final sameKind =
+          await (_db.select(_db.categories)
+                ..whereNotDeleted()
+                ..where((t) => t.kind.equalsValue(category.kind) & t.id.equals(category.id).not()))
+              .get();
+      if (sameKind.any((other) => other.name.trim().toLowerCase() == name)) {
+        throw DuplicateCategoryNameException(category.name.trim(), category.kind);
+      }
+      await _db.upsertSynced(_db.categories, category.id, categoryToCompanion(category));
+    });
+  }
 
   @override
   Future<void> delete(String id) => _db.softDelete(_db.categories, id);
