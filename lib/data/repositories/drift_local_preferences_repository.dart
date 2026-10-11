@@ -36,6 +36,8 @@ class DriftLocalPreferencesRepository implements LocalPreferencesRepository {
     return {
       AppMetaKeys.themeMode: preferences.themeMode.name,
       AppMetaKeys.biometricLock: preferences.biometricLock.toString(),
+      AppMetaKeys.balancesOnOpen: preferences.balancesOnOpen.name,
+      AppMetaKeys.balancesHidden: preferences.balancesHidden.toString(),
       AppMetaKeys.profileName: clean(preferences.profileName),
       AppMetaKeys.profileEmail: clean(preferences.profileEmail),
     };
@@ -45,6 +47,8 @@ class DriftLocalPreferencesRepository implements LocalPreferencesRepository {
     return LocalPreferences(
       themeMode: AppThemeMode.values.asNameMap()[values[AppMetaKeys.themeMode]] ?? AppThemeMode.system,
       biometricLock: values[AppMetaKeys.biometricLock] == 'true',
+      balancesOnOpen: BalancesOnOpen.values.asNameMap()[values[AppMetaKeys.balancesOnOpen]] ?? BalancesOnOpen.visible,
+      balancesHidden: values[AppMetaKeys.balancesHidden] == 'true',
       profileName: values[AppMetaKeys.profileName],
       profileEmail: values[AppMetaKeys.profileEmail],
     );

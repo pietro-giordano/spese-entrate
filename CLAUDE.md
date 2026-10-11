@@ -160,6 +160,7 @@ Chiavi: `default_expense_wallet_id`, `default_income_wallet_id`, `week_start` (1
 
 **app_meta** (solo locale, non sincronizzata) — `key TEXT PK`, `value TEXT`.
 Chiavi: `device_id`, `theme_mode` (system | light | dark), `biometric_lock` (bool),
+`balances_on_open` (visible | hidden | remember), `balances_hidden` (bool, ultima scelta dell'occhio),
 `profile_name`, `profile_email`.
 
 **outbox** (solo locale) — `id INT PK AUTOINCREMENT`, `entity TEXT`, `entity_id TEXT`,
@@ -344,6 +345,27 @@ Ciclo di vita:
   su `UIScene.willDeactivateNotification` in `AppDelegate` (non si sovrascrivono i metodi di
   `FlutterSceneDelegate`); in Flutter un velo in `AppLockGate` quando lo stato non è `resumed`.
 - Il velo è indipendente dal blocco con biometria: non cambia né il timer né lo sblocco.
+- **Saldi nascosti** (`balancesHiddenProvider`, `features/wallets/application/balance_visibility.dart`):
+  l'occhio nell'header di Portafogli ("Nascondi saldi" / "Mostra saldi") nasconde in tutta l'app
+  patrimonio totale, totali dei gruppi, saldi dei portafogli, saldo nel dettaglio, saldi nel pannello
+  di scelta del portafoglio e nella scheda Da/A dell'inserimento rapido, "Saldo del periodo" nella
+  card di Movimenti. Ogni saldo passa da `BalanceText`: nascosto mostra "€ ••••" nello spazio
+  dell'importo vero (invisibile, così l'impaginazione non salta) con Semantics "Saldo nascosto".
+  Restano **sempre visibili** gli importi dei movimenti e i totali Entrate/Uscite della card.
+  - **Dettaglio portafoglio**: il grafico dell'andamento non si mostra (nemmeno la linea), al suo
+    posto "Mostra i saldi per visualizzare l'andamento".
+  - **Aggiorna saldo**: nessun valore derivato dal saldo registrato. "Saldo registrato: € ••••", campo
+    vuoto, differenza "€ ••••", niente "Il saldo coincide". Si registra solo come rettifica:
+    "Registra come entrata o spesa" è disattivato, perché la categoria di entrata o di spesa direbbe
+    il segno della differenza.
+- **Saldi all'apertura** (Impostazioni › Privacy, `balances_on_open` in `app_meta`): sempre visibili
+  (predefinito), sempre nascosti, ricorda l'ultima scelta (`balances_hidden`, salvata a ogni tocco
+  dell'occhio).
+  - Il cambio ha **effetto immediato** (`BalancesHidden.setMode`): "sempre visibili" li mostra,
+    "sempre nascosti" li nasconde, "ricorda" conserva lo stato corrente, che diventa l'ultima scelta.
+  - Con "sempre nascosti" si nascondono di nuovo quando l'app torna in primo piano dopo almeno 1 minuto
+    effettivo in background (`hidden`/`paused`; `inactive` da solo non conta), indipendentemente dal
+    blocco con biometria. Gli eventi arrivano da `AppLockGate`, come per il blocco.
 
 ## Export e import CSV
 
@@ -476,7 +498,7 @@ In caso di conflitto tra un mockup e questo file, vale questo file.
 Regola comune alle 4 tab (Movimenti, Portafogli, Grafici, Confronta): l'intestazione è `TabHeader`
 (`core/widgets/`), con titolo, le azioni della schermata e **sempre ultimo a destra** l'avatar
 "Profilo e impostazioni" (44×44, Semantics con quel nome) che apre `/settings`. Le impostazioni sono
-quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli "+",
+quindi raggiungibili da ogni tab. Le azioni attuali: Movimenti cerca e filtri, Portafogli occhio dei saldi e "+",
 Grafici e Confronta il pulsante Filtri con il numero di filtri attivi sull'icona. Sotto l'intestazione
 di Grafici e Confronta i filtri attivi compaiono come chip rimovibili ("Rimuovi filtro …") con "Azzera"; le esclusioni
 come "− Contanti", "− #storico" o "− Senza label" in tinta spesa ("Rimuovi esclusione …"). In Movimenti il chip del
@@ -504,7 +526,7 @@ Riepilogo delle schermate:
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
   "almeno una/tutte" e "Senza label" (tutti chip a tre stati con `AppFilterChip`, conteggio
   "2 incluse · 1 esclusa"), interruttore trasferimenti; Azzera e Applica.
-- **Portafogli**: intestazione con "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
+- **Portafogli**: intestazione con occhio (nascondi/mostra saldi), "+" e avatar; patrimonio totale con barra per gruppi, pulsante trasferisci, liste per gruppo
   con saldo, ultimo aggiornamento e badge.
 - **Dettaglio portafoglio**: tipo, saldo, ultimo aggiornamento, "Aggiorna saldo" (pannello con
   nuovo saldo, data, differenza, scelta rettifica/movimento), andamento 6 mesi, movimenti.
@@ -517,7 +539,7 @@ Riepilogo delle schermate:
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e
-  sicurezza (biometria); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
+  sicurezza (biometria); Privacy (saldi all'apertura); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza**: totali fissi mensili, Attive/In pausa,

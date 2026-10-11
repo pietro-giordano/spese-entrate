@@ -4,6 +4,7 @@ import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../domain/models/statistics.dart';
+import '../../../wallets/presentation/widgets/balance_text.dart';
 
 /// Card del riepilogo: saldo, entrate, uscite e quota spesa delle entrate.
 class SummaryCard extends StatelessWidget {
@@ -20,10 +21,6 @@ class SummaryCard extends StatelessWidget {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
     final balance = summary.balanceCents;
-    final balanceText = switch (balance) {
-      > 0 => '+ ${formatCents(balance)}',
-      _ => formatCents(balance),
-    };
     final ratio = summary.spentRatio;
 
     return Container(
@@ -51,8 +48,9 @@ class SummaryCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(
-              balanceText,
+            child: BalanceText(
+              balance,
+              format: (cents) => cents > 0 ? '+ ${formatCents(cents)}' : formatCents(cents),
               style: textTheme.displaySmall?.copyWith(
                 fontSize: 34,
                 letterSpacing: -0.7,

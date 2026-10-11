@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../wallets/application/balance_visibility.dart';
 import '../application/app_lock.dart';
 
 /// Ascolta il ciclo di vita dell'app e, quando è bloccata, copre tutto con la schermata di sblocco.
+/// Avvisa anche i saldi nascosti, che con "sempre nascosti" si richiudono dopo 1 minuto.
 /// Le schermate sotto restano in memoria (si ritrovano come le si era lasciate).
 ///
 /// Quando l'app non è in primo piano mostra anche un velo di privacy, così gli importi non
@@ -35,11 +37,14 @@ class _AppLockGateState extends ConsumerState<AppLockGate> {
       onStateChange: (state) {
         if (_isObscured(state) != _obscured) setState(() => _obscured = _isObscured(state));
         final lock = ref.read(appLockProvider.notifier);
+        final balances = ref.read(balancesHiddenProvider.notifier);
         switch (state) {
           case AppLifecycleState.hidden || AppLifecycleState.paused:
             lock.wentToBackground();
+            balances.wentToBackground();
           case AppLifecycleState.resumed:
             lock.cameToForeground();
+            balances.cameToForeground();
           default:
             break;
         }

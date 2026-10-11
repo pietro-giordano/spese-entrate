@@ -5,6 +5,7 @@ import 'package:spese_entrate/core/theme/app_theme.dart';
 import 'package:spese_entrate/data/device/biometric_auth.dart';
 import 'package:spese_entrate/features/settings/application/app_lock.dart';
 import 'package:spese_entrate/features/settings/presentation/app_lock_gate.dart';
+import 'package:spese_entrate/features/wallets/application/balance_visibility.dart';
 
 /// Blocco finto: parte da [initial] e registra gli eventi del ciclo di vita che riceve.
 class _RecordingAppLock extends AppLock {
@@ -15,6 +16,20 @@ class _RecordingAppLock extends AppLock {
 
   @override
   bool build() => initial;
+
+  @override
+  void wentToBackground() => events.add('background');
+
+  @override
+  void cameToForeground() => events.add('foreground');
+}
+
+/// Saldi finti: registrano gli stessi eventi, senza aprire il database delle preferenze.
+class _RecordingBalances extends BalancesHidden {
+  final events = <String>[];
+
+  @override
+  bool build() => false;
 
   @override
   void wentToBackground() => events.add('background');
@@ -37,12 +52,16 @@ void main() {
   final balance = find.text('€ 1.234,56');
   final lockScreen = find.text('Finanze è bloccata');
 
+  late _RecordingBalances balances;
+
   Future<_RecordingAppLock> pumpGate(WidgetTester tester, {bool locked = false}) async {
     final lock = _RecordingAppLock(locked);
+    balances = _RecordingBalances();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appLockProvider.overrideWith(() => lock),
+          balancesHiddenProvider.overrideWith(() => balances),
           biometricAuthProvider.overrideWithValue(_FailingBiometricAuth()),
         ],
         child: MaterialApp(
@@ -93,6 +112,7 @@ void main() {
     await goTo(tester, toForeground);
     expect(cover, findsNothing);
     expect(lock.events.last, 'foreground');
+    expect(balances.events, lock.events, reason: 'anche i saldi nascosti sanno del background');
   });
 
   testWidgets('con l\'app bloccata il velo copre anche la schermata di sblocco, che poi resta', (tester) async {

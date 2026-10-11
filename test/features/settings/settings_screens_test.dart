@@ -27,6 +27,7 @@ import 'package:spese_entrate/domain/models/transaction.dart';
 import 'package:spese_entrate/features/settings/application/csv_exporter.dart';
 import 'package:spese_entrate/features/settings/application/settings_providers.dart';
 import 'package:spese_entrate/features/transactions/application/transaction_list_providers.dart';
+import 'package:spese_entrate/features/wallets/application/balance_visibility.dart';
 
 import 'settings_logic_test.dart' show FakeBiometricAuth;
 
@@ -163,6 +164,45 @@ void main() {
       await tester.tap(find.text('Blocco con biometria'));
       await waitFor(tester, () => container.read(localPreferencesProvider).value?.biometricLock == true);
       expect(biometric.calls, 1);
+      await finish(tester);
+    });
+
+    testWidgets('Privacy: «Saldi all\'apertura» si salva in app_meta', (tester) async {
+      await pumpAt(tester, AppRoutes.settings);
+      await tester.scrollUntilVisible(find.text('Saldi all\'apertura'), 200, scrollable: find.byType(Scrollable).first);
+      expect(find.text('PRIVACY'), findsOneWidget);
+      expect(find.text('Sempre visibili'), findsOneWidget);
+      await tester.ensureVisible(find.text('Saldi all\'apertura'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Saldi all\'apertura'));
+      await tester.pumpAndSettle();
+      expect(find.text('Ricorda l\'ultima scelta'), findsOneWidget);
+      await tester.tap(find.text('Sempre nascosti'));
+      await waitFor(
+        tester,
+        () => container.read(localPreferencesProvider).value?.balancesOnOpen == BalancesOnOpen.hidden,
+      );
+      expect(find.text('Sempre nascosti'), findsOneWidget);
+      expect(container.read(balancesHiddenProvider), isTrue, reason: 'effetto immediato');
+
+      // Con «Ricorda» lo stato corrente resta (qui nascosti).
+      await tester.tap(find.text('Saldi all\'apertura'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ricorda l\'ultima scelta'));
+      await waitFor(
+        tester,
+        () => container.read(localPreferencesProvider).value?.balancesOnOpen == BalancesOnOpen.remember,
+      );
+      expect(container.read(balancesHiddenProvider), isTrue);
+
+      await tester.tap(find.text('Saldi all\'apertura'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sempre visibili'));
+      await waitFor(
+        tester,
+        () => container.read(localPreferencesProvider).value?.balancesOnOpen == BalancesOnOpen.visible,
+      );
+      expect(container.read(balancesHiddenProvider), isFalse);
       await finish(tester);
     });
 

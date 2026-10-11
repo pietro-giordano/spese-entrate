@@ -24,6 +24,7 @@ import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/local_preferences.dart';
 import '../../../domain/models/wallet.dart';
 import '../../transactions/application/transaction_list_providers.dart';
+import '../../wallets/application/balance_visibility.dart';
 import '../../wallets/application/wallet_providers.dart';
 import '../application/app_lock.dart';
 import '../application/settings_providers.dart';
@@ -33,6 +34,12 @@ const _periodLabels = {
   PeriodType.week: 'Settimana',
   PeriodType.month: 'Mese',
   PeriodType.year: 'Anno',
+};
+
+const _balancesOnOpenLabels = {
+  BalancesOnOpen.visible: 'Sempre visibili',
+  BalancesOnOpen.hidden: 'Sempre nascosti',
+  BalancesOnOpen.remember: 'Ricorda l\'ultima scelta',
 };
 
 const _weekdays = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
@@ -104,6 +111,20 @@ class SettingsScreen extends ConsumerWidget {
             .read(selectedPeriodProvider.notifier)
             .set(Period.containing(PeriodType.week, period.start, weekStart: picked));
       }
+    }
+
+    Future<void> pickBalancesOnOpen() async {
+      final picked = await showChoiceSheet<BalancesOnOpen>(
+        context,
+        title: 'Saldi all\'apertura',
+        choices: [for (final MapEntry(:key, :value) in _balancesOnOpenLabels.entries) Choice(value: key, label: value)],
+        selected: preferences.balancesOnOpen,
+        hint:
+            'Gli importi dei movimenti restano sempre visibili. Con «Sempre nascosti» i saldi si '
+            'nascondono di nuovo anche quando torni nell\'app dopo almeno 1 minuto.',
+      );
+      if (picked == null) return;
+      await ref.read(balancesHiddenProvider.notifier).setMode(picked);
     }
 
     Future<void> toggleBiometricLock(bool enable) async {
@@ -232,6 +253,19 @@ class SettingsScreen extends ConsumerWidget {
                           semanticLabel: 'Blocco con biometria',
                           onChanged: toggleBiometricLock,
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  const SectionLabel('Privacy', indent: true),
+                  const SizedBox(height: AppSpacing.sm),
+                  AppListGroup(
+                    children: [
+                      AppListRow(
+                        title: 'Saldi all\'apertura',
+                        subtitle: 'L\'occhio in Portafogli li mostra o li nasconde in tutta l\'app',
+                        value: _balancesOnOpenLabels[preferences.balancesOnOpen],
+                        onTap: pickBalancesOnOpen,
                       ),
                     ],
                   ),

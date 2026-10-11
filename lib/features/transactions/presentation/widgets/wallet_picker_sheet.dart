@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_list_row.dart';
 import '../../../../domain/models/wallet.dart';
+import '../../../wallets/presentation/widgets/balance_text.dart';
 
 /// Apre il pannello di scelta del portafoglio e restituisce l'ID scelto (null se chiuso).
 Future<String?> showWalletPickerSheet(
@@ -34,11 +34,13 @@ Future<String?> showWalletPickerSheet(
                 checked: wallet.id == selectedId,
                 child: AppListRow(
                   title: wallet.name,
-                  subtitle: [
-                    formatCents(balances[wallet.id] ?? wallet.initialBalanceCents),
-                    if (wallet.id == otherSelectedId && otherSelectedLabel != null)
-                      'già selezionato come $otherSelectedLabel',
-                  ].join(' · '),
+                  subtitleWidget: Wrap(
+                    children: [
+                      BalanceText(balances[wallet.id] ?? wallet.initialBalanceCents),
+                      if (wallet.id == otherSelectedId && otherSelectedLabel != null)
+                        Text(' · già selezionato come $otherSelectedLabel'),
+                    ],
+                  ),
                   trailing: _RadioDot(selected: wallet.id == selectedId),
                   onTap: () => Navigator.pop(sheetContext, wallet.id),
                 ),

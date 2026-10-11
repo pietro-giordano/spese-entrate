@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/dates.dart';
-import '../../../../core/money.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../application/wallet_providers.dart';
+import 'balance_text.dart';
 import 'wallet_visuals.dart';
 
 /// Riga di un portafoglio: icona, nome, ultimo aggiornamento con i badge, saldo.
@@ -62,8 +62,9 @@ class WalletRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              formatCents(overview.balanceCents),
+            BalanceText(
+              overview.balanceCents,
+              textAlign: TextAlign.end,
               style: textTheme.bodyLarge?.copyWith(
                 fontWeight: FontWeight.w800,
                 color: wallet.isArchived ? colors.textMuted : colors.text,

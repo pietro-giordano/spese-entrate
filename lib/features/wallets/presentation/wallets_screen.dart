@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/clock.dart';
-import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -12,7 +11,9 @@ import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../core/widgets/state_message.dart';
 import '../../../domain/models/wallet.dart';
+import '../application/balance_visibility.dart';
 import '../application/wallet_providers.dart';
+import 'widgets/balance_text.dart';
 import 'widgets/net_worth_card.dart';
 import 'widgets/wallet_row.dart';
 import 'widgets/wallet_visuals.dart';
@@ -26,6 +27,7 @@ class WalletsScreen extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final today = ref.watch(todayProvider);
     final overviewsAsync = ref.watch(walletOverviewsProvider);
+    final balancesHidden = ref.watch(balancesHiddenProvider);
     final overviews = overviewsAsync.value ?? const <WalletOverview>[];
 
     final active = overviews.where((o) => !o.wallet.isArchived).toList();
@@ -39,12 +41,12 @@ class WalletsScreen extends ConsumerWidget {
       for (final group in byGroup.keys) group: sum(included.where((o) => o.wallet.type.group == group)),
     };
 
-    Widget section(String title, String? trailing, List<WalletOverview> list) => Padding(
+    Widget section(String title, int? totalCents, List<WalletOverview> list) => Padding(
       padding: const EdgeInsets.only(top: AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SectionLabel(title, trailing: trailing),
+          SectionLabel(title, trailingWidget: totalCents == null ? null : BalanceText(totalCents)),
           const SizedBox(height: AppSpacing.sm),
           AppListGroup(
             children: [
@@ -69,6 +71,11 @@ class WalletsScreen extends ConsumerWidget {
             TabHeader(
               title: 'Portafogli',
               actions: [
+                AppIconButton(
+                  icon: balancesHidden ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  tooltip: balancesHidden ? 'Mostra saldi' : 'Nascondi saldi',
+                  onPressed: () => ref.read(balancesHiddenProvider.notifier).toggle(),
+                ),
                 AppIconButton(
                   icon: Icons.add_rounded,
                   tooltip: 'Nuovo portafoglio',
@@ -100,7 +107,7 @@ class WalletsScreen extends ConsumerWidget {
                 label: const Text('Trasferisci tra portafogli'),
               ),
               for (final MapEntry(key: group, value: list) in byGroup.entries)
-                section(walletGroupLabel(group), formatCents(groupTotals[group]!), list),
+                section(walletGroupLabel(group), groupTotals[group]!, list),
               if (archived.isNotEmpty) section('Archiviati', null, archived),
             ],
             const SizedBox(height: AppSpacing.lg),

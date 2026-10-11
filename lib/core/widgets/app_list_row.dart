@@ -12,6 +12,7 @@ class AppListRow extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleWidget,
     this.value,
     this.leading,
     this.trailing,
@@ -20,6 +21,10 @@ class AppListRow extends StatelessWidget {
 
   final String title;
   final String? subtitle;
+
+  /// Al posto di [subtitle], quando il sottotitolo è un widget (es. un saldo nascondibile).
+  /// Riceve già lo stile del sottotitolo.
+  final Widget? subtitleWidget;
 
   /// Testo grigio a destra (es. "Euro (€)").
   final String? value;
@@ -37,7 +42,7 @@ class AppListRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: subtitle == null ? 52 : 60),
+        constraints: BoxConstraints(minHeight: subtitle == null && subtitleWidget == null ? 52 : 60),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.sm),
           child: Row(
@@ -49,7 +54,13 @@ class AppListRow extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(title, style: textTheme.titleSmall),
-                    if (subtitle != null) ...[const SizedBox(height: 2), Text(subtitle!, style: textTheme.bodySmall)],
+                    if (subtitleWidget != null) ...[
+                      const SizedBox(height: 2),
+                      DefaultTextStyle.merge(style: textTheme.bodySmall, child: subtitleWidget!),
+                    ] else if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(subtitle!, style: textTheme.bodySmall),
+                    ],
                   ],
                 ),
               ),
