@@ -115,6 +115,9 @@ Colonne in snake_case. "Comuni" = `id TEXT PK, created_at INT, updated_at INT, d
 
 **categories** — comuni +
 `name TEXT`, `kind TEXT` (expense | income), `color INT`, `sort_order INT`, `archived_at INT NULL`.
+Nome unico **per tipo** tra le categorie non cancellate (anche archiviate), senza distinzione di
+maiuscole e spazi: "Regali" di spesa e "Regali" di entrata sono ammesse (controllo nel repository,
+`DuplicateCategoryNameException`).
 
 **labels** — comuni + `name TEXT`, `color INT`.
 Nome unico tra le label non cancellate (controllo nel repository).
@@ -329,9 +332,11 @@ Tipi: spesa | entrata | trasferimento | rettifica. Label separate da `|`.
   - data AAAA-MM-GG o GG/MM/AAAA; tipo senza distinzione di maiuscole; importo `1.234,56` o `1234.56`;
   - spesa/entrata con importo negativo → positivo con avviso; rettifica con segno; trasferimento
     negativo o importo zero → errore; valuta vuota = EUR, altre → errore;
-  - portafogli, categorie e label abbinati per nome senza distinzione di maiuscole e spazi; categoria
-    obbligatoria e del tipo giusto per spesa/entrata; destinazione obbligatoria e diversa per i
-    trasferimenti; i dati che non servono al tipo sono ignorati con un avviso;
+  - portafogli, categorie e label abbinati per nome senza distinzione di maiuscole e spazi; le
+    categorie per nome **e tipo** (spesa → categorie di spesa, entrata → di entrata). Categoria
+    obbligatoria per spesa/entrata; se il nome esiste solo con l'altro tipo, la categoria è
+    sconosciuta (da creare o abbinare con il tipo della riga), non un errore. Destinazione obbligatoria
+    e diversa per i trasferimenti; i dati che non servono al tipo sono ignorati con un avviso;
   - nomi sconosciuti → da creare (solo dalle righe valide);
   - `id`: UUID esistente → aggiorna; UUID nuovo → si usa; di un movimento eliminato → errore (lapide);
     vuoto → UUID v5 (`importedRowId`, namespace fisso `importNamespace`) della riga normalizzata più un
@@ -343,7 +348,9 @@ Tipi: spesa | entrata | trasferimento | rettifica. Label separate da `|`.
 - **Esecuzione** (`buildImportOperations`, pura, poi `ImportRepository.execute`): un'unica transazione,
   movimenti salvati a blocchi con l'avanzamento; o tutto o niente. Le righe con errori sono saltate,
   mai importate a metà. Portafogli e categorie sconosciuti: "Crea nuovo" (portafoglio di tipo Altro,
-  saldo 0 a oggi) o "Abbina a…" uno esistente (categorie dello stesso tipo); label sconosciute create.
+  saldo 0 a oggi) o "Abbina a…" uno esistente. Le categorie si scelgono per nome + tipo: "Regali (spesa)" e
+"Regali (entrata)" sono due righe distinte e "Abbina a…" propone solo categorie di quel tipo.
+Label sconosciute create.
   Opzioni: portafoglio per le righe con la colonna vuota, label aggiuntiva su spese ed entrate.
   I movimenti nuovi hanno `import_batch_id`; quelli aggiornati tengono stato, ricorrenza e il loro
   `import_batch_id`. Una riga che con gli abbinamenti diventa un trasferimento sullo stesso

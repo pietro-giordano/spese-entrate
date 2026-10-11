@@ -211,6 +211,25 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('nome già usato nello stesso tipo: errore; nell\'altro tipo è ammesso', (tester) async {
+      await pumpAt(tester, AppRoutes.categories);
+      await tester.scrollUntilVisible(find.text('+ Nuova categoria'), 200, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('+ Nuova categoria'));
+      await tester.pumpAndSettle();
+      // "Casa" esiste già tra le spese (anche scritto diversamente).
+      await tester.enterText(find.byType(TextField), ' casa ');
+      await tester.tap(find.text('Salva'));
+      await waitFor(tester, () => find.text('Esiste già una categoria di spesa con questo nome').evaluate().isNotEmpty);
+      expect(find.text('Esiste già una categoria di spesa con questo nome'), findsOneWidget);
+
+      // "Regali" esiste solo tra le entrate: come spesa si può creare.
+      await tester.enterText(find.byType(TextField), 'Regali');
+      await tester.tap(find.text('Salva'));
+      await waitFor(tester, () => find.text('Nuova categoria').evaluate().isEmpty);
+      expect((await expenses(tester)).last.name, 'Regali');
+      await finish(tester);
+    });
+
     testWidgets('riordino trascinando: l\'ordine si salva', (tester) async {
       await pumpAt(tester, AppRoutes.categories);
       final before = await expenses(tester);

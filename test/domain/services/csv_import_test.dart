@@ -247,10 +247,45 @@ void main() {
       expect(p.rows.map((r) => r.category!.id), ['c-other-exp', 'c-other-inc']);
     });
 
-    test('esiste solo dell\'altro tipo: errore', () {
-      expect(errorsOf(plan(['03/10/2026;spesa;1;;Contanti;;Stipendio;;;'])), [
-        'la categoria «Stipendio» è di entrata: qui ne serve una di spesa',
+    test('esiste solo dell\'altro tipo: è sconosciuta e va creata del tipo della riga, non è un errore', () {
+      final p = plan(['03/10/2026;spesa;1;;Contanti;;Stipendio;;;']);
+      expect(p.errors, isEmpty);
+      expect(p.rows.single.category, const ImportRef('Stipendio'));
+      expect(p.unknownCategories, [(name: 'Stipendio', kind: CategoryKind.expense)]);
+    });
+
+    test('"Regali" sia spesa sia entrata, nessuna esistente: due categorie sconosciute distinte', () {
+      final p = plan([
+        '03/10/2026;spesa;30;;Contanti;;Regali;;compleanno;',
+        '04/10/2026;entrata;50;;Contanti;;regali;;dalla nonna;',
+        '05/10/2026;spesa;20;;Contanti;;REGALI;;;',
       ]);
+      expect(p.errors, isEmpty);
+      expect(p.unknownCategories, [
+        (name: 'Regali', kind: CategoryKind.expense),
+        (name: 'regali', kind: CategoryKind.income),
+      ]);
+      expect(p.rows.map((r) => r.category), [
+        const ImportRef('Regali'),
+        const ImportRef('regali'),
+        const ImportRef('Regali'),
+      ]);
+    });
+
+    test('"Regali" esistente solo come entrata: la spesa è sconosciuta, l\'entrata è abbinata', () {
+      final p = planCsvImport(
+        '$header\n03/10/2026;spesa;30;;Contanti;;Regali;;;\n04/10/2026;entrata;50;;Contanti;;regali;;;',
+        wallets: wallets,
+        categories: [
+          ...categories,
+          const Category(id: 'c-gift-inc', name: 'Regali', kind: CategoryKind.income, color: 0),
+        ],
+        labels: labels,
+      );
+      expect(p.errors, isEmpty);
+      expect(p.rows.first.category, const ImportRef('Regali'), reason: 'la spesa non va sulla categoria di entrata');
+      expect(p.rows.last.category, const ImportRef('Regali', 'c-gift-inc'));
+      expect(p.unknownCategories, [(name: 'Regali', kind: CategoryKind.expense)]);
     });
 
     test('sconosciuta: da creare con il tipo della riga', () {

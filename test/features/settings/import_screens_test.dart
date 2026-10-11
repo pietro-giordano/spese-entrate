@@ -163,7 +163,8 @@ void main() {
     await tapVisible(tester, find.text('Carta'));
     await tapVisible(tester, find.text('Abbina a Contanti'));
     expect(find.text('Abbinato a Contanti'), findsOneWidget);
-    expect(find.text('Verrà creata'), findsOneWidget);
+    expect(find.text('Palestra (spesa)'), findsOneWidget);
+    expect(find.text('Verrà creata come categoria di spesa'), findsOneWidget);
 
     // Opzioni: portafoglio per la riga senza, label aggiuntiva.
     await tapVisible(tester, find.text('Continua'));
@@ -200,6 +201,49 @@ void main() {
     expect(find.text('Importazione annullata: 2 movimenti eliminati'), findsOneWidget);
     final after = await rows(tester);
     expect(after.where((r) => r.deletedAt == null).map((r) => r.id), [existingId]);
+    await finish(tester);
+  });
+
+  testWidgets('abbinamenti per nome + tipo: "Regali (spesa)" e "Regali (entrata)", "Abbina a…" solo del tipo giusto', (
+    tester,
+  ) async {
+    await pumpAt(tester, AppRoutes.import);
+    // "Regali" esiste già solo come categoria di entrata (dati iniziali): la spesa è sconosciuta.
+    await pick(tester, [
+      '01/10/2026;spesa;30,00;;Contanti;;Regali;;compleanno;',
+      '02/10/2026;entrata;50,00;;Contanti;;Regali;;dalla nonna;',
+      '03/10/2026;entrata;10,00;;Contanti;;Mance;;;',
+    ]);
+    expect(find.bySemanticsLabel('3 righe pronte'), findsOneWidget, reason: 'nessuna riga scartata');
+    await tapVisible(tester, find.text('Continua'));
+    expect(find.text('Regali (spesa)'), findsOneWidget);
+    expect(find.text('Regali (entrata)'), findsNothing, reason: 'l\'entrata è già abbinata alla categoria esistente');
+    expect(find.text('Mance (entrata)'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Regali (spesa)'));
+    expect(find.text('Abbina a Casa'), findsOneWidget);
+    expect(find.text('Abbina a Stipendio'), findsNothing, reason: 'solo categorie di spesa');
+    expect(find.text('Abbina a Regali'), findsNothing, reason: 'Regali esiste solo come entrata');
+    await tapVisible(tester, find.text('Crea nuova'));
+
+    await tapVisible(tester, find.text('Mance (entrata)'));
+    expect(find.text('Abbina a Stipendio'), findsOneWidget);
+    expect(find.text('Abbina a Casa'), findsNothing, reason: 'solo categorie di entrata');
+    await tapVisible(tester, find.text('Abbina a Regali'));
+    expect(find.text('Abbinato a Regali'), findsOneWidget);
+
+    await tapVisible(tester, find.text('Continua'));
+    await tapVisible(tester, find.text('Importa 3 movimenti'));
+    await waitFor(tester, () => find.text('Importazione completata').evaluate().isNotEmpty);
+    final categories = (await tester.runAsync(() => db.select(db.categories).get()))!;
+    final gifts = categories.where((c) => c.name == 'Regali' && c.deletedAt == null).toList();
+    expect(gifts.map((c) => c.kind).toSet(), {CategoryKind.expense, CategoryKind.income});
+    final all = await rows(tester);
+    final expenseGift = gifts.firstWhere((c) => c.kind == CategoryKind.expense);
+    final incomeGift = gifts.firstWhere((c) => c.kind == CategoryKind.income);
+    expect(all.firstWhere((r) => r.note == 'compleanno').categoryId, expenseGift.id);
+    expect(all.firstWhere((r) => r.note == 'dalla nonna').categoryId, incomeGift.id);
+    expect(all.firstWhere((r) => r.amountCents == 1000).categoryId, incomeGift.id, reason: 'Mance abbinata a Regali');
     await finish(tester);
   });
 

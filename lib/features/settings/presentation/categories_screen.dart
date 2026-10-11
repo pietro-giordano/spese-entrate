@@ -17,6 +17,7 @@ import '../../../core/widgets/section_label.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/enums.dart';
 import '../../../domain/models/label.dart';
+import '../../../domain/repositories/category_repository.dart';
 import '../../../domain/repositories/label_repository.dart';
 import '../application/category_label_actions.dart';
 import '../application/settings_providers.dart';
@@ -232,12 +233,19 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
           if (c.kind == kind && !c.isArchived && c.id != category?.id) Choice(value: c.id, label: c.name),
       ],
       onSave: (name, color) async {
-        if (category == null) {
-          await actions.createCategory(name: name, color: color, kind: kind);
-        } else {
-          await actions.updateCategory(category.copyWith(name: name, color: color));
+        try {
+          if (category == null) {
+            await actions.createCategory(name: name, color: color, kind: kind);
+          } else {
+            await actions.updateCategory(category.copyWith(name: name, color: color));
+          }
+          return null;
+        } on DuplicateCategoryNameException {
+          // Lo stesso nome va bene solo nell'altro tipo (es. "Regali" di spesa e di entrata).
+          return kind == CategoryKind.expense
+              ? 'Esiste già una categoria di spesa con questo nome'
+              : 'Esiste già una categoria di entrata con questo nome';
         }
-        return null;
       },
     );
     if (result == null || category == null) return;
