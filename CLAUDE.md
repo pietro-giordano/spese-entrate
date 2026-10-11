@@ -336,7 +336,22 @@ Tipi: spesa | entrata | trasferimento | rettifica. Label separate da `|`.
   - `id`: UUID esistente → aggiorna; UUID nuovo → si usa; di un movimento eliminato → errore (lapide);
     vuoto → UUID v5 (`importedRowId`, namespace fisso `importNamespace`) della riga normalizzata più un
     contatore per le righe identiche: reimportare lo stesso file aggiorna invece di duplicare.
+  - `id` calcolato (riga senza id) di un movimento eliminato, es. dopo un annullamento: si passa
+    in modo deterministico a una "generazione" successiva dell'id, così la lapide resta e il file si
+    può reimportare (un `id` scritto nel file e cancellato resta invece un errore).
 - `csvImportTemplate` genera il modello con intestazioni e 3 righe di esempio.
+- **Esecuzione** (`buildImportOperations`, pura, poi `ImportRepository.execute`): un'unica transazione,
+  movimenti salvati a blocchi con l'avanzamento; o tutto o niente. Le righe con errori sono saltate,
+  mai importate a metà. Portafogli e categorie sconosciuti: "Crea nuovo" (portafoglio di tipo Altro,
+  saldo 0 a oggi) o "Abbina a…" uno esistente (categorie dello stesso tipo); label sconosciute create.
+  Opzioni: portafoglio per le righe con la colonna vuota, label aggiuntiva su spese ed entrate.
+  I movimenti nuovi hanno `import_batch_id`; quelli aggiornati tengono stato, ricorrenza e il loro
+  `import_batch_id`. Una riga che con gli abbinamenti diventa un trasferimento sullo stesso
+  portafoglio è scartata.
+- **Annulla importazione** (Storico importazioni): cancella logicamente solo i movimenti con quel
+  `import_batch_id` e imposta `undone_at`. I movimenti aggiornati non si ripristinano e l'anteprima e
+  lo storico lo dicono prima di confermare. Portafogli, categorie e label creati restano. "Duplica"
+  di un movimento importato non copia `import_batch_id`.
 
 ## Design
 
@@ -408,7 +423,7 @@ Tab (StatefulShellRoute): **Movimenti** `/`, **Portafogli** `/wallets`, **Grafic
 Altre rotte: `/add?type=expense|income|transfer` (modale a schermo intero),
 `/transactions/:id`, `/filters`, `/wallets/new`, `/wallets/:id`, `/wallets/:id/edit`,
 `/settings`, `/settings/categories`, `/settings/recurring`, `/settings/recurring/:id`,
-`/settings/backup`.
+`/settings/backup`, `/settings/import` (Importa da CSV), `/settings/imports` (Storico importazioni).
 
 ## Schermate
 
@@ -458,7 +473,7 @@ Riepilogo delle schermate:
   tabella delle variazioni.
 - **Impostazioni**: card profilo; Aspetto (tema); Preferenze (valuta, portafogli predefiniti,
   vista predefinita, inizio settimana, movimenti ricorrenti, categorie e label); Notifiche e
-  sicurezza (biometria); Dati (backup ed esportazione); Esci / Elimina dati; versione.
+  sicurezza (biometria); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza**: totali fissi mensili, Attive/In pausa,

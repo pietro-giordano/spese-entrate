@@ -30,6 +30,10 @@ abstract class Transaction with _$Transaction {
     @Default([]) List<String> labelIds,
     String? recurrenceId,
     LocalDate? occurrenceDate,
+
+    /// Import da CSV che ha creato il movimento; null se inserito nell'app. Annullare l'import
+    /// cancella i movimenti con questo id (non quelli che l'import ha solo aggiornato).
+    String? importBatchId,
   }) = _Transaction;
 
   const Transaction._();

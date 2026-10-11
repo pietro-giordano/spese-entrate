@@ -13,6 +13,8 @@ abstract final class AppRoutes {
   static const categories = '/settings/categories';
   static const recurring = '/settings/recurring';
   static const backup = '/settings/backup';
+  static const import = '/settings/import';
+  static const imports = '/settings/imports';
 
   /// Solo in debug.
   static const componentCatalog = '/debug/catalog';

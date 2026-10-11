@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../data/repositories/repository_providers.dart';
+import '../../../domain/models/import_record.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/models/label.dart';
@@ -44,3 +45,7 @@ Future<Map<String, int>> labelUsage(Ref ref) async {
   }
   return counts;
 }
+
+/// Storico degli import da CSV, dal più recente.
+@riverpod
+Stream<List<ImportRecord>> importHistory(Ref ref) => ref.watch(importRepositoryProvider).watchAll();

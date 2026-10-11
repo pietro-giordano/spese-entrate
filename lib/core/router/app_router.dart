@@ -9,6 +9,8 @@ import '../../features/analytics/presentation/compare_screen.dart';
 import '../../features/recurring/presentation/recurrence_detail_screen.dart';
 import '../../features/recurring/presentation/recurring_list_screen.dart';
 import '../../features/settings/presentation/backup_screen.dart';
+import '../../features/settings/presentation/import_history_screen.dart';
+import '../../features/settings/presentation/import_screen.dart';
 import '../../features/settings/presentation/categories_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/transactions/presentation/filters_screen.dart';
@@ -121,6 +123,8 @@ GoRouter appRouter(Ref ref) {
             ],
           ),
           GoRoute(path: 'backup', builder: (context, state) => const BackupScreen()),
+          GoRoute(path: 'import', builder: (context, state) => const ImportScreen()),
+          GoRoute(path: 'imports', builder: (context, state) => const ImportHistoryScreen()),
         ],
       ),
       if (kDebugMode)

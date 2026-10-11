@@ -245,6 +245,16 @@ class SettingsScreen extends ConsumerWidget {
                         subtitle: 'Esporta i movimenti in CSV',
                         onTap: () => context.push(AppRoutes.backup),
                       ),
+                      AppListRow(
+                        title: 'Importa da CSV',
+                        subtitle: 'Movimenti da un file, con anteprima prima di salvare',
+                        onTap: () => context.push(AppRoutes.import),
+                      ),
+                      AppListRow(
+                        title: 'Storico importazioni',
+                        subtitle: 'File importati e annullamento',
+                        onTap: () => context.push(AppRoutes.imports),
+                      ),
                       if (kDebugMode)
                         AppListRow(
                           title: 'Catalogo componenti',

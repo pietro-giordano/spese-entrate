@@ -218,3 +218,41 @@ final class LabelUsageProvider
 }
 
 String _$labelUsageHash() => r'465859388391375e9375f2db8bc65ce8a506ce57';
+
+/// Storico degli import da CSV, dal più recente.
+
+@ProviderFor(importHistory)
+final importHistoryProvider = ImportHistoryProvider._();
+
+/// Storico degli import da CSV, dal più recente.
+
+final class ImportHistoryProvider
+    extends $FunctionalProvider<AsyncValue<List<ImportRecord>>, List<ImportRecord>, Stream<List<ImportRecord>>>
+    with $FutureModifier<List<ImportRecord>>, $StreamProvider<List<ImportRecord>> {
+  /// Storico degli import da CSV, dal più recente.
+  ImportHistoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'importHistoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$importHistoryHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<ImportRecord>> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<ImportRecord>> create(Ref ref) {
+    return importHistory(ref);
+  }
+}
+
+String _$importHistoryHash() => r'b1b804f692877faeb83b114ac36d18e118def269';

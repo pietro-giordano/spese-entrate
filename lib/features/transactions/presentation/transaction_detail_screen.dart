@@ -334,9 +334,10 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
       id: newId(),
       date: ref.read(todayProvider),
       status: TransactionStatus.confirmed,
-      // La copia non è un'occorrenza della ricorrenza.
+      // La copia non è un'occorrenza della ricorrenza, né parte dell'import d'origine.
       recurrenceId: null,
       occurrenceDate: null,
+      importBatchId: null,
     );
     await ref.read(transactionRepositoryProvider).save(copy);
     if (!mounted) return;

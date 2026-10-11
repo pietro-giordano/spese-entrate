@@ -186,13 +186,29 @@ void main() {
     });
 
     test('portafoglio mancante: errore; sconosciuto: da creare, elencato una volta', () {
-      expect(errorsOf(plan(['03/10/2026;spesa;1;;;;Spesa alimentare;;;'])), ['portafoglio mancante']);
+      expect(errorsOf(plan(['03/10/2026;spesa;1;;;;Spesa alimentare;;;'])), [
+        'portafoglio mancante: scrivilo nel file o scegli un portafoglio per le righe senza',
+      ]);
       final p = plan([
         '03/10/2026;spesa;1;;Carta Visa;;Spesa alimentare;;;',
         '03/10/2026;spesa;2;;carta visa;;Spesa alimentare;;;',
       ]);
       expect(p.unknownWallets, ['Carta Visa']);
       expect(p.rows.map((r) => r.wallet), [const ImportRef('Carta Visa'), const ImportRef('Carta Visa')]);
+    });
+
+    test('colonna vuota: si usa il portafoglio scelto nelle opzioni', () {
+      final p = planCsvImport(
+        '$header\n03/10/2026;spesa;1;;;;Spesa alimentare;;;\n03/10/2026;trasferimento;1;;;Contanti;;;;\n'
+        '03/10/2026;trasferimento;2;;;Conto corrente;;;;',
+        wallets: wallets,
+        categories: categories,
+        labels: labels,
+        fallbackWallet: wallets.first,
+      );
+      expect(p.rows.first.wallet, const ImportRef('Conto corrente', 'w-cc'));
+      expect(p.rows[1].toWallet!.id, 'w-cash');
+      expect(p.errors.single, const ImportIssue(4, 'portafoglio e portafoglio_destinazione devono essere diversi'));
     });
 
     test('trasferimento: destinazione obbligatoria e diversa', () {
@@ -327,6 +343,15 @@ void main() {
       expect(b, a);
     });
 
+    test('id calcolato di un movimento eliminato: nuova generazione deterministica, non errore', () {
+      final first = plan([groceries]).rows.single.id;
+      final regenerated = plan([groceries], deletedIds: {first}).rows.single;
+      expect(regenerated.id, isNot(first));
+      expect(plan([groceries], deletedIds: {first}).rows.single.id, regenerated.id, reason: 'sempre lo stesso');
+      final updated = plan([groceries], deletedIds: {first}, activeIds: {regenerated.id}).rows.single;
+      expect(updated.updatesExisting, isTrue);
+    });
+
     test('reimportare lo stesso file non crea duplicati: aggiorna gli stessi movimenti', () {
       final lines = [groceries, groceries, '05/10/2026;entrata;2.400,00;;Conto corrente;;Stipendio;;;'];
       final first = plan(lines);
@@ -353,7 +378,7 @@ void main() {
       startsWith('tipo non valido'),
       startsWith('importo non valido'),
       startsWith('valuta'),
-      'portafoglio mancante',
+      startsWith('portafoglio mancante'),
     ]);
     expect(p.rows.single.line, 3);
   });

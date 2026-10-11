@@ -151,6 +151,8 @@ void main() {
     'Movimenti ricorrenti': () => AppRoutes.recurring,
     'Dettaglio ricorrenza': () => AppRoutes.recurrence('luce'),
     'Backup': () => AppRoutes.backup,
+    'Importa da CSV': () => AppRoutes.import,
+    'Storico importazioni': () => AppRoutes.imports,
   };
 
   // Pannelli che si aprono sopra le schermate: si controllano con il testo al 130%.

@@ -76,6 +76,7 @@ Transaction transactionFromRow(TransactionRow row, {List<String> labelIds = cons
   labelIds: labelIds,
   recurrenceId: row.recurrenceId,
   occurrenceDate: row.occurrenceDate,
+  importBatchId: row.importBatchId,
 );
 
 /// Le label non stanno nella riga del movimento ma in `transaction_labels`.
@@ -91,6 +92,7 @@ TransactionsCompanion transactionToCompanion(Transaction tx) => TransactionsComp
   note: Value(tx.note),
   recurrenceId: Value(tx.recurrenceId),
   occurrenceDate: Value(tx.occurrenceDate),
+  importBatchId: Value(tx.importBatchId),
 );
 
 Attachment attachmentFromRow(AttachmentRow row) => Attachment(

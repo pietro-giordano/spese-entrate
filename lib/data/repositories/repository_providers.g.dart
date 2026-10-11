@@ -192,6 +192,42 @@ final class RecurrenceRepositoryProvider
 
 String _$recurrenceRepositoryHash() => r'7d05d4d1b8ef01b2b29040729d844d6e5115c70f';
 
+@ProviderFor(importRepository)
+final importRepositoryProvider = ImportRepositoryProvider._();
+
+final class ImportRepositoryProvider extends $FunctionalProvider<ImportRepository, ImportRepository, ImportRepository>
+    with $Provider<ImportRepository> {
+  ImportRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'importRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$importRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ImportRepository> $createElement($ProviderPointer pointer) => $ProviderElement(pointer);
+
+  @override
+  ImportRepository create(Ref ref) {
+    return importRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ImportRepository value) {
+    return $ProviderOverride(origin: this, providerOverride: $SyncValueProvider<ImportRepository>(value));
+  }
+}
+
+String _$importRepositoryHash() => r'db42ed4d446cab176691e11e6be5a4db9866e4b1';
+
 @ProviderFor(settingsRepository)
 final settingsRepositoryProvider = SettingsRepositoryProvider._();
 

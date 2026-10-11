@@ -134,6 +134,23 @@ class ImportPlan {
   ];
 
   bool get hasErrors => errors.isNotEmpty;
+
+  /// Errore sulle intestazioni (o file vuoto): non si può importare nulla.
+  bool get isUnreadable => errors.any((e) => e.line == 1);
+
+  /// Righe di dati lette: valide più quelle scartate per errori.
+  int get readRowCount =>
+      rows.length +
+      {
+        for (final e in errors)
+          if (e.line > 1) e.line,
+      }.length;
+
+  /// Righe con almeno un errore (saltate).
+  int get skippedRowCount => {
+    for (final e in errors)
+      if (e.line > 1) e.line,
+  }.length;
 }
 
 /// Legge [content] (UTF-8, con o senza BOM; separatore `;` o `,` riconosciuto dalle intestazioni)
@@ -142,7 +159,8 @@ class ImportPlan {
 /// Portafogli, categorie e label si abbinano per nome senza distinzione tra maiuscole e minuscole;
 /// quelli che non esistono finiscono negli elenchi "da creare". [activeIds] sono gli id dei
 /// movimenti esistenti (una riga con uno di questi id lo aggiorna); [deletedIds] quelli cancellati,
-/// che non si reimportano (lapide definitiva).
+/// che non si reimportano (lapide definitiva). [fallbackWallet] è il portafoglio delle righe con la
+/// colonna `portafoglio` vuota; senza, quelle righe sono errori.
 ImportPlan planCsvImport(
   String content, {
   required List<Wallet> wallets,
@@ -150,6 +168,7 @@ ImportPlan planCsvImport(
   required List<Label> labels,
   Set<String> activeIds = const {},
   Set<String> deletedIds = const {},
+  Wallet? fallbackWallet,
 }) {
   return _Planner(
     wallets: wallets,
@@ -157,6 +176,7 @@ ImportPlan planCsvImport(
     labels: labels,
     activeIds: activeIds,
     deletedIds: deletedIds,
+    fallbackWallet: fallbackWallet,
   ).plan(content);
 }
 
@@ -233,12 +253,14 @@ class _Planner {
     required List<Label> labels,
     required this.activeIds,
     required this.deletedIds,
+    this.fallbackWallet,
   }) : _wallets = {for (final w in wallets) _key(w.name): w},
        _categories = {for (final c in categories) (c.kind, _key(c.name)): c},
        _labels = {for (final l in labels) _key(l.name): l};
 
   final Set<String> activeIds;
   final Set<String> deletedIds;
+  final Wallet? fallbackWallet;
   final Map<String, Wallet> _wallets;
   final Map<(CategoryKind, String), Category> _categories;
   final Map<String, Label> _labels;
@@ -319,13 +341,15 @@ class _Planner {
       typeText,
       amountText,
       currencyText,
-      walletText,
+      walletColumn,
       toWalletText,
       categoryText,
       labelsText,
       noteText,
       idText,
     ] = fields;
+    // Colonna vuota: il portafoglio scelto nelle opzioni, se c'è.
+    final walletText = walletColumn.isEmpty ? fallbackWallet?.name ?? '' : walletColumn;
 
     // Data
     final date = _parseDate(dateText);
@@ -357,7 +381,7 @@ class _Planner {
     // Portafogli
     ImportRef? wallet;
     if (walletText.isEmpty) {
-      errors.add('portafoglio mancante');
+      errors.add('portafoglio mancante: scrivilo nel file o scegli un portafoglio per le righe senza');
     } else {
       wallet = _walletRef(walletText);
     }
@@ -440,7 +464,16 @@ class _Planner {
       ].join('\u001f');
       final repeat = _repeats[normalized] ?? 0;
       _repeats[normalized] = repeat + 1;
-      id = importedRowId(normalized, repeat);
+      // Se l'id è di un movimento eliminato (es. import annullato), la lapide resta: si passa,
+      // sempre in modo deterministico, alla "generazione" successiva dell'id. Così reimportare
+      // dopo un annullamento ricrea le righe, e un ulteriore reimport le aggiorna senza duplicarle.
+      var generation = 0;
+      var generated = importedRowId(normalized, repeat);
+      while (deletedIds.contains(generated)) {
+        generation++;
+        generated = importedRowId('$normalized\u001fgen$generation', repeat);
+      }
+      id = generated;
       if (!_seenIds.add(id)) {
         _errors.add(ImportIssue(line, 'id ripetuto nel file'));
         return;
