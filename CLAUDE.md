@@ -225,6 +225,13 @@ Al primo avvio, se il database è vuoto:
   In Grafici e Confronta contano solo portafogli, categorie e label (almeno una/tutte): tipo e
   trasferimenti si ignorano (`analyticsScope`). I filtri si applicano prima di ogni calcolo
   (`filterForAnalytics`): torte, totale al centro, barre, linee cumulate e tabella delle variazioni.
+- **Ricerca** (Movimenti, `transaction_search.dart`, logica pura): su tutto lo storico (non solo il
+  periodo), solo movimenti confermati, con i filtri attivi applicati. Cerca in nota, nome della
+  categoria, label e portafogli (anche la destinazione), senza distinzione di maiuscole e accenti
+  (`foldForSearch`); con più parole devono esserci tutte. Un numero cerca l'importo: con decimali
+  (`64,20`) l'importo esatto, intero (`64`) gli importi da 64,00 a 64,99; il segno non conta.
+  Filtro in memoria sui movimenti già caricati: ~25 ms su 10.000 movimenti, quindi niente FTS5 (da
+  rivalutare con una tabella FTS e una migrazione se lo storico crescesse di molto).
 - **Tap su una fetta** (Grafici): apre Movimenti con il periodo del grafico, il tipo (Spese/Entrate),
   la voce toccata e i filtri del grafico (`sliceFilters`): la voce sostituisce i filtri della sua
   dimensione (una categoria toccata sostituisce le categorie, una label le label, in modalità
@@ -455,7 +462,10 @@ La schermata **Filtri** è una sola e riceve il contesto dalla rotta (`/filters?
 
 Riepilogo delle schermate:
 
-- **Movimenti**: header con avatar (impostazioni), cerca e filtri; selettore
+- **Movimenti**: header con avatar (impostazioni), cerca e filtri. "Cerca" sostituisce l'intestazione
+  con un campo (debounce 300 ms, ✕ per cancellare, "Chiudi ricerca" o indietro per uscire): al posto di
+  periodo e riepilogo compaiono "N risultati · totale · con N filtri" e i risultati per giorno, oppure
+  uno stato vuoto con suggerimento (e "Azzera filtri" se ci sono filtri attivi); selettore
   Giorno/Sett./Mese/Anno/Periodo (default Mese) con frecce; card riepilogo (saldo, entrate,
   uscite, % speso, chip "Tutti i portafogli"); sezione "In arrivo" (pending dei prossimi 7 giorni);
   lista per giorno con totale; pulsanti fissi "− Spesa" e "+ Entrata".

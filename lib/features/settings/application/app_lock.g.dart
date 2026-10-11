@@ -49,7 +49,7 @@ final class AppLockProvider extends $NotifierProvider<AppLock, bool> {
   }
 }
 
-String _$appLockHash() => r'a33500b7f5f4d3332d5364e56dfab9d7c48b970c';
+String _$appLockHash() => r'072c464d9684dcbb1f294f71f4cb871d7d9be79b';
 
 /// Stato del blocco con biometria: true = schermata di sblocco visibile.
 ///
