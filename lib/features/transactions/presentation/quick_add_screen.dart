@@ -8,6 +8,7 @@ import '../../../core/money.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/choice_sheet.dart';
 import '../../../core/widgets/screen_placeholder.dart';
@@ -142,9 +143,46 @@ class _QuickAddFormState extends ConsumerState<_QuickAddForm> {
     final systemKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
+      // Tastierino e "Salva" in basso: restano sopra la barra di sistema e, con la tastiera
+      // aperta (nota), sopra la tastiera.
+      bottomNavigationBar: BottomActionBar(
+        color: colors.background,
+        showBorder: false,
+        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 0, AppSpacing.screen, AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!systemKeyboardOpen) ...[
+              AmountKeypad(onKey: controller.pressKey, onClear: controller.clearAmount),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: tone.fill,
+                foregroundColor: tone.onFill,
+                minimumSize: const Size.fromHeight(56),
+                // Parte dallo stile del tema: un TextStyle nuovo perderebbe il font Manrope.
+                textStyle: textTheme.titleMedium?.copyWith(fontSize: 17),
+              ),
+              onPressed: state.saving
+                  ? null
+                  : () => state.isTransfer ? _save(wallets.fromId, toWalletId: wallets.toId) : _save(wallets.walletId),
+              child: Text(
+                '${state.confirming ? 'Conferma' : 'Salva'} ${switch (state.type) {
+                  TransactionType.income => 'entrata',
+                  TransactionType.transfer => 'trasferimento',
+                  _ => 'spesa',
+                }}',
+              ),
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
+        bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 14, AppSpacing.screen, 18),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 14, AppSpacing.screen, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -241,30 +279,6 @@ class _QuickAddFormState extends ConsumerState<_QuickAddForm> {
                       ],
                     ),
                   ],
-                ),
-              ),
-              if (!systemKeyboardOpen) ...[
-                AmountKeypad(onKey: controller.pressKey, onClear: controller.clearAmount),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: tone.fill,
-                  foregroundColor: tone.onFill,
-                  minimumSize: const Size.fromHeight(56),
-                  // Parte dallo stile del tema: un TextStyle nuovo perderebbe il font Manrope.
-                  textStyle: textTheme.titleMedium?.copyWith(fontSize: 17),
-                ),
-                onPressed: state.saving
-                    ? null
-                    : () =>
-                          state.isTransfer ? _save(wallets.fromId, toWalletId: wallets.toId) : _save(wallets.walletId),
-                child: Text(
-                  '${state.confirming ? 'Conferma' : 'Salva'} ${switch (state.type) {
-                    TransactionType.income => 'entrata',
-                    TransactionType.transfer => 'trasferimento',
-                    _ => 'spesa',
-                  }}',
                 ),
               ),
             ],

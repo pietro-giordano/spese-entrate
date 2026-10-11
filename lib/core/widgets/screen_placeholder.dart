@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
+import 'bottom_action_bar.dart';
 import 'app_icon_button.dart';
 import 'app_list_row.dart';
 import 'section_label.dart';
@@ -42,7 +43,12 @@ class ScreenPlaceholder extends StatelessWidget {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 14, AppSpacing.screen, AppSpacing.xxl),
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screen,
+            14,
+            AppSpacing.screen,
+            AppSpacing.xxl + bottomSystemInset(context),
+          ),
           children: [
             Row(
               children: [

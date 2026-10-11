@@ -10,6 +10,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/choice_sheet.dart';
 import '../../../core/widgets/screen_placeholder.dart';
 import '../../../core/widgets/section_label.dart';
@@ -101,53 +102,40 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
     final rule = _rule;
 
     return Scaffold(
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: AppSpacing.xl),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md, AppSpacing.screen, 0),
-            child: Row(
-              children: [
-                Tooltip(
-                  message: 'Elimina movimento',
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      fixedSize: const Size.square(56),
-                      minimumSize: const Size.square(56),
-                      padding: EdgeInsets.zero,
-                      foregroundColor: colors.danger,
-                      side: BorderSide(color: colors.danger.withValues(alpha: 0.35)),
-                    ),
-                    onPressed: state.saving ? null : _delete,
-                    // Il Tooltip esterno non dà un nome al pulsante per lo screen reader: lo dà l'icona.
-                    child: const Icon(Icons.delete_outline_rounded, size: 22, semanticLabel: 'Elimina movimento'),
-                  ),
+      bottomNavigationBar: BottomActionBar(
+        child: Row(
+          children: [
+            Tooltip(
+              message: 'Elimina movimento',
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  fixedSize: const Size.square(56),
+                  minimumSize: const Size.square(56),
+                  padding: EdgeInsets.zero,
+                  foregroundColor: colors.danger,
+                  side: BorderSide(color: colors.danger.withValues(alpha: 0.35)),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: tone.fill,
-                      foregroundColor: tone.onFill,
-                      minimumSize: const Size.fromHeight(56),
-                    ),
-                    // Attivo solo se qualcosa è cambiato.
-                    onPressed: isDirty && !state.saving
-                        ? () => state.isTransfer
-                              ? _save(wallets.fromId, toWalletId: wallets.toId)
-                              : _save(wallets.walletId)
-                        : null,
-                    child: const Text('Salva modifiche'),
-                  ),
-                ),
-              ],
+                onPressed: state.saving ? null : _delete,
+                // Il Tooltip esterno non dà un nome al pulsante per lo screen reader: lo dà l'icona.
+                child: const Icon(Icons.delete_outline_rounded, size: 22, semanticLabel: 'Elimina movimento'),
+              ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: tone.fill,
+                  foregroundColor: tone.onFill,
+                  minimumSize: const Size.fromHeight(56),
+                ),
+                // Attivo solo se qualcosa è cambiato.
+                onPressed: isDirty && !state.saving
+                    ? () => state.isTransfer ? _save(wallets.fromId, toWalletId: wallets.toId) : _save(wallets.walletId)
+                    : null,
+                child: const Text('Salva modifiche'),
+              ),
+            ),
+          ],
         ),
       ),
       body: SafeArea(

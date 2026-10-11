@@ -10,6 +10,7 @@ import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/amount_text.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
@@ -118,7 +119,12 @@ class RecurringListScreen extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.xxl),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.xs,
+                  AppSpacing.screen,
+                  AppSpacing.xxl + bottomSystemInset(context),
+                ),
                 children: [
                   if (rulesAsync.hasError && rulesAsync.value == null)
                     StateMessage.error(what: 'le ricorrenze', onRetry: () => ref.invalidate(recurrenceRulesProvider))

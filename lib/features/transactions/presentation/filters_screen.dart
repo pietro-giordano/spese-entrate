@@ -7,6 +7,7 @@ import '../../../core/clock.dart';
 import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_segmented.dart';
@@ -88,22 +89,11 @@ class _FiltersScreenState extends ConsumerState<FiltersScreen> {
     );
 
     return Scaffold(
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: AppSpacing.xl),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md, AppSpacing.screen, 0),
-            child: FilledButton(
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
-              onPressed: _apply,
-              child: const Text('Applica filtri'),
-            ),
-          ),
+      bottomNavigationBar: BottomActionBar(
+        child: FilledButton(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+          onPressed: _apply,
+          child: const Text('Applica filtri'),
         ),
       ),
       body: SafeArea(

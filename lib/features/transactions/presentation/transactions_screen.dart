@@ -9,6 +9,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/app_icon_button.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../core/widgets/state_message.dart';
@@ -256,40 +257,33 @@ class _AddButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 10, AppSpacing.screen, AppSpacing.md),
-        child: Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.expense.fill,
-                  foregroundColor: colors.expense.onFill,
-                ),
-                onPressed: () => context.push(AppRoutes.add('expense')),
-                icon: const Icon(Icons.remove_rounded),
-                label: const Text('Spesa'),
+    // Sopra la barra delle tab, che ha già il suo spazio di sistema: qui l'inset è zero.
+    return BottomActionBar(
+      color: colors.background,
+      padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 10, AppSpacing.screen, AppSpacing.md),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.expense.fill,
+                foregroundColor: colors.expense.onFill,
               ),
+              onPressed: () => context.push(AppRoutes.add('expense')),
+              icon: const Icon(Icons.remove_rounded),
+              label: const Text('Spesa'),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.income.fill,
-                  foregroundColor: colors.income.onFill,
-                ),
-                onPressed: () => context.push(AppRoutes.add('income')),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Entrata'),
-              ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: colors.income.fill, foregroundColor: colors.income.onFill),
+              onPressed: () => context.push(AppRoutes.add('income')),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Entrata'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../../../core/dates.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/amount_text.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -116,7 +117,12 @@ class _RecurrenceDetail extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.xxl),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.xs,
+                  AppSpacing.screen,
+                  AppSpacing.xxl + bottomSystemInset(context),
+                ),
                 children: [
                   _SummaryCard(rule: rule, finished: finished),
                   if (!finished) ...[

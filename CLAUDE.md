@@ -322,6 +322,14 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   (sfondo testo, testo su sfondo).
 - Componenti in `core/widgets/`: `AppChip`, `AppSegmented`, `AppSwitch`, `AppListRow`,
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori).
+- **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
+  (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
+  `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
+  tastiera copre la barra). Mai `SafeArea(minimum:)`, che prende il massimo e lascia il pulsante
+  attaccato alla barra. I pannelli passano da `AppBottomSheet` (navigator principale, `useSafeArea`,
+  stesso spazio in basso, contenuto che scorre col campo attivo visibile). Le liste fuori dalle tab
+  con `SafeArea(bottom: false)` aggiungono `bottomSystemInset` al padding finale.
+  Verificato da `test/core/bottom_insets_test.dart`.
 - **Errori**: un errore di caricamento non si mostra mai come uno stato vuoto. Le schermate principali
   usano `StateMessage.error` ("Non è stato possibile caricare …" + "Riprova"); i dettagli distinguono
   "non esiste più" da "non è stato possibile caricare".

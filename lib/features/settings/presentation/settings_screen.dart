@@ -9,6 +9,7 @@ import '../../../core/dates.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
@@ -145,7 +146,12 @@ class SettingsScreen extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 6, AppSpacing.screen, AppSpacing.xxl),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  6,
+                  AppSpacing.screen,
+                  AppSpacing.xxl + bottomSystemInset(context),
+                ),
                 children: [
                   _ProfileCard(
                     preferences: preferences,

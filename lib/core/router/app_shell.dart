@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/bottom_action_bar.dart';
 
 /// Contenitore dei 4 tab: mostra il tab attivo e la barra in basso.
 ///
@@ -26,34 +28,24 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border(top: BorderSide(color: colors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: 14),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-            child: Row(
-              children: [
-                for (var i = 0; i < _tabs.length; i++)
-                  Expanded(
-                    child: _TabItem(
-                      icon: _tabs[i].icon,
-                      label: _tabs[i].label,
-                      selected: i == navigationShell.currentIndex,
-                      onTap: () => _onTap(i),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+      // La tastiera può coprire la barra delle tab: conta solo la barra di sistema.
+      bottomNavigationBar: BottomActionBar(
+        avoidKeyboard: false,
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, AppSpacing.sm),
+        child: Row(
+          children: [
+            for (var i = 0; i < _tabs.length; i++)
+              Expanded(
+                child: _TabItem(
+                  icon: _tabs[i].icon,
+                  label: _tabs[i].label,
+                  selected: i == navigationShell.currentIndex,
+                  onTap: () => _onTap(i),
+                ),
+              ),
+          ],
         ),
       ),
     );

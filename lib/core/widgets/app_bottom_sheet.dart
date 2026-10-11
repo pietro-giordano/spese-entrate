@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
+import 'bottom_action_bar.dart';
 
 /// Pannello dal basso con maniglia e titolo.
 ///
@@ -24,7 +25,10 @@ class AppBottomSheet extends StatelessWidget {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
+      // useSafeArea protegge il pannello in alto e ai lati; in basso lo spazio lo aggiunge il pannello.
       useSafeArea: true,
+      // Sopra tutto, anche sopra la barra delle tab: così riceve gli inset completi (sistema e tastiera).
+      useRootNavigator: true,
       builder: (context) => AppBottomSheet(title: title, titleTrailing: titleTrailing, child: builder(context)),
     );
   }
@@ -32,7 +36,9 @@ class AppBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom;
+    // Barra di sistema o tastiera (la più alta delle due): il pannello sale e il contenuto scorre,
+    // così il campo attivo resta visibile sopra la tastiera.
+    final bottomInset = bottomSystemInset(context);
 
     return Padding(
       // Con la tastiera aperta il pannello sale sopra di essa.

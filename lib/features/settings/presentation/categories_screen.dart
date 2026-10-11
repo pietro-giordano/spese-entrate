@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/theme/category_palette.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_icon_button.dart';
@@ -124,11 +125,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             Expanded(
               child: isCategories
                   ? ReorderableListView(
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         AppSpacing.screen,
                         AppSpacing.xs,
                         AppSpacing.screen,
-                        AppSpacing.xl,
+                        AppSpacing.xl + bottomSystemInset(context),
                       ),
                       header: header,
                       footer: Column(
@@ -167,11 +168,11 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       ],
                     )
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(
+                      padding: EdgeInsets.fromLTRB(
                         AppSpacing.screen,
                         AppSpacing.xs,
                         AppSpacing.screen,
-                        AppSpacing.xl,
+                        AppSpacing.xl + bottomSystemInset(context),
                       ),
                       children: [
                         header,

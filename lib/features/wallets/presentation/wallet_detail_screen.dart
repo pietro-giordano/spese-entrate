@@ -8,6 +8,7 @@ import '../../../core/money.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/screen_placeholder.dart';
@@ -91,7 +92,12 @@ class WalletDetailScreen extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, AppSpacing.xl),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  AppSpacing.xs,
+                  AppSpacing.screen,
+                  AppSpacing.xl + bottomSystemInset(context),
+                ),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(18),

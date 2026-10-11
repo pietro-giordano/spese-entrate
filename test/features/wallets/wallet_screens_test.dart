@@ -221,6 +221,9 @@ void main() {
     expect(find.text('Modifica portafoglio'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Archivia portafoglio'), 200, scrollable: find.byType(Scrollable).first);
+    // scrollUntilVisible si ferma appena il pulsante esiste: va portato fuori da sotto la barra in basso.
+    await tester.ensureVisible(find.text('Archivia portafoglio'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Archivia portafoglio'));
     await waitFor(tester, () => gone(find.byType(WalletFormScreen)));
 

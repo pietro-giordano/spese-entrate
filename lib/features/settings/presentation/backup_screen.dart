@@ -6,6 +6,7 @@ import '../../../core/clock.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/section_label.dart';
@@ -87,7 +88,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screen, 6, AppSpacing.screen, AppSpacing.xxl),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.screen,
+                  6,
+                  AppSpacing.screen,
+                  AppSpacing.xxl + bottomSystemInset(context),
+                ),
                 children: [
                   const SectionLabel('Esporta CSV', indent: true),
                   const SizedBox(height: AppSpacing.sm),
