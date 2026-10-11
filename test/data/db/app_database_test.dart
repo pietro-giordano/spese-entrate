@@ -66,15 +66,17 @@ void main() {
           'attachments',
           'recurrence_rules',
           'recurrence_exceptions',
+          'imports',
           'settings',
           'app_meta',
           'outbox',
           'transactions_date',
           'transactions_wallet_id',
           'transactions_category_id',
+          'transactions_import_batch_id',
         ]),
       );
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 3);
     });
   });
 

@@ -21,6 +21,7 @@ part 'app_database.g.dart';
     Attachments,
     RecurrenceRules,
     RecurrenceExceptions,
+    Imports,
     Settings,
     AppMeta,
     Outbox,
@@ -45,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   /// Versione dello schema. Va incrementata a ogni modifica delle tabelle,
   /// insieme a una migrazione (vedi [migration]).
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -57,6 +58,13 @@ class AppDatabase extends _$AppDatabase {
       onUpgrade: stepByStep(
         from1To2: (m, schema) async {
           await m.addColumn(schema.wallets, schema.wallets.lastBalanceVerifiedDate);
+        },
+        // v3: import da file. Una tabella nuova e una colonna (con indice) sui movimenti:
+        // i dati esistenti restano, import_batch_id parte vuoto.
+        from2To3: (m, schema) async {
+          await m.createTable(schema.imports);
+          await m.addColumn(schema.transactions, schema.transactions.importBatchId);
+          await m.createIndex(schema.transactionsImportBatchId);
         },
       ),
       beforeOpen: (details) async {

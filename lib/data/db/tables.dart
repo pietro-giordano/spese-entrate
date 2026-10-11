@@ -57,6 +57,7 @@ class Labels extends Table with SyncColumns {
 @TableIndex(name: 'transactions_date', columns: {#date})
 @TableIndex(name: 'transactions_wallet_id', columns: {#walletId})
 @TableIndex(name: 'transactions_category_id', columns: {#categoryId})
+@TableIndex(name: 'transactions_import_batch_id', columns: {#importBatchId})
 class Transactions extends Table with SyncColumns {
   TextColumn get type => textEnum<TransactionType>()();
   TextColumn get status => textEnum<TransactionStatus>().withDefault(const Constant('confirmed'))();
@@ -77,6 +78,9 @@ class Transactions extends Table with SyncColumns {
   TextColumn get note => text().nullable()();
   TextColumn get recurrenceId => text().nullable()();
   TextColumn get occurrenceDate => text().map(const LocalDateConverter()).nullable()();
+
+  /// Import da cui viene il movimento (`imports.id`); null se inserito a mano. Dalla v3.
+  TextColumn get importBatchId => text().nullable()();
 
   // SQLite considera distinti i NULL: i movimenti non ricorrenti non entrano in conflitto.
   @override
@@ -115,6 +119,27 @@ class Attachments extends Table with SyncColumns {
   IntColumn get sizeBytes => integer()();
   TextColumn get sha256 => text()();
   TextColumn get remoteUrl => text().nullable()();
+}
+
+/// Un import di movimenti da file (es. CSV della banca): cosa è stato importato e con che esito.
+/// Sincronizzabile. Annullare un import imposta [undoneAt] (i movimenti hanno `import_batch_id`).
+/// Dalla v3.
+@DataClassName('ImportRow')
+class Imports extends Table with SyncColumns {
+  TextColumn get fileName => text()();
+
+  /// Righe lette dal file.
+  IntColumn get rowCount => integer()();
+
+  /// Movimenti creati e movimenti esistenti aggiornati.
+  IntColumn get insertedCount => integer()();
+  IntColumn get updatedCount => integer()();
+
+  /// Quando l'import è stato annullato (millisecondi UTC); null se è ancora valido.
+  IntColumn get undoneAt => integer().nullable()();
+
+  @override
+  List<String> get customConstraints => ['CHECK (row_count >= 0 AND inserted_count >= 0 AND updated_count >= 0)'];
 }
 
 @DataClassName('RecurrenceRuleRow')

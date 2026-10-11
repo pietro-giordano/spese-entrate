@@ -1765,6 +1765,15 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   ).withConverter<LocalDate?>($TransactionsTable.$converteroccurrenceDaten);
+  static const VerificationMeta _importBatchIdMeta = const VerificationMeta('importBatchId');
+  @override
+  late final GeneratedColumn<String> importBatchId = GeneratedColumn<String>(
+    'import_batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1783,6 +1792,7 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
     note,
     recurrenceId,
     occurrenceDate,
+    importBatchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1843,6 +1853,12 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
     if (data.containsKey('recurrence_id')) {
       context.handle(_recurrenceIdMeta, recurrenceId.isAcceptableOrUnknown(data['recurrence_id']!, _recurrenceIdMeta));
     }
+    if (data.containsKey('import_batch_id')) {
+      context.handle(
+        _importBatchIdMeta,
+        importBatchId.isAcceptableOrUnknown(data['import_batch_id']!, _importBatchIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1880,6 +1896,7 @@ class $TransactionsTable extends Transactions with TableInfo<$TransactionsTable,
       occurrenceDate: $TransactionsTable.$converteroccurrenceDaten.fromSql(
         attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}occurrence_date']),
       ),
+      importBatchId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}import_batch_id']),
     );
   }
 
@@ -1925,6 +1942,9 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
   final String? note;
   final String? recurrenceId;
   final LocalDate? occurrenceDate;
+
+  /// Import da cui viene il movimento (`imports.id`); null se inserito a mano. Dalla v3.
+  final String? importBatchId;
   const TransactionRow({
     required this.id,
     required this.createdAt,
@@ -1942,6 +1962,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     this.note,
     this.recurrenceId,
     this.occurrenceDate,
+    this.importBatchId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1980,6 +2001,9 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     if (!nullToAbsent || occurrenceDate != null) {
       map['occurrence_date'] = Variable<String>($TransactionsTable.$converteroccurrenceDaten.toSql(occurrenceDate));
     }
+    if (!nullToAbsent || importBatchId != null) {
+      map['import_batch_id'] = Variable<String>(importBatchId);
+    }
     return map;
   }
 
@@ -2001,6 +2025,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       recurrenceId: recurrenceId == null && nullToAbsent ? const Value.absent() : Value(recurrenceId),
       occurrenceDate: occurrenceDate == null && nullToAbsent ? const Value.absent() : Value(occurrenceDate),
+      importBatchId: importBatchId == null && nullToAbsent ? const Value.absent() : Value(importBatchId),
     );
   }
 
@@ -2023,6 +2048,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       note: serializer.fromJson<String?>(json['note']),
       recurrenceId: serializer.fromJson<String?>(json['recurrenceId']),
       occurrenceDate: serializer.fromJson<LocalDate?>(json['occurrenceDate']),
+      importBatchId: serializer.fromJson<String?>(json['importBatchId']),
     );
   }
   @override
@@ -2045,6 +2071,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       'note': serializer.toJson<String?>(note),
       'recurrenceId': serializer.toJson<String?>(recurrenceId),
       'occurrenceDate': serializer.toJson<LocalDate?>(occurrenceDate),
+      'importBatchId': serializer.toJson<String?>(importBatchId),
     };
   }
 
@@ -2065,6 +2092,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     Value<String?> note = const Value.absent(),
     Value<String?> recurrenceId = const Value.absent(),
     Value<LocalDate?> occurrenceDate = const Value.absent(),
+    Value<String?> importBatchId = const Value.absent(),
   }) => TransactionRow(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -2082,6 +2110,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     note: note.present ? note.value : this.note,
     recurrenceId: recurrenceId.present ? recurrenceId.value : this.recurrenceId,
     occurrenceDate: occurrenceDate.present ? occurrenceDate.value : this.occurrenceDate,
+    importBatchId: importBatchId.present ? importBatchId.value : this.importBatchId,
   );
   TransactionRow copyWithCompanion(TransactionsCompanion data) {
     return TransactionRow(
@@ -2101,6 +2130,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
       note: data.note.present ? data.note.value : this.note,
       recurrenceId: data.recurrenceId.present ? data.recurrenceId.value : this.recurrenceId,
       occurrenceDate: data.occurrenceDate.present ? data.occurrenceDate.value : this.occurrenceDate,
+      importBatchId: data.importBatchId.present ? data.importBatchId.value : this.importBatchId,
     );
   }
 
@@ -2122,7 +2152,8 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
           ..write('categoryId: $categoryId, ')
           ..write('note: $note, ')
           ..write('recurrenceId: $recurrenceId, ')
-          ..write('occurrenceDate: $occurrenceDate')
+          ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('importBatchId: $importBatchId')
           ..write(')'))
         .toString();
   }
@@ -2145,6 +2176,7 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
     note,
     recurrenceId,
     occurrenceDate,
+    importBatchId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2165,7 +2197,8 @@ class TransactionRow extends DataClass implements Insertable<TransactionRow> {
           other.categoryId == this.categoryId &&
           other.note == this.note &&
           other.recurrenceId == this.recurrenceId &&
-          other.occurrenceDate == this.occurrenceDate);
+          other.occurrenceDate == this.occurrenceDate &&
+          other.importBatchId == this.importBatchId);
 }
 
 class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
@@ -2185,6 +2218,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
   final Value<String?> note;
   final Value<String?> recurrenceId;
   final Value<LocalDate?> occurrenceDate;
+  final Value<String?> importBatchId;
   final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
@@ -2203,6 +2237,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     this.note = const Value.absent(),
     this.recurrenceId = const Value.absent(),
     this.occurrenceDate = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TransactionsCompanion.insert({
@@ -2222,6 +2257,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     this.note = const Value.absent(),
     this.recurrenceId = const Value.absent(),
     this.occurrenceDate = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -2249,6 +2285,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     Expression<String>? note,
     Expression<String>? recurrenceId,
     Expression<String>? occurrenceDate,
+    Expression<String>? importBatchId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2268,6 +2305,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
       if (note != null) 'note': note,
       if (recurrenceId != null) 'recurrence_id': recurrenceId,
       if (occurrenceDate != null) 'occurrence_date': occurrenceDate,
+      if (importBatchId != null) 'import_batch_id': importBatchId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2289,6 +2327,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
     Value<String?>? note,
     Value<String?>? recurrenceId,
     Value<LocalDate?>? occurrenceDate,
+    Value<String?>? importBatchId,
     Value<int>? rowid,
   }) {
     return TransactionsCompanion(
@@ -2308,6 +2347,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
       note: note ?? this.note,
       recurrenceId: recurrenceId ?? this.recurrenceId,
       occurrenceDate: occurrenceDate ?? this.occurrenceDate,
+      importBatchId: importBatchId ?? this.importBatchId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2365,6 +2405,9 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
         $TransactionsTable.$converteroccurrenceDaten.toSql(occurrenceDate.value),
       );
     }
+    if (importBatchId.present) {
+      map['import_batch_id'] = Variable<String>(importBatchId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2390,6 +2433,7 @@ class TransactionsCompanion extends UpdateCompanion<TransactionRow> {
           ..write('note: $note, ')
           ..write('recurrenceId: $recurrenceId, ')
           ..write('occurrenceDate: $occurrenceDate, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4874,6 +4918,539 @@ class RecurrenceExceptionsCompanion extends UpdateCompanion<RecurrenceExceptionR
   }
 }
 
+class $ImportsTable extends Imports with TableInfo<$ImportsTable, ImportRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ImportsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta('deletedAt');
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta('deviceId');
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta('fileName');
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rowCountMeta = const VerificationMeta('rowCount');
+  @override
+  late final GeneratedColumn<int> rowCount = GeneratedColumn<int>(
+    'row_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _insertedCountMeta = const VerificationMeta('insertedCount');
+  @override
+  late final GeneratedColumn<int> insertedCount = GeneratedColumn<int>(
+    'inserted_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedCountMeta = const VerificationMeta('updatedCount');
+  @override
+  late final GeneratedColumn<int> updatedCount = GeneratedColumn<int>(
+    'updated_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _undoneAtMeta = const VerificationMeta('undoneAt');
+  @override
+  late final GeneratedColumn<int> undoneAt = GeneratedColumn<int>(
+    'undone_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    deviceId,
+    fileName,
+    rowCount,
+    insertedCount,
+    updatedCount,
+    undoneAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'imports';
+  @override
+  VerificationContext validateIntegrity(Insertable<ImportRow> instance, {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta, createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta, updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(_deletedAtMeta, deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta));
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(_deviceIdMeta, deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta));
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(_fileNameMeta, fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta));
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('row_count')) {
+      context.handle(_rowCountMeta, rowCount.isAcceptableOrUnknown(data['row_count']!, _rowCountMeta));
+    } else if (isInserting) {
+      context.missing(_rowCountMeta);
+    }
+    if (data.containsKey('inserted_count')) {
+      context.handle(
+        _insertedCountMeta,
+        insertedCount.isAcceptableOrUnknown(data['inserted_count']!, _insertedCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_insertedCountMeta);
+    }
+    if (data.containsKey('updated_count')) {
+      context.handle(_updatedCountMeta, updatedCount.isAcceptableOrUnknown(data['updated_count']!, _updatedCountMeta));
+    } else if (isInserting) {
+      context.missing(_updatedCountMeta);
+    }
+    if (data.containsKey('undone_at')) {
+      context.handle(_undoneAtMeta, undoneAt.isAcceptableOrUnknown(data['undone_at']!, _undoneAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ImportRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ImportRow(
+      id: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      createdAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}updated_at'])!,
+      deletedAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}deleted_at']),
+      deviceId: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}device_id'])!,
+      fileName: attachedDatabase.typeMapping.read(DriftSqlType.string, data['${effectivePrefix}file_name'])!,
+      rowCount: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}row_count'])!,
+      insertedCount: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}inserted_count'])!,
+      updatedCount: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}updated_count'])!,
+      undoneAt: attachedDatabase.typeMapping.read(DriftSqlType.int, data['${effectivePrefix}undone_at']),
+    );
+  }
+
+  @override
+  $ImportsTable createAlias(String alias) {
+    return $ImportsTable(attachedDatabase, alias);
+  }
+}
+
+class ImportRow extends DataClass implements Insertable<ImportRow> {
+  final String id;
+  final int createdAt;
+  final int updatedAt;
+  final int? deletedAt;
+  final String deviceId;
+  final String fileName;
+
+  /// Righe lette dal file.
+  final int rowCount;
+
+  /// Movimenti creati e movimenti esistenti aggiornati.
+  final int insertedCount;
+  final int updatedCount;
+
+  /// Quando l'import è stato annullato (millisecondi UTC); null se è ancora valido.
+  final int? undoneAt;
+  const ImportRow({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+    required this.deviceId,
+    required this.fileName,
+    required this.rowCount,
+    required this.insertedCount,
+    required this.updatedCount,
+    this.undoneAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['device_id'] = Variable<String>(deviceId);
+    map['file_name'] = Variable<String>(fileName);
+    map['row_count'] = Variable<int>(rowCount);
+    map['inserted_count'] = Variable<int>(insertedCount);
+    map['updated_count'] = Variable<int>(updatedCount);
+    if (!nullToAbsent || undoneAt != null) {
+      map['undone_at'] = Variable<int>(undoneAt);
+    }
+    return map;
+  }
+
+  ImportsCompanion toCompanion(bool nullToAbsent) {
+    return ImportsCompanion(
+      id: Value(id),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent ? const Value.absent() : Value(deletedAt),
+      deviceId: Value(deviceId),
+      fileName: Value(fileName),
+      rowCount: Value(rowCount),
+      insertedCount: Value(insertedCount),
+      updatedCount: Value(updatedCount),
+      undoneAt: undoneAt == null && nullToAbsent ? const Value.absent() : Value(undoneAt),
+    );
+  }
+
+  factory ImportRow.fromJson(Map<String, dynamic> json, {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ImportRow(
+      id: serializer.fromJson<String>(json['id']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      rowCount: serializer.fromJson<int>(json['rowCount']),
+      insertedCount: serializer.fromJson<int>(json['insertedCount']),
+      updatedCount: serializer.fromJson<int>(json['updatedCount']),
+      undoneAt: serializer.fromJson<int?>(json['undoneAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'deviceId': serializer.toJson<String>(deviceId),
+      'fileName': serializer.toJson<String>(fileName),
+      'rowCount': serializer.toJson<int>(rowCount),
+      'insertedCount': serializer.toJson<int>(insertedCount),
+      'updatedCount': serializer.toJson<int>(updatedCount),
+      'undoneAt': serializer.toJson<int?>(undoneAt),
+    };
+  }
+
+  ImportRow copyWith({
+    String? id,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    String? deviceId,
+    String? fileName,
+    int? rowCount,
+    int? insertedCount,
+    int? updatedCount,
+    Value<int?> undoneAt = const Value.absent(),
+  }) => ImportRow(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    deviceId: deviceId ?? this.deviceId,
+    fileName: fileName ?? this.fileName,
+    rowCount: rowCount ?? this.rowCount,
+    insertedCount: insertedCount ?? this.insertedCount,
+    updatedCount: updatedCount ?? this.updatedCount,
+    undoneAt: undoneAt.present ? undoneAt.value : this.undoneAt,
+  );
+  ImportRow copyWithCompanion(ImportsCompanion data) {
+    return ImportRow(
+      id: data.id.present ? data.id.value : this.id,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      rowCount: data.rowCount.present ? data.rowCount.value : this.rowCount,
+      insertedCount: data.insertedCount.present ? data.insertedCount.value : this.insertedCount,
+      updatedCount: data.updatedCount.present ? data.updatedCount.value : this.updatedCount,
+      undoneAt: data.undoneAt.present ? data.undoneAt.value : this.undoneAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportRow(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('fileName: $fileName, ')
+          ..write('rowCount: $rowCount, ')
+          ..write('insertedCount: $insertedCount, ')
+          ..write('updatedCount: $updatedCount, ')
+          ..write('undoneAt: $undoneAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    createdAt,
+    updatedAt,
+    deletedAt,
+    deviceId,
+    fileName,
+    rowCount,
+    insertedCount,
+    updatedCount,
+    undoneAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ImportRow &&
+          other.id == this.id &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.deviceId == this.deviceId &&
+          other.fileName == this.fileName &&
+          other.rowCount == this.rowCount &&
+          other.insertedCount == this.insertedCount &&
+          other.updatedCount == this.updatedCount &&
+          other.undoneAt == this.undoneAt);
+}
+
+class ImportsCompanion extends UpdateCompanion<ImportRow> {
+  final Value<String> id;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> deviceId;
+  final Value<String> fileName;
+  final Value<int> rowCount;
+  final Value<int> insertedCount;
+  final Value<int> updatedCount;
+  final Value<int?> undoneAt;
+  final Value<int> rowid;
+  const ImportsCompanion({
+    this.id = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.rowCount = const Value.absent(),
+    this.insertedCount = const Value.absent(),
+    this.updatedCount = const Value.absent(),
+    this.undoneAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ImportsCompanion.insert({
+    required String id,
+    required int createdAt,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    required String deviceId,
+    required String fileName,
+    required int rowCount,
+    required int insertedCount,
+    required int updatedCount,
+    this.undoneAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       deviceId = Value(deviceId),
+       fileName = Value(fileName),
+       rowCount = Value(rowCount),
+       insertedCount = Value(insertedCount),
+       updatedCount = Value(updatedCount);
+  static Insertable<ImportRow> custom({
+    Expression<String>? id,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? deviceId,
+    Expression<String>? fileName,
+    Expression<int>? rowCount,
+    Expression<int>? insertedCount,
+    Expression<int>? updatedCount,
+    Expression<int>? undoneAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (deviceId != null) 'device_id': deviceId,
+      if (fileName != null) 'file_name': fileName,
+      if (rowCount != null) 'row_count': rowCount,
+      if (insertedCount != null) 'inserted_count': insertedCount,
+      if (updatedCount != null) 'updated_count': updatedCount,
+      if (undoneAt != null) 'undone_at': undoneAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ImportsCompanion copyWith({
+    Value<String>? id,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? deviceId,
+    Value<String>? fileName,
+    Value<int>? rowCount,
+    Value<int>? insertedCount,
+    Value<int>? updatedCount,
+    Value<int?>? undoneAt,
+    Value<int>? rowid,
+  }) {
+    return ImportsCompanion(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deviceId: deviceId ?? this.deviceId,
+      fileName: fileName ?? this.fileName,
+      rowCount: rowCount ?? this.rowCount,
+      insertedCount: insertedCount ?? this.insertedCount,
+      updatedCount: updatedCount ?? this.updatedCount,
+      undoneAt: undoneAt ?? this.undoneAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (rowCount.present) {
+      map['row_count'] = Variable<int>(rowCount.value);
+    }
+    if (insertedCount.present) {
+      map['inserted_count'] = Variable<int>(insertedCount.value);
+    }
+    if (updatedCount.present) {
+      map['updated_count'] = Variable<int>(updatedCount.value);
+    }
+    if (undoneAt.present) {
+      map['undone_at'] = Variable<int>(undoneAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ImportsCompanion(')
+          ..write('id: $id, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('fileName: $fileName, ')
+          ..write('rowCount: $rowCount, ')
+          ..write('insertedCount: $insertedCount, ')
+          ..write('updatedCount: $updatedCount, ')
+          ..write('undoneAt: $undoneAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings with TableInfo<$SettingsTable, SettingRow> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -5735,6 +6312,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
   late final $RecurrenceRulesTable recurrenceRules = $RecurrenceRulesTable(this);
   late final $RecurrenceExceptionsTable recurrenceExceptions = $RecurrenceExceptionsTable(this);
+  late final $ImportsTable imports = $ImportsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   late final $AppMetaTable appMeta = $AppMetaTable(this);
   late final $OutboxTable outbox = $OutboxTable(this);
@@ -5749,6 +6327,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index transactionsCategoryId = Index(
     'transactions_category_id',
     'CREATE INDEX transactions_category_id ON transactions (category_id)',
+  );
+  late final Index transactionsImportBatchId = Index(
+    'transactions_import_batch_id',
+    'CREATE INDEX transactions_import_batch_id ON transactions (import_batch_id)',
   );
   late final Index transactionLabelsLabelId = Index(
     'transaction_labels_label_id',
@@ -5770,12 +6352,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     attachments,
     recurrenceRules,
     recurrenceExceptions,
+    imports,
     settings,
     appMeta,
     outbox,
     transactionsDate,
     transactionsWalletId,
     transactionsCategoryId,
+    transactionsImportBatchId,
     transactionLabelsLabelId,
     attachmentsTransactionId,
   ];
@@ -6519,6 +7103,7 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion Functi
   Value<String?> note,
   Value<String?> recurrenceId,
   Value<LocalDate?> occurrenceDate,
+  Value<String?> importBatchId,
   Value<int> rowid,
 });
 typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion Function({
@@ -6538,6 +7123,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion Functi
   Value<String?> note,
   Value<String?> recurrenceId,
   Value<LocalDate?> occurrenceDate,
+  Value<String?> importBatchId,
   Value<int> rowid,
 });
 
@@ -6594,6 +7180,9 @@ class $$TransactionsTableFilterComposer extends Composer<_$AppDatabase, $Transac
 
   ColumnWithTypeConverterFilters<LocalDate?, LocalDate, String> get occurrenceDate =>
       $composableBuilder(column: $table.occurrenceDate, builder: (column) => ColumnWithTypeConverterFilters(column));
+
+  ColumnFilters<String> get importBatchId =>
+      $composableBuilder(column: $table.importBatchId, builder: (column) => ColumnFilters(column));
 }
 
 class $$TransactionsTableOrderingComposer extends Composer<_$AppDatabase, $TransactionsTable> {
@@ -6650,6 +7239,9 @@ class $$TransactionsTableOrderingComposer extends Composer<_$AppDatabase, $Trans
 
   ColumnOrderings<String> get occurrenceDate =>
       $composableBuilder(column: $table.occurrenceDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get importBatchId =>
+      $composableBuilder(column: $table.importBatchId, builder: (column) => ColumnOrderings(column));
 }
 
 class $$TransactionsTableAnnotationComposer extends Composer<_$AppDatabase, $TransactionsTable> {
@@ -6696,6 +7288,9 @@ class $$TransactionsTableAnnotationComposer extends Composer<_$AppDatabase, $Tra
 
   GeneratedColumnWithTypeConverter<LocalDate?, String> get occurrenceDate =>
       $composableBuilder(column: $table.occurrenceDate, builder: (column) => column);
+
+  GeneratedColumn<String> get importBatchId =>
+      $composableBuilder(column: $table.importBatchId, builder: (column) => column);
 }
 
 class $$TransactionsTableTableManager
@@ -6739,6 +7334,7 @@ class $$TransactionsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<String?> recurrenceId = const Value.absent(),
                 Value<LocalDate?> occurrenceDate = const Value.absent(),
+                Value<String?> importBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
@@ -6757,6 +7353,7 @@ class $$TransactionsTableTableManager
                 note: note,
                 recurrenceId: recurrenceId,
                 occurrenceDate: occurrenceDate,
+                importBatchId: importBatchId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6777,6 +7374,7 @@ class $$TransactionsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<String?> recurrenceId = const Value.absent(),
                 Value<LocalDate?> occurrenceDate = const Value.absent(),
+                Value<String?> importBatchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
@@ -6795,6 +7393,7 @@ class $$TransactionsTableTableManager
                 note: note,
                 recurrenceId: recurrenceId,
                 occurrenceDate: occurrenceDate,
+                importBatchId: importBatchId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7908,6 +8507,241 @@ typedef $$RecurrenceExceptionsTableProcessedTableManager =
       RecurrenceExceptionRow,
       PrefetchHooks Function()
     >;
+typedef $$ImportsTableCreateCompanionBuilder = ImportsCompanion Function({
+  required String id,
+  required int createdAt,
+  required int updatedAt,
+  Value<int?> deletedAt,
+  required String deviceId,
+  required String fileName,
+  required int rowCount,
+  required int insertedCount,
+  required int updatedCount,
+  Value<int?> undoneAt,
+  Value<int> rowid,
+});
+typedef $$ImportsTableUpdateCompanionBuilder = ImportsCompanion Function({
+  Value<String> id,
+  Value<int> createdAt,
+  Value<int> updatedAt,
+  Value<int?> deletedAt,
+  Value<String> deviceId,
+  Value<String> fileName,
+  Value<int> rowCount,
+  Value<int> insertedCount,
+  Value<int> updatedCount,
+  Value<int?> undoneAt,
+  Value<int> rowid,
+});
+
+class $$ImportsTableFilterComposer extends Composer<_$AppDatabase, $ImportsTable> {
+  $$ImportsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get rowCount =>
+      $composableBuilder(column: $table.rowCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get insertedCount =>
+      $composableBuilder(column: $table.insertedCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get updatedCount =>
+      $composableBuilder(column: $table.updatedCount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get undoneAt =>
+      $composableBuilder(column: $table.undoneAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$ImportsTableOrderingComposer extends Composer<_$AppDatabase, $ImportsTable> {
+  $$ImportsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get rowCount =>
+      $composableBuilder(column: $table.rowCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get insertedCount =>
+      $composableBuilder(column: $table.insertedCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get updatedCount =>
+      $composableBuilder(column: $table.updatedCount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get undoneAt =>
+      $composableBuilder(column: $table.undoneAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ImportsTableAnnotationComposer extends Composer<_$AppDatabase, $ImportsTable> {
+  $$ImportsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id => $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt => $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt => $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt => $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId => $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName => $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<int> get rowCount => $composableBuilder(column: $table.rowCount, builder: (column) => column);
+
+  GeneratedColumn<int> get insertedCount =>
+      $composableBuilder(column: $table.insertedCount, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedCount => $composableBuilder(column: $table.updatedCount, builder: (column) => column);
+
+  GeneratedColumn<int> get undoneAt => $composableBuilder(column: $table.undoneAt, builder: (column) => column);
+}
+
+class $$ImportsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ImportsTable,
+          ImportRow,
+          $$ImportsTableFilterComposer,
+          $$ImportsTableOrderingComposer,
+          $$ImportsTableAnnotationComposer,
+          $$ImportsTableCreateCompanionBuilder,
+          $$ImportsTableUpdateCompanionBuilder,
+          (ImportRow, BaseReferences<_$AppDatabase, $ImportsTable, ImportRow>),
+          ImportRow,
+          PrefetchHooks Function()
+        > {
+  $$ImportsTableTableManager(_$AppDatabase db, $ImportsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () => $$ImportsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () => $$ImportsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => $$ImportsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<int> rowCount = const Value.absent(),
+                Value<int> insertedCount = const Value.absent(),
+                Value<int> updatedCount = const Value.absent(),
+                Value<int?> undoneAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ImportsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                deviceId: deviceId,
+                fileName: fileName,
+                rowCount: rowCount,
+                insertedCount: insertedCount,
+                updatedCount: updatedCount,
+                undoneAt: undoneAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required int createdAt,
+                required int updatedAt,
+                Value<int?> deletedAt = const Value.absent(),
+                required String deviceId,
+                required String fileName,
+                required int rowCount,
+                required int insertedCount,
+                required int updatedCount,
+                Value<int?> undoneAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ImportsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                deviceId: deviceId,
+                fileName: fileName,
+                rowCount: rowCount,
+                insertedCount: insertedCount,
+                updatedCount: updatedCount,
+                undoneAt: undoneAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ImportsTable, ImportRow>(table),
+                  BaseReferences<_$AppDatabase, $ImportsTable, ImportRow>(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ImportsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ImportsTable,
+      ImportRow,
+      $$ImportsTableFilterComposer,
+      $$ImportsTableOrderingComposer,
+      $$ImportsTableAnnotationComposer,
+      $$ImportsTableCreateCompanionBuilder,
+      $$ImportsTableUpdateCompanionBuilder,
+      (ImportRow, BaseReferences<_$AppDatabase, $ImportsTable, ImportRow>),
+      ImportRow,
+      PrefetchHooks Function()
+    >;
 typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   required String id,
   required int createdAt,
@@ -8371,6 +9205,7 @@ class $AppDatabaseManager {
       $$RecurrenceRulesTableTableManager(_db, _db.recurrenceRules);
   $$RecurrenceExceptionsTableTableManager get recurrenceExceptions =>
       $$RecurrenceExceptionsTableTableManager(_db, _db.recurrenceExceptions);
+  $$ImportsTableTableManager get imports => $$ImportsTableTableManager(_db, _db.imports);
   $$SettingsTableTableManager get settings => $$SettingsTableTableManager(_db, _db.settings);
   $$AppMetaTableTableManager get appMeta => $$AppMetaTableTableManager(_db, _db.appMeta);
   $$OutboxTableTableManager get outbox => $$OutboxTableTableManager(_db, _db.outbox);

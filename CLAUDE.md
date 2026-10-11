@@ -126,7 +126,8 @@ Nome unico tra le label non cancellate (controllo nel repository).
 `currency TEXT`, `date TEXT`, `wallet_id TEXT` (origine per i trasferimenti),
 `to_wallet_id TEXT NULL` (solo transfer), `category_id TEXT NULL` (obbligatoria per expense/income),
 `note TEXT NULL`, `recurrence_id TEXT NULL`, `occurrence_date TEXT NULL`.
-Indici: `date`, `wallet_id`, `category_id`. Vincolo unico: `(recurrence_id, occurrence_date)`.
+`import_batch_id TEXT NULL` (import da cui viene il movimento, dalla v3).
+Indici: `date`, `wallet_id`, `category_id`, `import_batch_id`. Vincolo unico: `(recurrence_id, occurrence_date)`.
 
 **transaction_labels** — comuni + `transaction_id TEXT`, `label_id TEXT`.
 Vincolo unico: `(transaction_id, label_id)`.
@@ -146,6 +147,10 @@ Vincolo unico: `(transaction_id, label_id)`.
 **recurrence_exceptions** — comuni + `rule_id TEXT`, `occurrence_date TEXT`, `kind TEXT` (skip).
 Vincolo unico: `(rule_id, occurrence_date)`.
 
+**imports** (dalla v3) — comuni +
+`file_name TEXT`, `row_count INT`, `inserted_count INT`, `updated_count INT` (conteggi ≥ 0),
+`undone_at INT NULL` (quando l'import è stato annullato).
+
 **settings** (sincronizzabile) — comuni + `key TEXT UNIQUE`, `value TEXT`.
 Chiavi: `default_expense_wallet_id`, `default_income_wallet_id`, `week_start` (1 = lunedì),
 `default_period` (month), `currency` (EUR).
@@ -156,6 +161,31 @@ Chiavi: `device_id`, `theme_mode` (system | light | dark), `biometric_lock` (boo
 
 **outbox** (solo locale) — `id INT PK AUTOINCREMENT`, `entity TEXT`, `entity_id TEXT`,
 `op TEXT` (upsert | delete), `changed_at INT`.
+
+## Migrazioni dello schema
+
+Versione attuale: **3**. Storico: v1 schema iniziale; v2 `wallets.last_balance_verified_date`;
+v3 tabella `imports` e `transactions.import_batch_id` (con indice).
+
+Ogni modifica dello schema (tabelle, colonne, indici, vincoli) segue sempre questi passi:
+
+1. Modifica le tabelle in `lib/data/db/tables.dart` (e l'elenco in `@DriftDatabase` se la tabella
+   è nuova). Le colonne nuove su tabelle esistenti sono `nullable` o hanno un default.
+2. Incrementa `schemaVersion` in `AppDatabase`.
+3. `dart run build_runner build --delete-conflicting-outputs`.
+4. `dart run drift_dev make-migrations`: salva `drift_schemas/app_database/drift_schema_vN.json`,
+   rigenera `lib/data/db/app_database.steps.dart` e `test/drift/app_database/generated/` (schema_vN).
+5. In `migration` aggiungi il passo `fromXToY` a `stepByStep` (`createTable`, `addColumn`,
+   `createIndex`, …; le trasformazioni di dati con `customStatement` nello stesso passo).
+6. Di nuovo `build_runner`, poi `dart format lib test`.
+7. In `test/drift/app_database/migration_test.dart` aggiungi un test con dati (`testWithDataIntegrity`)
+   dalla versione precedente alla nuova: righe esistenti identiche, colonne nuove al valore atteso.
+   I test "simple" verificano già lo schema per ogni coppia di versioni.
+8. `flutter test test/drift` e tutti gli altri test; aggiorna la sezione Schema e lo storico qui sopra.
+
+Regole: gli schemi salvati in `drift_schemas/` e i passi già rilasciati non si modificano mai (si
+aggiunge sempre una versione nuova); `drift_schemas/` e i file generati dei test si committano;
+rinominare un valore di un enum salvato come testo richiede una migrazione dei dati.
 
 ## Dati iniziali
 
