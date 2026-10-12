@@ -237,11 +237,10 @@ void main() {
   });
 
   group('Dettaglio ricorrenza', () {
-    testWidgets('riepilogo a righe: tutto visibile, label a capo, nessun overflow al 130%', (tester) async {
+    testWidgets('riepilogo: tipo accanto allo stato, categoria e label; oltre 6 label "Mostra tutte"', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.3;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      const names = ['casa', 'utenze di casa', 'spese fisse mensili', 'da controllare'];
-      const note = 'Fornitura luce e gas per l\'appartamento di via Roma';
+      const names = ['casa', 'utenze di casa', 'spese fisse', 'luce', 'gas', 'condominio', 'da controllare'];
       await pumpAt(
         tester,
         AppRoutes.recurrence('luce'),
@@ -251,31 +250,51 @@ void main() {
           }
           final repository = container.read(recurrenceRepositoryProvider);
           final luce = (await repository.getById('luce'))!;
-          await repository.save(luce.copyWith(note: note, labelIds: names));
+          await repository.save(luce.copyWith(labelIds: names));
         },
       );
 
-      Text text(String data) => tester.widget<Text>(find.text(data));
-      expect(text('Bolletta luce').maxLines, isNull, reason: 'il nome va a capo');
-      expect(text(note).maxLines, isNull, reason: 'anche la descrizione');
-      for (final (label, value) in [
-        ('Tipo', 'Spesa'),
-        ('Categoria', 'Casa'),
-        ('Portafoglio', 'Conto corrente'),
-        ('Frequenza', 'Ogni 2 mesi, il 5'),
-        ('Modalità', 'Da confermare'),
-        ('Prossima scadenza', 'Lun 5 ott'),
-      ]) {
-        expect(find.bySemanticsLabel(RegExp('^$label:\\s+$value\$')), findsOneWidget, reason: label);
+      expect(find.text('Da confermare'), findsWidgets);
+      expect(find.text('Spesa'), findsOneWidget, reason: 'il tipo accanto allo stato');
+      expect(find.text('Casa'), findsOneWidget, reason: 'la categoria');
+      expect(find.text('Ogni 2 mesi, il 5 · da Conto corrente'), findsOneWidget);
+      // 7 label: se ne vedono 5 e il pulsante per le altre.
+      for (final name in names.take(5)) {
+        expect(find.text('#$name'), findsOneWidget);
       }
+      expect(find.text('#condominio'), findsNothing);
+      await tester.tap(find.text('Mostra tutte (7)'));
+      await tester.pumpAndSettle();
       for (final name in names) {
-        expect(text('#$name').maxLines, isNull);
-        expect(text('#$name').overflow, isNot(TextOverflow.ellipsis));
+        expect(find.text('#$name'), findsOneWidget);
       }
+      await tester.tap(find.text('Mostra meno'));
+      await tester.pumpAndSettle();
+      expect(find.text('#condominio'), findsNothing);
       await finish(tester);
     });
 
-    testWidgets('senza label la riga Label non c\'è; trasferimento: Da → A, niente categoria', (tester) async {
+    testWidgets('fino a 6 label si vedono tutte, senza pulsante', (tester) async {
+      const names = ['casa', 'utenze', 'fisse', 'luce', 'gas', 'condominio'];
+      await pumpAt(
+        tester,
+        AppRoutes.recurrence('luce'),
+        setup: () async {
+          for (final name in names) {
+            await container.read(labelRepositoryProvider).save(Label(id: name, name: name, color: 0));
+          }
+          final repository = container.read(recurrenceRepositoryProvider);
+          await repository.save((await repository.getById('luce'))!.copyWith(labelIds: names));
+        },
+      );
+      for (final name in names) {
+        expect(find.text('#$name'), findsOneWidget);
+      }
+      expect(find.textContaining('Mostra tutte'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('trasferimento: tipo e portafogli, senza categoria né label', (tester) async {
       await pumpAt(
         tester,
         AppRoutes.recurrence('risparmio'),
@@ -295,10 +314,10 @@ void main() {
           await container.read(recurrenceRepositoryProvider).save(anchorRuleAt(rule, d(2026, 10, 27)));
         },
       );
-      expect(find.bySemanticsLabel(RegExp(r'^Portafoglio:\s+Conto corrente → Contanti$')), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp('^Categoria:')), findsNothing);
-      expect(find.bySemanticsLabel(RegExp('^Label:')), findsNothing);
-      expect(find.bySemanticsLabel(RegExp(r'^Modalità:\s+Automatica$')), findsOneWidget);
+      expect(find.text('Trasferimento'), findsOneWidget);
+      expect(find.text('Ogni mese, il 27 · da Conto corrente a Contanti'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+      expect(find.text('Casa'), findsNothing);
       await finish(tester);
     });
 

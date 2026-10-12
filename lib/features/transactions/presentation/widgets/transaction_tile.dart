@@ -158,6 +158,6 @@ class _Icon extends StatelessWidget {
 }
 
 /// Label in una riga di lista: le prime [max], poi "+N" per le altre ("#casa #auto +2").
-/// Nei dettagli invece si mostrano tutte (vedi `LabelTags`).
+/// Nei dettagli invece si mostrano tutte.
 String compactLabelTags(List<String> names, {int max = 2}) =>
     [for (final name in names.take(max)) '#$name', if (names.length > max) '+${names.length - max}'].join(' ');

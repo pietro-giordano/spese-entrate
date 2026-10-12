@@ -15,7 +15,6 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/app_list_row.dart';
 import '../../../core/widgets/app_switch.dart';
 import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/info_row.dart';
 import '../../../core/widgets/screen_placeholder.dart';
 import '../../../core/widgets/section_label.dart';
 import '../../../domain/models/category.dart';
@@ -132,12 +131,7 @@ class _RecurrenceDetail extends ConsumerWidget {
                   AppSpacing.xxl + bottomSystemInset(context),
                 ),
                 children: [
-                  _SummaryCard(
-                    rule: rule,
-                    finished: finished,
-                    today: today,
-                    nextDue: upcoming.firstWhereOrNull((o) => !o.isGone)?.date,
-                  ),
+                  _SummaryCard(rule: rule, finished: finished),
                   if (!finished) ...[
                     const SizedBox(height: AppSpacing.lg),
                     const SectionLabel('Prossime occorrenze', indent: true),
@@ -270,14 +264,10 @@ class _RecurrenceDetail extends ConsumerWidget {
 String _capitalized(String text) => text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
 class _SummaryCard extends ConsumerWidget {
-  const _SummaryCard({required this.rule, required this.finished, required this.today, required this.nextDue});
+  const _SummaryCard({required this.rule, required this.finished});
 
   final RecurrenceRule rule;
   final bool finished;
-  final LocalDate today;
-
-  /// Prossima occorrenza da registrare (anche un `pending` scaduto), se c'è.
-  final LocalDate? nextDue;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -300,19 +290,11 @@ class _SummaryCard extends ConsumerWidget {
       TransactionType.transfer => 'Trasferimento',
       _ => 'Spesa',
     };
-    String walletName(String? id) => wallets[id] ?? '—';
+    final where = rule.type == TransactionType.transfer
+        ? 'da ${wallets[rule.walletId] ?? '—'} a ${wallets[rule.toWalletId] ?? '—'}'
+        : '${rule.type == TransactionType.income ? 'su' : 'da'} ${wallets[rule.walletId] ?? '—'}';
+    final schedule = [describeSchedule(rule), ?describeEnd(rule), where].join(' · ');
     final tags = rule.labelIds.map((id) => labels[id]).nonNulls.toList();
-    final title = recurrenceTitle(rule, categoryName: category?.name);
-    // La descrizione dei movimenti, se non è già il titolo.
-    final note = rule.note?.trim() ?? '';
-    final description = note.isEmpty || note == title ? null : note;
-    final next = switch (nextDue) {
-      _ when rule.isPaused => 'In pausa',
-      _ when finished => 'Conclusa',
-      final date? when date == today => 'Oggi',
-      final date? => _capitalized(weekdayDate(date, today)),
-      null => 'Nessuna in programma',
-    };
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -324,35 +306,39 @@ class _SummaryCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RecurrenceBadge(label: badge, tone: tone),
-          const SizedBox(height: AppSpacing.md),
-          // Nome e descrizione vanno a capo: mai troncati.
-          Text(title, style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-          if (description != null) ...[
-            const SizedBox(height: 2),
-            Text(description, style: textTheme.bodyMedium?.copyWith(color: colors.neutral.onTint)),
+          // Stato e tipo sulla stessa riga; sotto la categoria (col suo colore) e le label.
+          Row(
+            children: [
+              RecurrenceBadge(label: badge, tone: tone),
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Text(
+                  kind,
+                  style: textTheme.labelMedium?.copyWith(color: colors.textMuted, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          if (category != null || tags.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _CategoryAndLabels(category: category, labels: tags),
           ],
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            recurrenceTitle(rule, categoryName: category?.name),
+            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
           AmountText(
             rule.amountCents,
             kind: amountKindOf(rule.type),
             colored: rule.type == TransactionType.income,
             style: textTheme.headlineMedium?.copyWith(fontSize: 30, fontWeight: FontWeight.w800),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Divider(height: 1, color: colors.divider),
-          const SizedBox(height: AppSpacing.sm),
-          InfoRow(label: 'Tipo', value: kind),
-          if (rule.type != TransactionType.transfer) InfoRow(label: 'Categoria', value: category?.name ?? '—'),
-          InfoRow(
-            label: 'Portafoglio',
-            value: rule.type == TransactionType.transfer
-                ? '${walletName(rule.walletId)} → ${walletName(rule.toWalletId)}'
-                : walletName(rule.walletId),
+          const SizedBox(height: 2),
+          Text(
+            schedule,
+            style: textTheme.bodySmall?.copyWith(color: colors.neutral.onTint, fontWeight: FontWeight.w600),
           ),
-          InfoRow(label: 'Frequenza', value: [describeSchedule(rule), ?describeEnd(rule)].join(' · ')),
-          InfoRow(label: 'Modalità', value: rule.mode == RecurrenceMode.auto ? 'Automatica' : 'Da confermare'),
-          InfoRow(label: 'Prossima scadenza', value: next),
-          if (tags.isNotEmpty) InfoRow(label: 'Label', child: LabelTags(tags)),
           if (!finished) ...[
             const SizedBox(height: AppSpacing.md),
             Divider(height: 1, color: colors.divider),
@@ -383,6 +369,86 @@ class _SummaryCard extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Categoria e label come chip che vanno a capo. La categoria si distingue: pillola con il
+/// pallino del suo colore e il nome in grassetto; le label sono chip grigi "#nome".
+/// Con più di [_maxLabels] label se ne mostrano le prime e un pulsante per vederle tutte.
+class _CategoryAndLabels extends StatefulWidget {
+  const _CategoryAndLabels({required this.category, required this.labels});
+
+  final Category? category;
+  final List<String> labels;
+
+  @override
+  State<_CategoryAndLabels> createState() => _CategoryAndLabelsState();
+}
+
+const _maxLabels = 6;
+
+class _CategoryAndLabelsState extends State<_CategoryAndLabels> {
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    final labels = widget.labels;
+    final collapsed = !_expanded && labels.length > _maxLabels;
+    final visible = collapsed ? labels.take(_maxLabels - 1) : labels;
+
+    Widget chip(String text) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: colors.neutral.tint, borderRadius: BorderRadius.circular(AppRadius.labelChip)),
+      child: Text(
+        text,
+        style: textTheme.labelMedium?.copyWith(color: colors.neutral.onTint, fontWeight: FontWeight.w700),
+      ),
+    );
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (widget.category case final category?)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border.all(color: colors.borderStrong),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(color: Color(category.color), shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(category.name, style: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800)),
+                ),
+              ],
+            ),
+          ),
+        for (final name in visible) chip('#$name'),
+        if (labels.length > _maxLabels)
+          TextButton(
+            style: TextButton.styleFrom(
+              minimumSize: const Size(AppSizes.minTouchTarget, AppSizes.minTouchTarget),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              foregroundColor: colors.text,
+              textStyle: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            onPressed: () => setState(() => _expanded = !_expanded),
+            child: Text(collapsed ? 'Mostra tutte (${labels.length})' : 'Mostra meno'),
+          ),
+      ],
     );
   }
 }

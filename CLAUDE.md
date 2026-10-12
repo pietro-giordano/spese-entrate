@@ -469,11 +469,10 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
   `BottomActionBar`, `TabHeader` (intestazione delle tab), `AppFilterChip` (chip dei filtri a tre
   stati: incluso con ✓ in inversione, escluso con ✕, testo barrato e bordo tratteggiato `danger`;
-  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco), `InfoRow` (riga
-  etichetta/valore dei dettagli, letta come "Etichetta: valore") e `LabelTags` (label come chip in un
-  `Wrap`).
+  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco).
 - **Troncamento**: nei dettagli (Dettaglio ricorrenza, Dettaglio portafoglio, Modifica movimento) nessun
-  testo si tronca: nomi, descrizioni e valori vanno a capo, le label sono tutte visibili in un `Wrap`.
+  testo si tronca: nomi e valori vanno a capo, le label stanno in un `Wrap` (nel Dettaglio ricorrenza
+  oltre 6 se ne vedono 5 con "Mostra tutte (N)" / "Mostra meno").
   Nelle righe delle liste il troncamento resta (una riga con ellissi) e le label oltre la seconda
   diventano "+N" (`compactLabelTags`). `AppChip` e `AppFilterChip` hanno altezze minime e il testo
   limitato alla larghezza disponibile: un nome più largo della riga va a capo (nelle righe che
@@ -565,10 +564,11 @@ Riepilogo delle schermate:
   sicurezza (biometria); Privacy (saldi all'apertura); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
-- **Dettaglio ricorrenza**: card con stato, nome e descrizione (a capo), importo, poi righe `InfoRow`
-  Tipo, Categoria (non per i trasferimenti), Portafoglio (Da → A per i trasferimenti), Frequenza
-  (con la fine), Modalità, Prossima scadenza (o "In pausa"/"Conclusa"), e Label come chip solo se ci
-  sono; sotto, l'interruttore della pausa.
+- **Dettaglio ricorrenza**: card con il badge di stato (Automatico/Da confermare/In pausa/Conclusa) e
+  accanto il tipo (Spesa/Entrata/Trasferimento); sotto, categoria e label come chip che vanno a capo:
+  la categoria è una pillola con il pallino del suo colore e il nome in grassetto, le label chip grigi
+  "#nome" (oltre 6 label: le prime 5 e "Mostra tutte (N)"); poi nome (a capo), importo, ripetizione con
+  fine e portafoglio ("da Conto corrente", "da X a Y"), e l'interruttore della pausa.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza** (matita "Modifica regola" = "questa e le successive" sulla prossima occorrenza): totali fissi mensili, Attive/In pausa,
   prossime occorrenze con conferma e menu (salta, modifica solo questa, questa e le successive),
   storico, pausa, elimina.
