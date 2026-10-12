@@ -22,6 +22,7 @@ class AppChip extends StatelessWidget {
     this.selectedTone,
     this.showCheck = false,
     this.dashed = false,
+    this.semanticLabel,
   });
 
   final String label;
@@ -35,6 +36,9 @@ class AppChip extends StatelessWidget {
 
   /// Bordo tratteggiato e sfondo trasparente, per le azioni (es. "+ Gestisci").
   final bool dashed;
+
+  /// Cosa legge lo screen reader al posto del testo (es. "Mostra tutte le categorie" per "Tutte (4)").
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +81,7 @@ class AppChip extends StatelessWidget {
       container: true,
       button: true,
       selected: selected,
+      label: semanticLabel,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -106,7 +111,10 @@ class AppChip extends StatelessWidget {
                     ],
                     ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: maxTextWidth),
-                      child: Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: foreground)),
+                      child: ExcludeSemantics(
+                        excluding: semanticLabel != null,
+                        child: Text(label, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: foreground)),
+                      ),
                     ),
                   ],
                 ),

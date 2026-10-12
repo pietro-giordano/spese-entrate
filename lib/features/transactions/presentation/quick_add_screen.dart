@@ -12,6 +12,7 @@ import '../../../core/widgets/app_icon_button.dart';
 import '../../../core/widgets/bottom_action_bar.dart';
 import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/choice_sheet.dart';
+import '../../../core/widgets/fading_scroll_view.dart';
 import '../../../core/widgets/screen_placeholder.dart';
 import '../../../domain/models/app_settings.dart';
 import '../../../domain/models/enums.dart';
@@ -241,8 +242,9 @@ class _QuickAddFormState extends ConsumerState<_QuickAddForm> {
               ),
               const SizedBox(height: AppSpacing.md),
               TransactionTypeSelector(seed: _seed, size: AppSegmentedSize.large),
+              // Sfuma ai bordi quando c'è altro da scorrere (liste espanse, schermi bassi).
               Expanded(
-                child: ListView(
+                child: FadingScrollView(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   children: [
                     _AmountDisplay(

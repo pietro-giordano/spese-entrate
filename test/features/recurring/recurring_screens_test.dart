@@ -505,6 +505,9 @@ void main() {
         await tester.tap(find.descendant(of: find.byType(QuickAddScreen), matching: find.text(digit)));
         await tester.pump();
       }
+      // Abbonamenti è la 7ª categoria di spesa: nella vista ridotta è tra le nascoste.
+      await tester.tap(find.text('Tutte (2)'));
+      await tester.pump();
       await tester.tap(find.text('Abbonamenti'));
       await tester.enterText(find.widgetWithText(TextField, 'Nota (facoltativa)'), 'Netflix');
       await tester.tap(find.bySemanticsLabel(RegExp('^Data del movimento: ')));
@@ -532,6 +535,9 @@ void main() {
         await tester.tap(find.descendant(of: find.byType(QuickAddScreen), matching: find.text(digit)));
         await tester.pump();
       }
+      // Abbonamenti è la 7ª categoria di spesa: nella vista ridotta è tra le nascoste.
+      await tester.tap(find.text('Tutte (2)'));
+      await tester.pump();
       await tester.tap(find.text('Abbonamenti'));
       await tester.enterText(find.widgetWithText(TextField, 'Nota (facoltativa)'), 'Netflix');
       await tester.tap(find.bySemanticsLabel(RegExp('^Data del movimento: ')));

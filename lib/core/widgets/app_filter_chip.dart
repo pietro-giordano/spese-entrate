@@ -75,6 +75,8 @@ class AppFilterChip extends StatelessWidget {
       label: label,
       value: state,
       hint: hint,
+      // excludeSemantics toglie anche l'azione del GestureDetector: il tocco va dato al nodo.
+      onTap: onTap,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,

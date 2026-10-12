@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/clock.dart';
 import '../../../../core/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
@@ -10,9 +11,13 @@ import '../../../../core/widgets/app_segmented.dart';
 import '../../../../core/widgets/section_label.dart';
 import '../../../../domain/models/category.dart';
 import '../../../../domain/models/enums.dart';
+import '../../../../domain/models/label.dart';
+import '../../../../domain/models/transaction.dart';
+import '../../../../domain/services/recent_usage.dart';
 import '../../../settings/application/settings_providers.dart';
 import '../../../wallets/application/wallet_providers.dart';
 import '../../application/transaction_form_controller.dart';
+import '../../application/transaction_providers.dart';
 import 'transfer_wallets_card.dart';
 import 'wallet_picker_sheet.dart';
 
@@ -70,22 +75,94 @@ class TransactionFormDetails extends ConsumerWidget {
   }
 }
 
-class _CategoriesAndLabels extends ConsumerWidget {
+/// Quante categorie e label mostra la vista ridotta prima di "Tutte (N)".
+const compactCategoryCount = 6;
+const compactLabelCount = 5;
+
+/// Categorie e label in vista ridotta: le più usate negli ultimi 90 giorni per quel tipo
+/// (vedi `recent_usage.dart`), con le selezionate in testa, poi "Tutte (N)" che espande sul posto
+/// la lista completa in sort_order. L'ordine si calcola all'apertura e al cambio Spesa/Entrata e
+/// poi resta fermo: toccare un chip non sposta nulla.
+class _CategoriesAndLabels extends ConsumerStatefulWidget {
   const _CategoriesAndLabels({required this.seed});
 
   final TransactionFormSeed seed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(transactionFormControllerProvider(seed));
-    final controller = ref.read(transactionFormControllerProvider(seed).notifier);
+  ConsumerState<_CategoriesAndLabels> createState() => _CategoriesAndLabelsState();
+}
+
+class _CategoriesAndLabelsState extends ConsumerState<_CategoriesAndLabels> {
+  /// Ordini della vista ridotta, fissati per [_orderedFor] (null = non ancora calcolati).
+  TransactionType? _orderedFor;
+  List<String> _categoryOrder = const [];
+  List<String> _labelOrder = const [];
+
+  var _categoriesExpanded = false;
+  var _labelsExpanded = false;
+
+  /// Calcola (o ricalcola, richiudendo, per avere le selezionate in testa) gli ordini ridotti.
+  void _order(
+    TransactionFormState state,
+    List<Category> categories,
+    List<Label> labels,
+    List<Transaction> transactions,
+  ) {
+    final usage = recentUsage(transactions, type: state.type, today: ref.read(todayProvider));
+    _categoryOrder = compactOrder(
+      [for (final c in categories) c.id],
+      usage: usage.categories,
+      selected: {?state.categoryId},
+    );
+    _labelOrder = compactOrder([for (final l in labels) l.id], usage: usage.labels, selected: state.labelIds);
+    _orderedFor = state.type;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = transactionFormControllerProvider(widget.seed);
+    final state = ref.watch(provider);
+    final controller = ref.read(provider.notifier);
     final kind = state.type == TransactionType.income ? CategoryKind.income : CategoryKind.expense;
     final categories = (ref.watch(categoriesProvider).value ?? const <Category>[])
         // Una categoria archiviata resta visibile se è quella già scelta.
         .where((c) => c.kind == kind && (!c.isArchived || c.id == state.categoryId))
         .toList();
-    final labels = ref.watch(labelsProvider).value ?? const [];
+    final labels = ref.watch(labelsProvider).value ?? const <Label>[];
+    final transactions = ref.watch(allTransactionsProvider).value;
     final tone = formTone(context, state.type);
+
+    // L'ordine si fissa quando lo storico è caricato (all'apertura) e a ogni cambio di tipo.
+    final loaded = transactions != null && ref.watch(categoriesProvider).hasValue && ref.watch(labelsProvider).hasValue;
+    if (loaded && _orderedFor != state.type) {
+      if (_orderedFor != null) _categoriesExpanded = _labelsExpanded = false;
+      _order(state, categories, labels, transactions);
+    }
+
+    final categoryIds = [for (final c in categories) c.id];
+    final labelIds = [for (final l in labels) l.id];
+    final shownCategories = _categoriesExpanded
+        ? categoryIds
+        : compactVisible(_categoryOrder, ids: categoryIds, selected: {?state.categoryId}, limit: compactCategoryCount);
+    final shownLabels = _labelsExpanded
+        ? labelIds
+        : compactVisible(_labelOrder, ids: labelIds, selected: state.labelIds, limit: compactLabelCount);
+    final categoriesById = {for (final c in categories) c.id: c};
+    final labelsById = {for (final l in labels) l.id: l};
+
+    /// "Tutte (N)" / "Meno". Richiudendo l'ordine si ricalcola: le selezionate tornano in testa.
+    Widget toggle({required bool expanded, required int hidden, required String what, required VoidCallback onTap}) =>
+        AppChip(
+          label: expanded ? 'Meno' : 'Tutte ($hidden)',
+          semanticLabel: expanded ? 'Mostra meno $what' : 'Mostra tutte le $what',
+          shape: what == 'label' ? AppChipShape.label : AppChipShape.pill,
+          dashed: true,
+          onTap: onTap,
+        );
+
+    void collapse() {
+      if (transactions != null) _order(state, categories, labels, transactions);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,12 +171,22 @@ class _CategoriesAndLabels extends ConsumerWidget {
         Wrap(
           spacing: 6,
           children: [
-            for (final category in categories)
+            for (final id in shownCategories)
               AppChip(
-                label: category.name,
-                selected: category.id == state.categoryId,
+                label: categoriesById[id]!.name,
+                selected: id == state.categoryId,
                 selectedTone: tone,
-                onTap: () => controller.selectCategory(category.id),
+                onTap: () => controller.selectCategory(id),
+              ),
+            if (categoryIds.length > shownCategories.length || _categoriesExpanded)
+              toggle(
+                expanded: _categoriesExpanded,
+                hidden: categoryIds.length - shownCategories.length,
+                what: 'categorie',
+                onTap: () => setState(() {
+                  if (_categoriesExpanded) collapse();
+                  _categoriesExpanded = !_categoriesExpanded;
+                }),
               ),
           ],
         ),
@@ -109,12 +196,22 @@ class _CategoriesAndLabels extends ConsumerWidget {
         Wrap(
           spacing: 6,
           children: [
-            for (final label in labels)
+            for (final id in shownLabels)
               AppChip(
-                label: '#${label.name}',
+                label: '#${labelsById[id]!.name}',
                 shape: AppChipShape.label,
-                selected: state.labelIds.contains(label.id),
-                onTap: () => controller.toggleLabel(label.id),
+                selected: state.labelIds.contains(id),
+                onTap: () => controller.toggleLabel(id),
+              ),
+            if (labelIds.length > shownLabels.length || _labelsExpanded)
+              toggle(
+                expanded: _labelsExpanded,
+                hidden: labelIds.length - shownLabels.length,
+                what: 'label',
+                onTap: () => setState(() {
+                  if (_labelsExpanded) collapse();
+                  _labelsExpanded = !_labelsExpanded;
+                }),
               ),
             AppChip(
               label: '+ Gestisci',

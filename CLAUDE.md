@@ -257,6 +257,15 @@ Al primo avvio, se il database è vuoto:
   (`64,20`) l'importo esatto, intero (`64`) gli importi da 64,00 a 64,99; il segno non conta.
   Filtro in memoria sui movimenti già caricati: ~25 ms su 10.000 movimenti, quindi niente FTS5 (da
   rivalutare con una tabella FTS e una migrazione se lo storico crescesse di molto).
+- **Categorie e label nei form** (Inserimento rapido e Modifica movimento, `recent_usage.dart`):
+  vista ridotta di 6 categorie e 5 label, poi "Tutte (N)" (N = nascoste; Semantics "Mostra tutte le
+  categorie/label") che espande sul posto la lista completa in sort_order, e "Meno" per richiuderla.
+  Ordine ridotto: utilizzi negli ultimi 90 giorni (oggi compreso) dei movimenti confermati del tipo
+  (spese o entrate), esclusi gli importati (`import_batch_id`); a parità o senza dati, sort_order (per
+  le label l'ordine dell'elenco). Le selezionate sono sempre presenti, in testa (in Modifica movimento
+  quelle del movimento). L'ordine si calcola all'apertura e al cambio Spesa/Entrata e resta fermo:
+  toccare un chip non sposta nulla; solo richiudendo con "Meno" si ricalcola, così una scelta fatta
+  nella lista espansa compare in testa. Lo stato espanso si azzera a ogni apertura.
 - **Tap su una fetta** (Grafici): apre Movimenti con il periodo del grafico, il tipo (Spese/Entrate),
   la voce toccata e i filtri del grafico (`sliceFilters`): la voce sostituisce i filtri della sua
   dimensione (una categoria toccata sostituisce le categorie, una label le label, in modalità
@@ -469,7 +478,10 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
   `BottomActionBar`, `TabHeader` (intestazione delle tab), `AppFilterChip` (chip dei filtri a tre
   stati: incluso con ✓ in inversione, escluso con ✕, testo barrato e bordo tratteggiato `danger`;
-  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco).
+  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco), `FadingScrollView`
+  (area scorrevole che sfuma 20 px ai bordi: `ShaderMask` con `BlendMode.dstIn` sulla trasparenza,
+  quindi uguale nei due temi; in alto solo con `extentBefore > 0`, in basso solo con `extentAfter > 0`;
+  si aggiorna allo scroll e con `ScrollMetricsNotification` ai cambi di dimensione).
 - **Troncamento**: nei dettagli (Dettaglio ricorrenza, Dettaglio portafoglio, Modifica movimento) nessun
   testo si tronca: nomi e valori vanno a capo, le label stanno in un `Wrap` (nel Dettaglio ricorrenza
   oltre 6 se ne vedono 5 con "Mostra tutte (N)" / "Mostra meno").
@@ -541,9 +553,9 @@ Riepilogo delle schermate:
   lista per giorno con totale; pulsanti fissi "− Spesa" e "+ Entrata".
 - **Inserimento rapido**: header con chiudi, chip portafoglio ("da"/"su"), chip data con icona
   ripetizione se ricorrente; segmented Spesa/Entrata/Trasferimento; importo grande colorato;
-  categorie (pillole) e label (multiple); per il trasferimento scheda Da/A con inverti;
-  nota + allegati; tastierino 3×4 (1–9, 00, 0, cancella); pulsante salva colorato per tipo.
-- **Modifica movimento**: stessi campi in forma di form scorrevole, duplica in alto,
+  categorie (pillole) e label (multiple) in vista ridotta con "Tutte (N)"; per il trasferimento scheda Da/A con inverti;
+  nota + allegati nell'area scorrevole con dissolvenza ai bordi (`FadingScrollView`); tastierino 3×4 (1–9, 00, 0, cancella); pulsante salva colorato per tipo.
+- **Modifica movimento**: stessi campi in forma di form scorrevole (categorie e label in vista ridotta), duplica in alto,
   elimina + salva in basso (salva disattivo senza modifiche).
 - **Filtri**: tipo, periodo con date Dal/Al e preset, portafogli, categorie, label con
   "almeno una/tutte" e "Senza label" (tutti chip a tre stati con `AppFilterChip`, conteggio
