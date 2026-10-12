@@ -42,6 +42,33 @@ class AppFilterChip extends StatelessWidget {
       AppFilterChipMode.excluded => ('escluso', 'tocca per togliere il filtro'),
     };
 
+    final horizontalPadding = isPill ? 12.0 : 10.0;
+    final iconWidth = mode == AppFilterChipMode.neutral ? 0.0 : 20.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Come AppChip: il testo va a capo se il chip è più largo della riga.
+        final maxTextWidth = constraints.hasBoundedWidth
+            ? (constraints.maxWidth - 2 * horizontalPadding - iconWidth - 2).clamp(24.0, double.infinity)
+            : double.infinity;
+        return _chip(context, background, foreground, border, radius, horizontalPadding, maxTextWidth, state, hint);
+      },
+    );
+  }
+
+  Widget _chip(
+    BuildContext context,
+    Color background,
+    Color foreground,
+    Color border,
+    double radius,
+    double horizontalPadding,
+    double maxTextWidth,
+    String state,
+    String hint,
+  ) {
+    final colors = context.colors;
+    final isPill = shape == AppChipShape.pill;
     return Semantics(
       container: true,
       button: true,
@@ -52,18 +79,19 @@ class AppFilterChip extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          height: AppSizes.minTouchTarget,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
           child: Center(
             widthFactor: 1,
+            heightFactor: 1,
             child: CustomPaint(
               foregroundPainter: mode == AppFilterChipMode.excluded
                   ? DashedBorderPainter(color: colors.danger, radius: radius)
                   : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                height: isPill ? 36 : 32,
-                padding: EdgeInsets.symmetric(horizontal: isPill ? 12 : 10),
+                constraints: BoxConstraints(minHeight: isPill ? 36 : 32),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 6),
                 decoration: BoxDecoration(
                   color: background,
                   border: Border.all(color: border),
@@ -80,12 +108,15 @@ class AppFilterChip extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                     ],
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: foreground,
-                        decoration: mode == AppFilterChipMode.excluded ? TextDecoration.lineThrough : null,
-                        decorationColor: foreground,
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxTextWidth),
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: foreground,
+                          decoration: mode == AppFilterChipMode.excluded ? TextDecoration.lineThrough : null,
+                          decorationColor: foreground,
+                        ),
                       ),
                     ),
                   ],

@@ -75,13 +75,8 @@ class WalletDetailScreen extends ConsumerWidget {
                   Expanded(
                     child: Semantics(
                       header: true,
-                      child: Text(
-                        wallet.name,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleMedium,
-                      ),
+                      // Il nome va a capo invece di troncarsi.
+                      child: Text(wallet.name, textAlign: TextAlign.center, style: textTheme.titleMedium),
                     ),
                   ),
                   AppIconButton(

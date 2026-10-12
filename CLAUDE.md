@@ -469,7 +469,15 @@ I token vivono in `core/theme/app_colors.dart` (`AppColors`): i widget non usano
   `AppBottomSheet`, `AmountText`, `SectionLabel`, `StateMessage` (stati vuoti ed errori),
   `BottomActionBar`, `TabHeader` (intestazione delle tab), `AppFilterChip` (chip dei filtri a tre
   stati: incluso con ✓ in inversione, escluso con ✕, testo barrato e bordo tratteggiato `danger`;
-  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco).
+  Semantics con stato "non filtrato/incluso/escluso" e cosa fa il prossimo tocco), `InfoRow` (riga
+  etichetta/valore dei dettagli, letta come "Etichetta: valore") e `LabelTags` (label come chip in un
+  `Wrap`).
+- **Troncamento**: nei dettagli (Dettaglio ricorrenza, Dettaglio portafoglio, Modifica movimento) nessun
+  testo si tronca: nomi, descrizioni e valori vanno a capo, le label sono tutte visibili in un `Wrap`.
+  Nelle righe delle liste il troncamento resta (una riga con ellissi) e le label oltre la seconda
+  diventano "+N" (`compactLabelTags`). `AppChip` e `AppFilterChip` hanno altezze minime e il testo
+  limitato alla larghezza disponibile: un nome più largo della riga va a capo (nelle righe che
+  scorrono in orizzontale resta su una riga).
 - **Bordo inferiore (edge-to-edge)**: i pulsanti fissati in basso stanno in `BottomActionBar`
   (`Scaffold.bottomNavigationBar`), che aggiunge al proprio padding `bottomSystemInset`: il maggiore tra
   `viewPadding.bottom` (barra a 3 pulsanti, gesti, barra home) e la tastiera aperta (non la somma: la
@@ -557,6 +565,10 @@ Riepilogo delle schermate:
   sicurezza (biometria); Privacy (saldi all'apertura); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
+- **Dettaglio ricorrenza**: card con stato, nome e descrizione (a capo), importo, poi righe `InfoRow`
+  Tipo, Categoria (non per i trasferimenti), Portafoglio (Da → A per i trasferimenti), Frequenza
+  (con la fine), Modalità, Prossima scadenza (o "In pausa"/"Conclusa"), e Label come chip solo se ci
+  sono; sotto, l'interruttore della pausa.
 - **Movimenti ricorrenti** e **Dettaglio ricorrenza** (matita "Modifica regola" = "questa e le successive" sulla prossima occorrenza): totali fissi mensili, Attive/In pausa,
   prossime occorrenze con conferma e menu (salta, modifica solo questa, questa e le successive),
   storico, pausa, elimina.

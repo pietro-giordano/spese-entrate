@@ -61,7 +61,7 @@ class TransactionTile extends StatelessWidget {
             DateFormat('d MMM', 'it_IT').format(tx.date.toDateTime()),
             baseSubtitle,
           ].where((p) => p.isNotEmpty).join(' · ');
-    final tags = tx.labelIds.map((id) => labelNames[id]).nonNulls.map((name) => '#$name').join(' ');
+    final tags = compactLabelTags(tx.labelIds.map((id) => labelNames[id]).nonNulls.toList());
 
     final amountStyle = textTheme.bodyLarge?.copyWith(
       fontWeight: FontWeight.w800,
@@ -156,3 +156,8 @@ class _Icon extends StatelessWidget {
     );
   }
 }
+
+/// Label in una riga di lista: le prime [max], poi "+N" per le altre ("#casa #auto +2").
+/// Nei dettagli invece si mostrano tutte (vedi `LabelTags`).
+String compactLabelTags(List<String> names, {int max = 2}) =>
+    [for (final name in names.take(max)) '#$name', if (names.length > max) '+${names.length - max}'].join(' ');

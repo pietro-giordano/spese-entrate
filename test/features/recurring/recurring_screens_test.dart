@@ -15,6 +15,7 @@ import 'package:spese_entrate/data/db/app_database.dart';
 import 'package:spese_entrate/data/db/database_provider.dart';
 import 'package:spese_entrate/data/repositories/repository_providers.dart';
 import 'package:spese_entrate/domain/models/enums.dart';
+import 'package:spese_entrate/domain/models/label.dart';
 import 'package:spese_entrate/domain/models/recurrence_rule.dart';
 import 'package:spese_entrate/domain/models/transaction.dart';
 import 'package:spese_entrate/domain/services/recurrence.dart';
@@ -34,7 +35,8 @@ void main() {
   /// Oggi è sabato 3 ottobre 2026. Con [seed]:
   /// - "Bolletta luce": ogni 2 mesi dal 5 agosto, da confermare (pending il 5 ottobre);
   /// - "Spotify": ogni mese dal 7 gennaio, automatica (confermate fino a settembre).
-  Future<void> pumpAt(WidgetTester tester, String location, {bool seed = true}) async {
+  /// [setup] prepara altri dati dopo quelli di partenza, prima di mostrare l'app.
+  Future<void> pumpAt(WidgetTester tester, String location, {bool seed = true, Future<void> Function()? setup}) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -85,6 +87,7 @@ void main() {
       final transactions = container.read(transactionRepositoryProvider);
       final august = (await transactions.getById(occurrenceId('luce', d(2026, 8, 5))))!;
       await transactions.save(august.copyWith(status: TransactionStatus.confirmed));
+      await setup?.call();
     });
 
     await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const App()));
@@ -234,6 +237,71 @@ void main() {
   });
 
   group('Dettaglio ricorrenza', () {
+    testWidgets('riepilogo a righe: tutto visibile, label a capo, nessun overflow al 130%', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      const names = ['casa', 'utenze di casa', 'spese fisse mensili', 'da controllare'];
+      const note = 'Fornitura luce e gas per l\'appartamento di via Roma';
+      await pumpAt(
+        tester,
+        AppRoutes.recurrence('luce'),
+        setup: () async {
+          for (final name in names) {
+            await container.read(labelRepositoryProvider).save(Label(id: name, name: name, color: 0));
+          }
+          final repository = container.read(recurrenceRepositoryProvider);
+          final luce = (await repository.getById('luce'))!;
+          await repository.save(luce.copyWith(note: note, labelIds: names));
+        },
+      );
+
+      Text text(String data) => tester.widget<Text>(find.text(data));
+      expect(text('Bolletta luce').maxLines, isNull, reason: 'il nome va a capo');
+      expect(text(note).maxLines, isNull, reason: 'anche la descrizione');
+      for (final (label, value) in [
+        ('Tipo', 'Spesa'),
+        ('Categoria', 'Casa'),
+        ('Portafoglio', 'Conto corrente'),
+        ('Frequenza', 'Ogni 2 mesi, il 5'),
+        ('Modalità', 'Da confermare'),
+        ('Prossima scadenza', 'Lun 5 ott'),
+      ]) {
+        expect(find.bySemanticsLabel(RegExp('^$label:\\s+$value\$')), findsOneWidget, reason: label);
+      }
+      for (final name in names) {
+        expect(text('#$name').maxLines, isNull);
+        expect(text('#$name').overflow, isNot(TextOverflow.ellipsis));
+      }
+      await finish(tester);
+    });
+
+    testWidgets('senza label la riga Label non c\'è; trasferimento: Da → A, niente categoria', (tester) async {
+      await pumpAt(
+        tester,
+        AppRoutes.recurrence('risparmio'),
+        setup: () async {
+          final wallets = await container.read(walletRepositoryProvider).watchAll().first;
+          final rule = RecurrenceRule(
+            id: 'risparmio',
+            name: 'Risparmio',
+            type: TransactionType.transfer,
+            amountCents: 10000,
+            walletId: wallets.firstWhere((w) => w.name == 'Conto corrente').id,
+            toWalletId: wallets.firstWhere((w) => w.name == 'Contanti').id,
+            frequency: RecurrenceFrequency.monthly,
+            startDate: d(2026, 10, 27),
+            mode: RecurrenceMode.auto,
+          );
+          await container.read(recurrenceRepositoryProvider).save(anchorRuleAt(rule, d(2026, 10, 27)));
+        },
+      );
+      expect(find.bySemanticsLabel(RegExp(r'^Portafoglio:\s+Conto corrente → Contanti$')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('^Categoria:')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('^Label:')), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'^Modalità:\s+Automatica$')), findsOneWidget);
+      await finish(tester);
+    });
+
     testWidgets('prossime occorrenze, salto e pausa', (tester) async {
       await pumpAt(tester, AppRoutes.recurrence('luce'));
       expect(find.text('Bolletta luce'), findsOneWidget);
@@ -242,7 +310,8 @@ void main() {
       expect(find.text('Sabato 5 dicembre 2026'), findsOneWidget);
       expect(find.text('Conferma'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Opzioni per Sabato 5 dicembre 2026'));
+      // La card del riepilogo è alta: le occorrenze si portano in vista prima di toccarle.
+      await tapVisible(tester, find.byTooltip('Opzioni per Sabato 5 dicembre 2026'));
       await tester.pumpAndSettle();
       expect(find.text('Occorrenza del 5 dic'), findsOneWidget);
       await tester.tap(find.text('Salta solo questa'));
@@ -275,7 +344,7 @@ void main() {
     testWidgets('elimina: chiede conferma, lo storico resta', (tester) async {
       await pumpAt(tester, AppRoutes.recurrence('spotify'));
       await tester.scrollUntilVisible(find.text('Elimina ricorrenza'), 200, scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Elimina ricorrenza'));
+      await tapVisible(tester, find.text('Elimina ricorrenza'));
       await tester.pumpAndSettle();
       expect(find.text('Eliminare la ricorrenza?'), findsOneWidget);
       await tester.tap(find.text('Elimina'));
@@ -288,7 +357,8 @@ void main() {
 
     testWidgets('modifica questa e le successive da un\'occorrenza futura', (tester) async {
       await pumpAt(tester, AppRoutes.recurrence('luce'));
-      await tester.tap(find.byTooltip('Opzioni per Sabato 5 dicembre 2026'));
+      // La card del riepilogo è alta: le occorrenze si portano in vista prima di toccarle.
+      await tapVisible(tester, find.byTooltip('Opzioni per Sabato 5 dicembre 2026'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Modifica questa e le successive'));
       await tester.pumpAndSettle();

@@ -62,6 +62,11 @@ void main() {
       final categories = await db.select(db.categories).get();
       String category(String name) => categories.firstWhere((c) => c.name == name).id;
       await container.read(labelRepositoryProvider).save(const Label(id: 'casa', name: 'casa', color: 0xFF1D4ED8));
+      // Più label con nomi lunghi: nel dettaglio della ricorrenza vanno a capo, tutte visibili.
+      await container.read(labelRepositoryProvider).save(const Label(id: 'utenze', name: 'utenze di casa', color: 0));
+      await container
+          .read(labelRepositoryProvider)
+          .save(const Label(id: 'fisso', name: 'spese fisse mensili', color: 0));
       final transactions = container.read(transactionRepositoryProvider);
       txId = newId();
       for (final tx in [
@@ -110,6 +115,8 @@ void main() {
               RecurrenceRule(
                 id: 'luce',
                 name: 'Bolletta della luce e del gas',
+                note: 'Fornitura luce e gas per l\'appartamento di via Roma',
+                labelIds: const ['casa', 'utenze', 'fisso'],
                 type: TransactionType.expense,
                 amountCents: 6400,
                 walletId: walletId,

@@ -600,22 +600,16 @@ class _RowButton extends StatelessWidget {
         child: InkWell(
           borderRadius: borderRadius,
           onTap: onTap,
-          child: SizedBox(
-            height: 52,
+          // Altezza minima, non fissa: nomi lunghi e testo ingrandito vanno a capo.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Icon(icon, size: 18, color: colors.text),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      text,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
+                  Expanded(child: Text(text, style: Theme.of(context).textTheme.titleSmall)),
                   Icon(Icons.chevron_right_rounded, size: 20, color: colors.textMuted),
                 ],
               ),
