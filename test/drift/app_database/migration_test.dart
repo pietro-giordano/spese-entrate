@@ -11,6 +11,7 @@ import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v3.dart' as v3;
+import 'generated/schema_v4.dart' as v4;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -295,4 +296,150 @@ void main() {
       );
     },
   );
+
+  // v4: solo dati. Le regole con nome vuoto o uguale alla categoria prendono la nota come nome
+  // (se c'è); tutto il resto arriva identico. Ogni regola sistemata ha updated_at, device_id e una
+  // riga nell'outbox, come ogni scrittura sincronizzabile.
+  group('da v3 a v4 (nomi delle ricorrenze)', () {
+    final migratedAt = DateTime.utc(2026, 10, 12, 8);
+    const category = v3.CategoriesData(
+      id: 'c1',
+      createdAt: 1,
+      updatedAt: 1,
+      deviceId: 'old-device',
+      name: 'Abbonamenti',
+      kind: 'expense',
+      color: 0xFFC2410C,
+      sortOrder: 0,
+    );
+    const deviceId = v3.AppMetaData(key: 'device_id', value: 'this-device');
+    const outbox = v3.OutboxData(
+      id: 1,
+      entity: 'transactions',
+      entityId: 't1',
+      op: 'upsert',
+      changedAt: 4,
+    );
+
+    v3.RecurrenceRulesData rule(
+      String id, {
+      required String name,
+      String? note,
+      String? categoryId = 'c1',
+      String type = 'expense',
+      String? toWalletId,
+      int? deletedAt,
+    }) => v3.RecurrenceRulesData(
+      id: id,
+      createdAt: 1,
+      updatedAt: 2,
+      deletedAt: deletedAt,
+      deviceId: 'old-device',
+      name: name,
+      type: type,
+      amountCents: 1299,
+      currency: 'EUR',
+      walletId: 'w1',
+      toWalletId: toWalletId,
+      categoryId: categoryId,
+      note: note,
+      labelIds: '[]',
+      frequency: 'monthly',
+      interval: 1,
+      startDate: '2026-01-05',
+      mode: 'auto',
+    );
+
+    final sameAsCategory = rule('r1', name: 'Abbonamenti', note: 'Netflix');
+    final empty = rule('r2', name: '', note: '  Palestra ');
+    final categoryOtherCase = rule('r3', name: ' abbonamenti', note: 'Spotify');
+    final transferWithoutName = rule(
+      'r4',
+      name: '',
+      note: 'Risparmio',
+      categoryId: null,
+      type: 'transfer',
+      toWalletId: 'w2',
+    );
+    final customName = rule('r5', name: 'Bolletta luce', note: 'Enel');
+    final noNote = rule('r6', name: 'Abbonamenti');
+    final blankNote = rule('r7', name: 'Abbonamenti', note: '   ');
+    final deleted = rule('r8', name: '', note: 'Vecchia', deletedAt: 3);
+
+    test(
+      'il nome diventa la nota solo se vuoto o uguale alla categoria',
+      () async {
+        await verifier.testWithDataIntegrity(
+          oldVersion: 3,
+          newVersion: 4,
+          createOld: v3.DatabaseAtV3.new,
+          createNew: v4.DatabaseAtV4.new,
+          openTestedDatabase: (executor) =>
+              AppDatabase(executor, now: () => migratedAt),
+          createItems: (batch, oldDb) {
+            batch
+              ..insert(oldDb.categories, category)
+              ..insert(oldDb.appMeta, deviceId)
+              ..insert(oldDb.outbox, outbox)
+              ..insertAll(oldDb.recurrenceRules, [
+                sameAsCategory,
+                empty,
+                categoryOtherCase,
+                transferWithoutName,
+                customName,
+                noNote,
+                blankNote,
+                deleted,
+              ]);
+          },
+          validateItems: (newDb) async {
+            final now = migratedAt.millisecondsSinceEpoch;
+            Map<String, dynamic> fixed(
+              v3.RecurrenceRulesData old,
+              String name,
+            ) => {
+              ...old.toJson(),
+              'name': name,
+              'updatedAt': now,
+              'deviceId': 'this-device',
+            };
+
+            final rules = {
+              for (final row in await newDb.select(newDb.recurrenceRules).get())
+                row.id: row.toJson(),
+            };
+            expect(rules['r1'], fixed(sameAsCategory, 'Netflix'));
+            expect(rules['r2'], fixed(empty, 'Palestra'));
+            expect(rules['r3'], fixed(categoryOtherCase, 'Spotify'));
+            expect(rules['r4'], fixed(transferWithoutName, 'Risparmio'));
+            // Invariate: nome scelto dall'utente, nota assente o vuota, regola cancellata (lapide).
+            expect(rules['r5'], customName.toJson());
+            expect(rules['r6'], noNote.toJson());
+            expect(rules['r7'], blankNote.toJson());
+            expect(rules['r8'], deleted.toJson());
+
+            expect(
+              (await newDb.select(newDb.categories).getSingle()).toJson(),
+              category.toJson(),
+            );
+            final queued = [
+              for (final row in await newDb.select(newDb.outbox).get())
+                row.toJson(),
+            ];
+            expect(queued.first, outbox.toJson());
+            expect(
+              [
+                for (final row in queued.skip(1))
+                  (row['entity'], row['entityId'], row['op'], row['changedAt']),
+              ],
+              unorderedEquals([
+                for (final id in ['r1', 'r2', 'r3', 'r4'])
+                  ('recurrence_rules', id, 'upsert', now),
+              ]),
+            );
+          },
+        );
+      },
+    );
+  });
 }

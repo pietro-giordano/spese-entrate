@@ -46,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   /// Versione dello schema. Va incrementata a ogni modifica delle tabelle,
   /// insieme a una migrazione (vedi [migration]).
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -65,6 +65,27 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(schema.imports);
           await m.addColumn(schema.transactions, schema.transactions.importBatchId);
           await m.createIndex(schema.transactionsImportBatchId);
+        },
+        // v4: solo dati, le tabelle non cambiano. Le regole create da "Ripeti" avevano come nome la
+        // categoria (o niente) anche quando la nota c'era: se il nome è vuoto o uguale alla
+        // categoria e la nota è compilata, il nome diventa la nota. Come ogni scrittura
+        // sincronizzabile: updated_at, device_id e una riga nell'outbox.
+        from3To4: (m, schema) async {
+          const fixable =
+              "deleted_at IS NULL AND TRIM(COALESCE(note, '')) <> '' AND (TRIM(name) = '' OR LOWER(TRIM(name)) = "
+              '(SELECT LOWER(TRIM(c.name)) FROM categories c WHERE c.id = recurrence_rules.category_id))';
+          final now = nowMs();
+          await customStatement(
+            'INSERT INTO outbox (entity, entity_id, op, changed_at) '
+            "SELECT 'recurrence_rules', id, 'upsert', ? FROM recurrence_rules WHERE $fixable",
+            [now],
+          );
+          await customStatement(
+            'UPDATE recurrence_rules SET name = TRIM(note), updated_at = ?, '
+            "device_id = COALESCE((SELECT value FROM app_meta WHERE key = 'device_id'), device_id) "
+            'WHERE $fixable',
+            [now],
+          );
         },
       ),
       beforeOpen: (details) async {

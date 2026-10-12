@@ -76,7 +76,7 @@ void main() {
           'transactions_import_batch_id',
         ]),
       );
-      expect(db.schemaVersion, 3);
+      expect(db.schemaVersion, 4);
     });
   });
 

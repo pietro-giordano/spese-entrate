@@ -68,11 +68,14 @@ class UpcomingSection extends ConsumerWidget {
                     _UpcomingRow(
                       transaction: tx,
                       rule: rules[tx.recurrenceId],
-                      title:
-                          rules[tx.recurrenceId]?.name ??
-                          tx.note ??
-                          categories.firstWhereOrNull((c) => c.id == tx.categoryId)?.name ??
-                          'Movimento',
+                      title: switch (rules[tx.recurrenceId]) {
+                        final rule? => recurrenceTitle(
+                          rule,
+                          categoryName: categories.firstWhereOrNull((c) => c.id == rule.categoryId)?.name,
+                        ),
+                        null =>
+                          tx.note ?? categories.firstWhereOrNull((c) => c.id == tx.categoryId)?.name ?? 'Movimento',
+                      },
                     ),
                   ],
                 ],

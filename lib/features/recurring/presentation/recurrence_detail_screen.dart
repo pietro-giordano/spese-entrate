@@ -110,8 +110,15 @@ class _RecurrenceDetail extends ConsumerWidget {
                       child: Text('Ricorrenza', textAlign: TextAlign.center, style: textTheme.titleMedium),
                     ),
                   ),
-                  // Bilancia il pulsante indietro: il titolo resta al centro.
-                  const SizedBox(width: AppSizes.minTouchTarget),
+                  AppIconButton(
+                    icon: Icons.edit_outlined,
+                    tooltip: 'Modifica regola',
+                    // Una ricorrenza conclusa non ha occorrenze da cui ripartire.
+                    onPressed: switch (upcoming.firstWhereOrNull((o) => !o.isGone)) {
+                      final next? when !finished => () => _editRule(context, ref, next.date),
+                      _ => null,
+                    },
+                  ),
                 ],
               ),
             ),
@@ -220,6 +227,21 @@ class _RecurrenceDetail extends ConsumerWidget {
     return [...overdue, ...next];
   }
 
+  /// Titolo della regola (nome, nota o categoria), vedi [recurrenceTitle].
+  String _title(WidgetRef ref, RecurrenceRule rule) => recurrenceTitle(
+    rule,
+    categoryName: ref.read(categoriesProvider).value?.firstWhereOrNull((c) => c.id == rule.categoryId)?.name,
+  );
+
+  /// "Modifica regola": scorciatoia per "Modifica questa e le successive" sulla prossima occorrenza
+  /// ancora valida. Lì si cambia tutta la ricorrenza da quella data in poi, nome compreso.
+  Future<void> _editRule(BuildContext context, WidgetRef ref, LocalDate date) async {
+    // Un'occorrenza futura non esiste ancora: si crea come `pending` per poterla modificare.
+    final tx = await ref.read(recurrenceActionsProvider).occurrenceTransaction(rule.id, date);
+    if (tx == null || !context.mounted) return;
+    context.push(AppRoutes.transactionFollowing(tx.id));
+  }
+
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final confirmed = await showConfirmDialog(
       context,
@@ -235,7 +257,7 @@ class _RecurrenceDetail extends ConsumerWidget {
     await ref.read(recurrenceActionsProvider).delete(rule.id);
     if (!context.mounted) return;
     context.pop();
-    messenger.showSnackBar(SnackBar(content: Text('Ricorrenza «${rule.name}» eliminata')));
+    messenger.showSnackBar(SnackBar(content: Text('Ricorrenza «${_title(ref, rule)}» eliminata')));
   }
 }
 
@@ -300,7 +322,10 @@ class _SummaryCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(rule.name, style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            recurrenceTitle(rule, categoryName: category?.name),
+            style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
           AmountText(
             rule.amountCents,
             kind: amountKindOf(rule.type),

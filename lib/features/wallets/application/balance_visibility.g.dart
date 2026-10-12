@@ -49,7 +49,7 @@ final class BalancesHiddenProvider extends $NotifierProvider<BalancesHidden, boo
   }
 }
 
-String _$balancesHiddenHash() => r'2e453e0cff3521dba6164c0f4e8e9b29e617945a';
+String _$balancesHiddenHash() => r'1f720250cbe477684502e28ef5491dacaa65a89b';
 
 /// true = saldi nascosti in tutta l'app (patrimonio, gruppi, portafogli, scelta del portafoglio,
 /// scheda Da/A e saldo della card in Movimenti). Gli importi dei movimenti restano visibili.

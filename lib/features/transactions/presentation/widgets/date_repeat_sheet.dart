@@ -25,11 +25,20 @@ Future<DateRepeatChoice?> showDateRepeatSheet(
   required RepeatSettings? repeat,
   required LocalDate today,
   int weekStart = DateTime.monday,
+
+  /// Segnaposto del nome della ricorrenza: il titolo che avrebbe senza nome (nota o categoria).
+  String namePlaceholder = 'Es. Affitto',
 }) {
   return AppBottomSheet.show<DateRepeatChoice>(
     context,
     title: 'Data e ripetizione',
-    builder: (_) => _DateRepeatBody(initialDate: selected, initialRepeat: repeat, today: today, weekStart: weekStart),
+    builder: (_) => _DateRepeatBody(
+      initialDate: selected,
+      initialRepeat: repeat,
+      today: today,
+      weekStart: weekStart,
+      namePlaceholder: namePlaceholder,
+    ),
   );
 }
 
@@ -54,12 +63,14 @@ class _DateRepeatBody extends StatefulWidget {
     required this.initialRepeat,
     required this.today,
     required this.weekStart,
+    required this.namePlaceholder,
   });
 
   final LocalDate initialDate;
   final RepeatSettings? initialRepeat;
   final LocalDate today;
   final int weekStart;
+  final String namePlaceholder;
 
   @override
   State<_DateRepeatBody> createState() => _DateRepeatBodyState();
@@ -68,6 +79,15 @@ class _DateRepeatBody extends StatefulWidget {
 class _DateRepeatBodyState extends State<_DateRepeatBody> {
   late LocalDate _date = widget.initialDate;
   late RepeatSettings? _repeat = widget.initialRepeat;
+
+  /// Nome della ricorrenza: resta anche cambiando la ripetizione, si applica alla conferma.
+  late final _name = TextEditingController(text: widget.initialRepeat?.name ?? '');
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
 
   Future<void> _customize() async {
     final custom = await showCustomRepeatSheet(
@@ -132,10 +152,24 @@ class _DateRepeatBodyState extends State<_DateRepeatBody> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(_hint(repeat), style: textTheme.bodySmall?.copyWith(color: colors.neutral.onTint, height: 1.45)),
+          const SizedBox(height: AppSpacing.md),
+          const SectionLabel('Nome della ricorrenza'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(hintText: widget.namePlaceholder),
+          ),
+          const SizedBox(height: 4),
+          Text('Facoltativo: se lo lasci vuoto vale la nota, altrimenti la categoria.', style: textTheme.bodySmall),
         ],
         const SizedBox(height: 14),
         FilledButton(
-          onPressed: () => Navigator.pop<DateRepeatChoice>(context, (date: _date, repeat: _repeat)),
+          onPressed: () => Navigator.pop<DateRepeatChoice>(context, (
+            date: _date,
+            repeat: _repeat?.copyWith(name: _name.text.trim()),
+          )),
           child: const Text('Conferma'),
         ),
       ],
@@ -301,6 +335,7 @@ class _CustomRepeatBodyState extends State<_CustomRepeatBody> {
                     endDate: _end == _EndKind.date ? _endDate : null,
                     maxCount: _end == _EndKind.count ? _count : null,
                     mode: widget.initial.mode,
+                    name: widget.initial.name,
                   ),
                 ),
           child: const Text('Applica'),

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -77,6 +78,10 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
   );
   late final _noteController = TextEditingController(text: widget.detail.transaction.note ?? '');
 
+  /// Nome della ricorrenza ("Questa e le successive"): parte dal nome attuale della regola,
+  /// creato al primo uso, quando la regola è caricata.
+  TextEditingController? _ruleNameController;
+
   TransactionFormControllerProvider get _provider => transactionFormControllerProvider(_seed);
   Transaction get _original => widget.detail.transaction;
 
@@ -84,6 +89,7 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _ruleNameController?.dispose();
     super.dispose();
   }
 
@@ -170,12 +176,40 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
                   if (rule != null) ...[
                     _RecurrenceBanner(
                       rule: rule,
+                      title: recurrenceTitle(
+                        rule,
+                        categoryName: (ref.watch(categoriesProvider).value ?? const <Category>[])
+                            .firstWhereOrNull((c) => c.id == rule.categoryId)
+                            ?.name,
+                      ),
                       pending: canConfirmManually(_original, rule),
                       automatic: !_original.isConfirmed && !canConfirmManually(_original, rule),
                       following: widget.scope == EditScope.following,
                       onTap: () => context.push(AppRoutes.recurrence(rule.id)),
                     ),
                     const SizedBox(height: 14),
+                    if (widget.scope == EditScope.following) ...[
+                      _LabeledField(
+                        label: 'Nome della ricorrenza',
+                        child: TextField(
+                          controller: _ruleNameController ??= TextEditingController(text: rule.name),
+                          onChanged: controller.setRuleName,
+                          textCapitalization: TextCapitalization.sentences,
+                          textInputAction: TextInputAction.done,
+                          // Senza nome: la nota del form, altrimenti la categoria.
+                          decoration: InputDecoration(
+                            hintText: recurrenceTitleOf(
+                              note: state.note,
+                              categoryName: (ref.watch(categoriesProvider).value ?? const <Category>[])
+                                  .firstWhereOrNull((c) => c.id == state.categoryId)
+                                  ?.name,
+                              type: state.type,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
                   ],
                   TransactionTypeSelector(seed: _seed),
                   const SizedBox(height: 18),
@@ -390,6 +424,7 @@ class _EditTransactionFormState extends ConsumerState<_EditTransactionForm> {
 class _RecurrenceBanner extends StatelessWidget {
   const _RecurrenceBanner({
     required this.rule,
+    required this.title,
     required this.pending,
     required this.automatic,
     required this.following,
@@ -397,6 +432,9 @@ class _RecurrenceBanner extends StatelessWidget {
   });
 
   final RecurrenceRule rule;
+
+  /// Titolo della ricorrenza (nome, nota o categoria).
+  final String title;
 
   /// Da confermare dall'utente.
   final bool pending;
@@ -411,7 +449,6 @@ class _RecurrenceBanner extends StatelessWidget {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
     final borderRadius = BorderRadius.circular(14);
-    final title = rule.name;
     final subtitle = following
         ? 'Le modifiche varranno anche per le occorrenze successive'
         : [

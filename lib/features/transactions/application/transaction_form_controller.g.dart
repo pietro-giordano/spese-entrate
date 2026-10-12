@@ -61,7 +61,7 @@ final class TransactionFormControllerProvider
   }
 }
 
-String _$transactionFormControllerHash() => r'40cc0ff69f2164404a186e39810bdcc76422c7b3';
+String _$transactionFormControllerHash() => r'b7db096b44908d499d3af9f25c9977e7d1570810';
 
 /// Stato del form di un movimento, condiviso da Inserimento rapido e Modifica movimento.
 /// Si auto-elimina quando la schermata si chiude, così ogni apertura riparte da zero.

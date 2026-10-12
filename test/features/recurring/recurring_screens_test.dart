@@ -210,7 +210,7 @@ void main() {
       expect(find.textContaining('Media mensile prevista € 0,00'), findsNothing, reason: 'nessuna entrata non mensile');
 
       expect(find.text('ATTIVE'), findsOneWidget);
-      expect(find.text('Ogni 2 mesi, il 5 · Casa'), findsOneWidget);
+      expect(find.text('Ogni 2 mesi, il 5 · Casa · Conto corrente'), findsOneWidget);
       expect(find.text('Da confermare'), findsOneWidget);
       expect(find.text('Automatico'), findsOneWidget);
       expect(find.text('Prossima: 5 ott'), findsOneWidget);
@@ -295,7 +295,8 @@ void main() {
       expect(find.text('Modifica movimento'), findsOneWidget);
       expect(find.text('Le modifiche varranno anche per le occorrenze successive'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField).first, '70,00');
+      expect(find.text('NOME DELLA RICORRENZA'), findsOneWidget);
+      await tester.enterText(find.widgetWithText(TextField, '64,00'), '70,00');
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
       await tester.tap(find.text('Salva modifiche'));
@@ -377,7 +378,7 @@ void main() {
       await waitFor(tester, () async => (await readRules()).isNotEmpty);
 
       final rule = (await rules(tester)).single;
-      expect(rule.name, 'Casa');
+      expect(rule.name, isEmpty, reason: 'senza nota la regola non ha un nome: il titolo è la categoria');
       expect(rule.byMonthDay, 3);
       final created = (await db(
         tester,
@@ -406,6 +407,103 @@ void main() {
       await tapVisible(tester, find.text('Applica'));
       await tester.pumpAndSettle();
       expect(find.text('Ogni 2 mesi · 6 volte'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('con la nota "Netflix": la ricorrenza si chiama "Netflix" in elenco', (tester) async {
+      await pumpAt(tester, AppRoutes.add('expense'), seed: false);
+      for (final digit in ['1', '2', '9', '9']) {
+        await tester.tap(find.descendant(of: find.byType(QuickAddScreen), matching: find.text(digit)));
+        await tester.pump();
+      }
+      await tester.tap(find.text('Abbonamenti'));
+      await tester.enterText(find.widgetWithText(TextField, 'Nota (facoltativa)'), 'Netflix');
+      await tester.tap(find.bySemanticsLabel(RegExp('^Data del movimento: ')));
+      await tester.pumpAndSettle();
+      await tapVisible(tester, find.text('Ogni mese'));
+      await tapVisible(tester, find.text('Conferma'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salva spesa'));
+      await waitFor(tester, () async => (await readRules()).isNotEmpty);
+      expect((await rules(tester)).single.name, 'Netflix');
+
+      container.read(appRouterProvider).go(AppRoutes.recurring);
+      await tester.pumpAndSettle();
+      expect(find.text('Netflix'), findsOneWidget);
+      expect(find.text('Ogni mese, il 3 · Abbonamenti · Conto corrente'), findsOneWidget);
+      expect(find.text('Prossima: 3 nov'), findsOneWidget);
+      await finish(tester);
+    });
+  });
+
+  group('Nome alla creazione', () {
+    testWidgets('il nome scelto in "Data e ripetizione" vince sulla nota', (tester) async {
+      await pumpAt(tester, AppRoutes.add('expense'), seed: false);
+      for (final digit in ['1', '2', '9', '9']) {
+        await tester.tap(find.descendant(of: find.byType(QuickAddScreen), matching: find.text(digit)));
+        await tester.pump();
+      }
+      await tester.tap(find.text('Abbonamenti'));
+      await tester.enterText(find.widgetWithText(TextField, 'Nota (facoltativa)'), 'Netflix');
+      await tester.tap(find.bySemanticsLabel(RegExp('^Data del movimento: ')));
+      await tester.pumpAndSettle();
+      expect(find.text('NOME DELLA RICORRENZA'), findsNothing, reason: 'solo con una ripetizione');
+      await tapVisible(tester, find.text('Ogni mese'));
+      final name = find.descendant(of: find.byType(BottomSheet), matching: find.byType(TextField));
+      expect(tester.widget<TextField>(name).decoration!.hintText, 'Netflix', reason: 'segnaposto: la nota');
+      await tester.enterText(name, 'Streaming');
+      await tapVisible(tester, find.text('Conferma'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salva spesa'));
+      await waitFor(tester, () async => (await readRules()).isNotEmpty);
+      expect((await rules(tester)).single.name, 'Streaming');
+      await finish(tester);
+    });
+  });
+
+  group('Modifica regola', () {
+    testWidgets('la matita apre "questa e le successive" sulla prossima occorrenza, con il nome', (tester) async {
+      await pumpAt(tester, AppRoutes.recurrence('spotify'));
+      expect(find.text('Spotify'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Modifica regola'));
+      await tester.pumpAndSettle();
+      expect(find.text('Modifica movimento'), findsOneWidget);
+      expect(find.text('Le modifiche varranno anche per le occorrenze successive'), findsOneWidget);
+      final name = find.widgetWithText(TextField, 'Spotify');
+      expect(tester.widget<TextField>(name).decoration!.hintText, 'Casa', reason: 'senza nota: la categoria');
+
+      await tester.enterText(name, 'Musica');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salva modifiche'));
+      await waitFor(tester, () async => (await readRules()).any((r) => r.name == 'Musica'));
+
+      final all = await rules(tester);
+      final next = all.firstWhere((r) => r.name == 'Musica');
+      expect(next.startDate, d(2026, 10, 7), reason: 'dalla prossima occorrenza');
+      expect(all.firstWhere((r) => r.id == 'spotify').endDate, d(2026, 10, 6));
+      await finish(tester);
+    });
+
+    testWidgets('nome svuotato: la nuova regola usa il titolo calcolato', (tester) async {
+      await pumpAt(tester, AppRoutes.recurrence('spotify'));
+      await tester.tap(find.byTooltip('Modifica regola'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, 'Spotify'), '');
+      final note = find.widgetWithText(TextField, 'Nota (facoltativa)');
+      await tester.scrollUntilVisible(note, 200, scrollable: find.byType(Scrollable).first);
+      await tester.enterText(note, 'Spotify Family');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Salva modifiche'));
+      await waitFor(tester, () async => (await readRules()).length == 3);
+
+      final next = (await rules(tester)).firstWhere((r) => r.id != 'spotify' && r.id != 'luce');
+      expect(next.name, isEmpty);
+      container.read(appRouterProvider).go(AppRoutes.recurring);
+      await tester.pumpAndSettle();
+      expect(find.text('Spotify Family'), findsOneWidget, reason: 'senza nome: la nota');
       await finish(tester);
     });
   });

@@ -411,7 +411,8 @@ $TransactionCopyWith<$Res> get pending {
 /// @nodoc
 mixin _$RepeatSettings {
 
- RecurrenceFrequency get frequency; int get interval; LocalDate? get endDate; int? get maxCount; RecurrenceMode get mode;
+ RecurrenceFrequency get frequency; int get interval; LocalDate? get endDate; int? get maxCount; RecurrenceMode get mode;/// Nome della ricorrenza scelto nel pannello; vuoto = la nota del movimento (vedi [initialRuleName]).
+ String get name;
 /// Create a copy of RepeatSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -423,20 +424,20 @@ $RepeatSettingsCopyWith<RepeatSettings> get copyWith => _$RepeatSettingsCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as RepeatSettings;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RepeatSettings&&(identical(other.frequency, _this.frequency) || other.frequency == _this.frequency)&&(identical(other.interval, _this.interval) || other.interval == _this.interval)&&(identical(other.endDate, _this.endDate) || other.endDate == _this.endDate)&&(identical(other.maxCount, _this.maxCount) || other.maxCount == _this.maxCount)&&(identical(other.mode, _this.mode) || other.mode == _this.mode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RepeatSettings&&(identical(other.frequency, _this.frequency) || other.frequency == _this.frequency)&&(identical(other.interval, _this.interval) || other.interval == _this.interval)&&(identical(other.endDate, _this.endDate) || other.endDate == _this.endDate)&&(identical(other.maxCount, _this.maxCount) || other.maxCount == _this.maxCount)&&(identical(other.mode, _this.mode) || other.mode == _this.mode)&&(identical(other.name, _this.name) || other.name == _this.name));
 }
 
 
 @override
 int get hashCode {
   final _this = this as RepeatSettings;
-  return Object.hash(runtimeType,_this.frequency,_this.interval,_this.endDate,_this.maxCount,_this.mode);
+  return Object.hash(runtimeType,_this.frequency,_this.interval,_this.endDate,_this.maxCount,_this.mode,_this.name);
 }
 
 @override
 String toString() {
   final _this = this as RepeatSettings;
-  return 'RepeatSettings(frequency: ${_this.frequency}, interval: ${_this.interval}, endDate: ${_this.endDate}, maxCount: ${_this.maxCount}, mode: ${_this.mode})';
+  return 'RepeatSettings(frequency: ${_this.frequency}, interval: ${_this.interval}, endDate: ${_this.endDate}, maxCount: ${_this.maxCount}, mode: ${_this.mode}, name: ${_this.name})';
 }
 
 
@@ -447,7 +448,7 @@ abstract mixin class $RepeatSettingsCopyWith<$Res>  {
   factory $RepeatSettingsCopyWith(RepeatSettings value, $Res Function(RepeatSettings) _then) = _$RepeatSettingsCopyWithImpl;
 @useResult
 $Res call({
- RecurrenceFrequency frequency, int interval, LocalDate? endDate, int? maxCount, RecurrenceMode mode
+ RecurrenceFrequency frequency, int interval, LocalDate? endDate, int? maxCount, RecurrenceMode mode, String name
 });
 
 
@@ -464,14 +465,15 @@ class _$RepeatSettingsCopyWithImpl<$Res>
 
 /// Create a copy of RepeatSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? frequency = null,Object? interval = null,Object? endDate = freezed,Object? maxCount = freezed,Object? mode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? frequency = null,Object? interval = null,Object? endDate = freezed,Object? maxCount = freezed,Object? mode = null,Object? name = null,}) {
   return _then(RepeatSettings(
 frequency: null == frequency ? _self.frequency : frequency // ignore: cast_nullable_to_non_nullable
 as RecurrenceFrequency,interval: null == interval ? _self.interval : interval // ignore: cast_nullable_to_non_nullable
 as int,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as LocalDate?,maxCount: freezed == maxCount ? _self.maxCount : maxCount // ignore: cast_nullable_to_non_nullable
 as int?,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as RecurrenceMode,
+as RecurrenceMode,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -556,10 +558,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RepeatSettings() when $default != null:
-return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode);case _:
+return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode,_that.name);case _:
   return orElse();
 
 }
@@ -577,10 +579,10 @@ return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode,  String name)  $default,) {final _that = this;
 switch (_that) {
 case _RepeatSettings():
-return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode);case _:
+return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode,_that.name);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -597,10 +599,10 @@ return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RecurrenceFrequency frequency,  int interval,  LocalDate? endDate,  int? maxCount,  RecurrenceMode mode,  String name)?  $default,) {final _that = this;
 switch (_that) {
 case _RepeatSettings() when $default != null:
-return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode);case _:
+return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_that.mode,_that.name);case _:
   return null;
 
 }
@@ -612,7 +614,7 @@ return $default(_that.frequency,_that.interval,_that.endDate,_that.maxCount,_tha
 
 
 class _RepeatSettings implements RepeatSettings {
-  const _RepeatSettings({required this.frequency, this.interval = 1, this.endDate, this.maxCount, this.mode = RecurrenceMode.auto});
+  const _RepeatSettings({required this.frequency, this.interval = 1, this.endDate, this.maxCount, this.mode = RecurrenceMode.auto, this.name = ''});
   
 
 @override final  RecurrenceFrequency frequency;
@@ -620,6 +622,8 @@ class _RepeatSettings implements RepeatSettings {
 @override final  LocalDate? endDate;
 @override final  int? maxCount;
 @override@JsonKey() final  RecurrenceMode mode;
+/// Nome della ricorrenza scelto nel pannello; vuoto = la nota del movimento (vedi [initialRuleName]).
+@override@JsonKey() final  String name;
 
 /// Create a copy of RepeatSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -631,18 +635,18 @@ _$RepeatSettingsCopyWith<_RepeatSettings> get copyWith => __$RepeatSettingsCopyW
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RepeatSettings&&(identical(other.frequency, frequency) || other.frequency == frequency)&&(identical(other.interval, interval) || other.interval == interval)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.maxCount, maxCount) || other.maxCount == maxCount)&&(identical(other.mode, mode) || other.mode == mode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RepeatSettings&&(identical(other.frequency, frequency) || other.frequency == frequency)&&(identical(other.interval, interval) || other.interval == interval)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.maxCount, maxCount) || other.maxCount == maxCount)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.name, name) || other.name == name));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,frequency,interval,endDate,maxCount,mode);
+    return Object.hash(runtimeType,frequency,interval,endDate,maxCount,mode,name);
 }
 
 @override
 String toString() {
-    return 'RepeatSettings(frequency: $frequency, interval: $interval, endDate: $endDate, maxCount: $maxCount, mode: $mode)';
+    return 'RepeatSettings(frequency: $frequency, interval: $interval, endDate: $endDate, maxCount: $maxCount, mode: $mode, name: $name)';
 }
 
 
@@ -653,7 +657,7 @@ abstract mixin class _$RepeatSettingsCopyWith<$Res> implements $RepeatSettingsCo
   factory _$RepeatSettingsCopyWith(_RepeatSettings value, $Res Function(_RepeatSettings) _then) = __$RepeatSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- RecurrenceFrequency frequency, int interval, LocalDate? endDate, int? maxCount, RecurrenceMode mode
+ RecurrenceFrequency frequency, int interval, LocalDate? endDate, int? maxCount, RecurrenceMode mode, String name
 });
 
 
@@ -670,14 +674,15 @@ class __$RepeatSettingsCopyWithImpl<$Res>
 
 /// Create a copy of RepeatSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? frequency = null,Object? interval = null,Object? endDate = freezed,Object? maxCount = freezed,Object? mode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? frequency = null,Object? interval = null,Object? endDate = freezed,Object? maxCount = freezed,Object? mode = null,Object? name = null,}) {
   return _then(_RepeatSettings(
 frequency: null == frequency ? _self.frequency : frequency // ignore: cast_nullable_to_non_nullable
 as RecurrenceFrequency,interval: null == interval ? _self.interval : interval // ignore: cast_nullable_to_non_nullable
 as int,endDate: freezed == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
 as LocalDate?,maxCount: freezed == maxCount ? _self.maxCount : maxCount // ignore: cast_nullable_to_non_nullable
 as int?,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
-as RecurrenceMode,
+as RecurrenceMode,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -694,7 +699,9 @@ mixin _$TransactionFormState {
  List<Attachment> get removedAttachments;/// Allegati nuovi, copiati nella cartella dell'app solo al salvataggio.
  List<PickedAttachment> get newAttachments;/// Movimento di partenza in modifica; null per un movimento nuovo.
  Transaction? get original;/// Ripetizione del movimento nuovo (null = non si ripete).
- RepeatSettings? get repeat;/// True quando si conferma un `pending`: il salvataggio lo porta a `confirmed`.
+ RepeatSettings? get repeat;/// Nome della ricorrenza in "Questa e le successive" (null = invariato; vuoto = nessun nome,
+/// vale il titolo calcolato).
+ String? get ruleName;/// True quando si conferma un `pending`: il salvataggio lo porta a `confirmed`.
  bool get confirming;/// True finché l'importo è quello proposto (conferma): il primo tasto lo sostituisce.
  bool get amountIsSuggestion;/// Diventa true al primo tentativo di salvataggio: da lì si mostrano gli errori.
  bool get showErrors; bool get saving;
@@ -709,20 +716,20 @@ $TransactionFormStateCopyWith<TransactionFormState> get copyWith => _$Transactio
 @override
 bool operator ==(Object other) {
   final _this = this as TransactionFormState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionFormState&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.amountCents, _this.amountCents) || other.amountCents == _this.amountCents)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.expenseWalletId, _this.expenseWalletId) || other.expenseWalletId == _this.expenseWalletId)&&(identical(other.incomeWalletId, _this.incomeWalletId) || other.incomeWalletId == _this.incomeWalletId)&&(identical(other.fromWalletId, _this.fromWalletId) || other.fromWalletId == _this.fromWalletId)&&(identical(other.toWalletId, _this.toWalletId) || other.toWalletId == _this.toWalletId)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.savedAttachments, _this.savedAttachments)&&const DeepCollectionEquality().equals(other.removedAttachments, _this.removedAttachments)&&const DeepCollectionEquality().equals(other.newAttachments, _this.newAttachments)&&(identical(other.original, _this.original) || other.original == _this.original)&&(identical(other.repeat, _this.repeat) || other.repeat == _this.repeat)&&(identical(other.confirming, _this.confirming) || other.confirming == _this.confirming)&&(identical(other.amountIsSuggestion, _this.amountIsSuggestion) || other.amountIsSuggestion == _this.amountIsSuggestion)&&(identical(other.showErrors, _this.showErrors) || other.showErrors == _this.showErrors)&&(identical(other.saving, _this.saving) || other.saving == _this.saving));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TransactionFormState&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.amountCents, _this.amountCents) || other.amountCents == _this.amountCents)&&(identical(other.categoryId, _this.categoryId) || other.categoryId == _this.categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _this.labelIds)&&(identical(other.expenseWalletId, _this.expenseWalletId) || other.expenseWalletId == _this.expenseWalletId)&&(identical(other.incomeWalletId, _this.incomeWalletId) || other.incomeWalletId == _this.incomeWalletId)&&(identical(other.fromWalletId, _this.fromWalletId) || other.fromWalletId == _this.fromWalletId)&&(identical(other.toWalletId, _this.toWalletId) || other.toWalletId == _this.toWalletId)&&(identical(other.note, _this.note) || other.note == _this.note)&&const DeepCollectionEquality().equals(other.savedAttachments, _this.savedAttachments)&&const DeepCollectionEquality().equals(other.removedAttachments, _this.removedAttachments)&&const DeepCollectionEquality().equals(other.newAttachments, _this.newAttachments)&&(identical(other.original, _this.original) || other.original == _this.original)&&(identical(other.repeat, _this.repeat) || other.repeat == _this.repeat)&&(identical(other.ruleName, _this.ruleName) || other.ruleName == _this.ruleName)&&(identical(other.confirming, _this.confirming) || other.confirming == _this.confirming)&&(identical(other.amountIsSuggestion, _this.amountIsSuggestion) || other.amountIsSuggestion == _this.amountIsSuggestion)&&(identical(other.showErrors, _this.showErrors) || other.showErrors == _this.showErrors)&&(identical(other.saving, _this.saving) || other.saving == _this.saving));
 }
 
 
 @override
 int get hashCode {
   final _this = this as TransactionFormState;
-  return Object.hashAll([runtimeType,_this.type,_this.date,_this.amountCents,_this.categoryId,const DeepCollectionEquality().hash(_this.labelIds),_this.expenseWalletId,_this.incomeWalletId,_this.fromWalletId,_this.toWalletId,_this.note,const DeepCollectionEquality().hash(_this.savedAttachments),const DeepCollectionEquality().hash(_this.removedAttachments),const DeepCollectionEquality().hash(_this.newAttachments),_this.original,_this.repeat,_this.confirming,_this.amountIsSuggestion,_this.showErrors,_this.saving]);
+  return Object.hashAll([runtimeType,_this.type,_this.date,_this.amountCents,_this.categoryId,const DeepCollectionEquality().hash(_this.labelIds),_this.expenseWalletId,_this.incomeWalletId,_this.fromWalletId,_this.toWalletId,_this.note,const DeepCollectionEquality().hash(_this.savedAttachments),const DeepCollectionEquality().hash(_this.removedAttachments),const DeepCollectionEquality().hash(_this.newAttachments),_this.original,_this.repeat,_this.ruleName,_this.confirming,_this.amountIsSuggestion,_this.showErrors,_this.saving]);
 }
 
 @override
 String toString() {
   final _this = this as TransactionFormState;
-  return 'TransactionFormState(type: ${_this.type}, date: ${_this.date}, amountCents: ${_this.amountCents}, categoryId: ${_this.categoryId}, labelIds: ${_this.labelIds}, expenseWalletId: ${_this.expenseWalletId}, incomeWalletId: ${_this.incomeWalletId}, fromWalletId: ${_this.fromWalletId}, toWalletId: ${_this.toWalletId}, note: ${_this.note}, savedAttachments: ${_this.savedAttachments}, removedAttachments: ${_this.removedAttachments}, newAttachments: ${_this.newAttachments}, original: ${_this.original}, repeat: ${_this.repeat}, confirming: ${_this.confirming}, amountIsSuggestion: ${_this.amountIsSuggestion}, showErrors: ${_this.showErrors}, saving: ${_this.saving})';
+  return 'TransactionFormState(type: ${_this.type}, date: ${_this.date}, amountCents: ${_this.amountCents}, categoryId: ${_this.categoryId}, labelIds: ${_this.labelIds}, expenseWalletId: ${_this.expenseWalletId}, incomeWalletId: ${_this.incomeWalletId}, fromWalletId: ${_this.fromWalletId}, toWalletId: ${_this.toWalletId}, note: ${_this.note}, savedAttachments: ${_this.savedAttachments}, removedAttachments: ${_this.removedAttachments}, newAttachments: ${_this.newAttachments}, original: ${_this.original}, repeat: ${_this.repeat}, ruleName: ${_this.ruleName}, confirming: ${_this.confirming}, amountIsSuggestion: ${_this.amountIsSuggestion}, showErrors: ${_this.showErrors}, saving: ${_this.saving})';
 }
 
 
@@ -733,7 +740,7 @@ abstract mixin class $TransactionFormStateCopyWith<$Res>  {
   factory $TransactionFormStateCopyWith(TransactionFormState value, $Res Function(TransactionFormState) _then) = _$TransactionFormStateCopyWithImpl;
 @useResult
 $Res call({
- TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<Attachment> savedAttachments, List<Attachment> removedAttachments, List<PickedAttachment> newAttachments, Transaction? original, RepeatSettings? repeat, bool confirming, bool amountIsSuggestion, bool showErrors, bool saving
+ TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<Attachment> savedAttachments, List<Attachment> removedAttachments, List<PickedAttachment> newAttachments, Transaction? original, RepeatSettings? repeat, String? ruleName, bool confirming, bool amountIsSuggestion, bool showErrors, bool saving
 });
 
 
@@ -750,7 +757,7 @@ class _$TransactionFormStateCopyWithImpl<$Res>
 
 /// Create a copy of TransactionFormState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? savedAttachments = null,Object? removedAttachments = null,Object? newAttachments = null,Object? original = freezed,Object? repeat = freezed,Object? confirming = null,Object? amountIsSuggestion = null,Object? showErrors = null,Object? saving = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? savedAttachments = null,Object? removedAttachments = null,Object? newAttachments = null,Object? original = freezed,Object? repeat = freezed,Object? ruleName = freezed,Object? confirming = null,Object? amountIsSuggestion = null,Object? showErrors = null,Object? saving = null,}) {
   return _then(TransactionFormState(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -767,7 +774,8 @@ as List<Attachment>,removedAttachments: null == removedAttachments ? _self.remov
 as List<Attachment>,newAttachments: null == newAttachments ? _self.newAttachments : newAttachments // ignore: cast_nullable_to_non_nullable
 as List<PickedAttachment>,original: freezed == original ? _self.original : original // ignore: cast_nullable_to_non_nullable
 as Transaction?,repeat: freezed == repeat ? _self.repeat : repeat // ignore: cast_nullable_to_non_nullable
-as RepeatSettings?,confirming: null == confirming ? _self.confirming : confirming // ignore: cast_nullable_to_non_nullable
+as RepeatSettings?,ruleName: freezed == ruleName ? _self.ruleName : ruleName // ignore: cast_nullable_to_non_nullable
+as String?,confirming: null == confirming ? _self.confirming : confirming // ignore: cast_nullable_to_non_nullable
 as bool,amountIsSuggestion: null == amountIsSuggestion ? _self.amountIsSuggestion : amountIsSuggestion // ignore: cast_nullable_to_non_nullable
 as bool,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
 as bool,saving: null == saving ? _self.saving : saving // ignore: cast_nullable_to_non_nullable
@@ -880,10 +888,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  String? ruleName,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TransactionFormState() when $default != null:
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.ruleName,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
   return orElse();
 
 }
@@ -901,10 +909,10 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  String? ruleName,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)  $default,) {final _that = this;
 switch (_that) {
 case _TransactionFormState():
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.ruleName,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -921,10 +929,10 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TransactionType type,  LocalDate date,  int amountCents,  String? categoryId,  Set<String> labelIds,  String? expenseWalletId,  String? incomeWalletId,  String? fromWalletId,  String? toWalletId,  String note,  List<Attachment> savedAttachments,  List<Attachment> removedAttachments,  List<PickedAttachment> newAttachments,  Transaction? original,  RepeatSettings? repeat,  String? ruleName,  bool confirming,  bool amountIsSuggestion,  bool showErrors,  bool saving)?  $default,) {final _that = this;
 switch (_that) {
 case _TransactionFormState() when $default != null:
-return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
+return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.labelIds,_that.expenseWalletId,_that.incomeWalletId,_that.fromWalletId,_that.toWalletId,_that.note,_that.savedAttachments,_that.removedAttachments,_that.newAttachments,_that.original,_that.repeat,_that.ruleName,_that.confirming,_that.amountIsSuggestion,_that.showErrors,_that.saving);case _:
   return null;
 
 }
@@ -936,7 +944,7 @@ return $default(_that.type,_that.date,_that.amountCents,_that.categoryId,_that.l
 
 
 class _TransactionFormState extends TransactionFormState {
-  const _TransactionFormState({required this.type, required this.date, this.amountCents = 0, this.categoryId,  Set<String> labelIds = const <String>{}, this.expenseWalletId, this.incomeWalletId, this.fromWalletId, this.toWalletId, this.note = '',  List<Attachment> savedAttachments = const <Attachment>[],  List<Attachment> removedAttachments = const <Attachment>[],  List<PickedAttachment> newAttachments = const <PickedAttachment>[], this.original, this.repeat, this.confirming = false, this.amountIsSuggestion = false, this.showErrors = false, this.saving = false}): _labelIds = labelIds,_savedAttachments = savedAttachments,_removedAttachments = removedAttachments,_newAttachments = newAttachments,super._();
+  const _TransactionFormState({required this.type, required this.date, this.amountCents = 0, this.categoryId,  Set<String> labelIds = const <String>{}, this.expenseWalletId, this.incomeWalletId, this.fromWalletId, this.toWalletId, this.note = '',  List<Attachment> savedAttachments = const <Attachment>[],  List<Attachment> removedAttachments = const <Attachment>[],  List<PickedAttachment> newAttachments = const <PickedAttachment>[], this.original, this.repeat, this.ruleName, this.confirming = false, this.amountIsSuggestion = false, this.showErrors = false, this.saving = false}): _labelIds = labelIds,_savedAttachments = savedAttachments,_removedAttachments = removedAttachments,_newAttachments = newAttachments,super._();
   
 
 @override final  TransactionType type;
@@ -988,6 +996,9 @@ class _TransactionFormState extends TransactionFormState {
 @override final  Transaction? original;
 /// Ripetizione del movimento nuovo (null = non si ripete).
 @override final  RepeatSettings? repeat;
+/// Nome della ricorrenza in "Questa e le successive" (null = invariato; vuoto = nessun nome,
+/// vale il titolo calcolato).
+@override final  String? ruleName;
 /// True quando si conferma un `pending`: il salvataggio lo porta a `confirmed`.
 @override@JsonKey() final  bool confirming;
 /// True finché l'importo è quello proposto (conferma): il primo tasto lo sostituisce.
@@ -1006,18 +1017,18 @@ _$TransactionFormStateCopyWith<_TransactionFormState> get copyWith => __$Transac
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionFormState&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.amountCents, amountCents) || other.amountCents == amountCents)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.expenseWalletId, expenseWalletId) || other.expenseWalletId == expenseWalletId)&&(identical(other.incomeWalletId, incomeWalletId) || other.incomeWalletId == incomeWalletId)&&(identical(other.fromWalletId, fromWalletId) || other.fromWalletId == fromWalletId)&&(identical(other.toWalletId, toWalletId) || other.toWalletId == toWalletId)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.savedAttachments, _savedAttachments)&&const DeepCollectionEquality().equals(other.removedAttachments, _removedAttachments)&&const DeepCollectionEquality().equals(other.newAttachments, _newAttachments)&&(identical(other.original, original) || other.original == original)&&(identical(other.repeat, repeat) || other.repeat == repeat)&&(identical(other.confirming, confirming) || other.confirming == confirming)&&(identical(other.amountIsSuggestion, amountIsSuggestion) || other.amountIsSuggestion == amountIsSuggestion)&&(identical(other.showErrors, showErrors) || other.showErrors == showErrors)&&(identical(other.saving, saving) || other.saving == saving));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TransactionFormState&&(identical(other.type, type) || other.type == type)&&(identical(other.date, date) || other.date == date)&&(identical(other.amountCents, amountCents) || other.amountCents == amountCents)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.labelIds, _labelIds)&&(identical(other.expenseWalletId, expenseWalletId) || other.expenseWalletId == expenseWalletId)&&(identical(other.incomeWalletId, incomeWalletId) || other.incomeWalletId == incomeWalletId)&&(identical(other.fromWalletId, fromWalletId) || other.fromWalletId == fromWalletId)&&(identical(other.toWalletId, toWalletId) || other.toWalletId == toWalletId)&&(identical(other.note, note) || other.note == note)&&const DeepCollectionEquality().equals(other.savedAttachments, _savedAttachments)&&const DeepCollectionEquality().equals(other.removedAttachments, _removedAttachments)&&const DeepCollectionEquality().equals(other.newAttachments, _newAttachments)&&(identical(other.original, original) || other.original == original)&&(identical(other.repeat, repeat) || other.repeat == repeat)&&(identical(other.ruleName, ruleName) || other.ruleName == ruleName)&&(identical(other.confirming, confirming) || other.confirming == confirming)&&(identical(other.amountIsSuggestion, amountIsSuggestion) || other.amountIsSuggestion == amountIsSuggestion)&&(identical(other.showErrors, showErrors) || other.showErrors == showErrors)&&(identical(other.saving, saving) || other.saving == saving));
 }
 
 
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,type,date,amountCents,categoryId,const DeepCollectionEquality().hash(_labelIds),expenseWalletId,incomeWalletId,fromWalletId,toWalletId,note,const DeepCollectionEquality().hash(_savedAttachments),const DeepCollectionEquality().hash(_removedAttachments),const DeepCollectionEquality().hash(_newAttachments),original,repeat,confirming,amountIsSuggestion,showErrors,saving]);
+    return Object.hashAll([runtimeType,type,date,amountCents,categoryId,const DeepCollectionEquality().hash(_labelIds),expenseWalletId,incomeWalletId,fromWalletId,toWalletId,note,const DeepCollectionEquality().hash(_savedAttachments),const DeepCollectionEquality().hash(_removedAttachments),const DeepCollectionEquality().hash(_newAttachments),original,repeat,ruleName,confirming,amountIsSuggestion,showErrors,saving]);
 }
 
 @override
 String toString() {
-    return 'TransactionFormState(type: $type, date: $date, amountCents: $amountCents, categoryId: $categoryId, labelIds: $labelIds, expenseWalletId: $expenseWalletId, incomeWalletId: $incomeWalletId, fromWalletId: $fromWalletId, toWalletId: $toWalletId, note: $note, savedAttachments: $savedAttachments, removedAttachments: $removedAttachments, newAttachments: $newAttachments, original: $original, repeat: $repeat, confirming: $confirming, amountIsSuggestion: $amountIsSuggestion, showErrors: $showErrors, saving: $saving)';
+    return 'TransactionFormState(type: $type, date: $date, amountCents: $amountCents, categoryId: $categoryId, labelIds: $labelIds, expenseWalletId: $expenseWalletId, incomeWalletId: $incomeWalletId, fromWalletId: $fromWalletId, toWalletId: $toWalletId, note: $note, savedAttachments: $savedAttachments, removedAttachments: $removedAttachments, newAttachments: $newAttachments, original: $original, repeat: $repeat, ruleName: $ruleName, confirming: $confirming, amountIsSuggestion: $amountIsSuggestion, showErrors: $showErrors, saving: $saving)';
 }
 
 
@@ -1028,7 +1039,7 @@ abstract mixin class _$TransactionFormStateCopyWith<$Res> implements $Transactio
   factory _$TransactionFormStateCopyWith(_TransactionFormState value, $Res Function(_TransactionFormState) _then) = __$TransactionFormStateCopyWithImpl;
 @override @useResult
 $Res call({
- TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<Attachment> savedAttachments, List<Attachment> removedAttachments, List<PickedAttachment> newAttachments, Transaction? original, RepeatSettings? repeat, bool confirming, bool amountIsSuggestion, bool showErrors, bool saving
+ TransactionType type, LocalDate date, int amountCents, String? categoryId, Set<String> labelIds, String? expenseWalletId, String? incomeWalletId, String? fromWalletId, String? toWalletId, String note, List<Attachment> savedAttachments, List<Attachment> removedAttachments, List<PickedAttachment> newAttachments, Transaction? original, RepeatSettings? repeat, String? ruleName, bool confirming, bool amountIsSuggestion, bool showErrors, bool saving
 });
 
 
@@ -1045,7 +1056,7 @@ class __$TransactionFormStateCopyWithImpl<$Res>
 
 /// Create a copy of TransactionFormState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? savedAttachments = null,Object? removedAttachments = null,Object? newAttachments = null,Object? original = freezed,Object? repeat = freezed,Object? confirming = null,Object? amountIsSuggestion = null,Object? showErrors = null,Object? saving = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? date = null,Object? amountCents = null,Object? categoryId = freezed,Object? labelIds = null,Object? expenseWalletId = freezed,Object? incomeWalletId = freezed,Object? fromWalletId = freezed,Object? toWalletId = freezed,Object? note = null,Object? savedAttachments = null,Object? removedAttachments = null,Object? newAttachments = null,Object? original = freezed,Object? repeat = freezed,Object? ruleName = freezed,Object? confirming = null,Object? amountIsSuggestion = null,Object? showErrors = null,Object? saving = null,}) {
   return _then(_TransactionFormState(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as TransactionType,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -1062,7 +1073,8 @@ as List<Attachment>,removedAttachments: null == removedAttachments ? _self._remo
 as List<Attachment>,newAttachments: null == newAttachments ? _self._newAttachments : newAttachments // ignore: cast_nullable_to_non_nullable
 as List<PickedAttachment>,original: freezed == original ? _self.original : original // ignore: cast_nullable_to_non_nullable
 as Transaction?,repeat: freezed == repeat ? _self.repeat : repeat // ignore: cast_nullable_to_non_nullable
-as RepeatSettings?,confirming: null == confirming ? _self.confirming : confirming // ignore: cast_nullable_to_non_nullable
+as RepeatSettings?,ruleName: freezed == ruleName ? _self.ruleName : ruleName // ignore: cast_nullable_to_non_nullable
+as String?,confirming: null == confirming ? _self.confirming : confirming // ignore: cast_nullable_to_non_nullable
 as bool,amountIsSuggestion: null == amountIsSuggestion ? _self.amountIsSuggestion : amountIsSuggestion // ignore: cast_nullable_to_non_nullable
 as bool,showErrors: null == showErrors ? _self.showErrors : showErrors // ignore: cast_nullable_to_non_nullable
 as bool,saving: null == saving ? _self.saving : saving // ignore: cast_nullable_to_non_nullable

@@ -168,8 +168,10 @@ Chiavi: `device_id`, `theme_mode` (system | light | dark), `biometric_lock` (boo
 
 ## Migrazioni dello schema
 
-Versione attuale: **3**. Storico: v1 schema iniziale; v2 `wallets.last_balance_verified_date`;
-v3 tabella `imports` e `transactions.import_batch_id` (con indice).
+Versione attuale: **4**. Storico: v1 schema iniziale; v2 `wallets.last_balance_verified_date`;
+v3 tabella `imports` e `transactions.import_batch_id` (con indice); v4 solo dati, tabelle invariate:
+le regole con nome vuoto o uguale alla categoria (senza distinzione di maiuscole e spazi), non
+cancellate e con la nota compilata prendono la nota come nome (con `updated_at`, `device_id` e outbox).
 
 Ogni modifica dello schema (tabelle, colonne, indici, vincoli) segue sempre questi passi:
 
@@ -303,7 +305,20 @@ Al primo avvio, se il database è vuoto:
   conferma e il form le rifiutano (`AutomaticOccurrenceException`). Le conferma solo il generatore.
 - Nel dettaglio, le occorrenze il cui movimento è stato eliminato appaiono come "Eliminata"
   (barrate, senza azioni) e non si rigenerano.
-- Nome della regola: la nota, altrimenti la categoria, altrimenti "Trasferimento".
+- **Nome e titolo** (`recurrenceTitle`, `initialRuleName` in `domain/services/recurrence.dart`):
+  - il titolo (elenco, dettaglio, "In arrivo", banner del movimento) è il nome della regola se c'è,
+    altrimenti la descrizione dei movimenti (la nota), altrimenti la categoria, altrimenti
+    "Trasferimento" o "Ricorrenza"; nomi e note di soli spazi contano come vuoti;
+  - creazione da "Ripeti": in "Data e ripetizione", con una ripetizione scelta, c'è il campo facoltativo
+    "Nome della ricorrenza" (`RepeatSettings.name`) con il titolo calcolato come segnaposto. Se resta
+    vuoto il nome è la nota (se compilata), altrimenti vuoto e vale il titolo calcolato;
+  - "Modifica questa e le successive" ha il campo "Nome della ricorrenza" (parte dal nome attuale,
+    segnaposto = titolo calcolato da nota e categoria del form): la regola nuova prende quel nome,
+    vuoto = titolo calcolato. Senza modifiche al campo tiene il nome della regola divisa;
+  - la matita "Modifica regola" nel dettaglio è una scorciatoia per "Modifica questa e le successive"
+    sulla prossima occorrenza non saltata né eliminata (disattivata se la ricorrenza è conclusa).
+  - Sottotitolo in elenco: frequenza · categoria · portafoglio (trasferimenti: origine → destinazione),
+    poi lo stato con la prossima scadenza.
 - **Totali fissi** (Movimenti ricorrenti): l'effettivo del mese (importi registrati o della regola,
   senza saltate e pause) e, se ci sono regole non mensili, la "Media mensile prevista"
   (settimanali × 52 / 12, giornaliere × 365 / 12, annuali / 12, sempre diviso l'intervallo).
@@ -542,7 +557,7 @@ Riepilogo delle schermate:
   sicurezza (biometria); Privacy (saldi all'apertura); Dati (backup ed esportazione, Importa da CSV, Storico importazioni); Esci / Elimina dati; versione.
 - **Categorie e label**: tab, Spese/Entrate, elenco riordinabile, pannello di modifica con
   nome, colore, unisci, archivia.
-- **Movimenti ricorrenti** e **Dettaglio ricorrenza**: totali fissi mensili, Attive/In pausa,
+- **Movimenti ricorrenti** e **Dettaglio ricorrenza** (matita "Modifica regola" = "questa e le successive" sulla prossima occorrenza): totali fissi mensili, Attive/In pausa,
   prossime occorrenze con conferma e menu (salta, modifica solo questa, questa e le successive),
   storico, pausa, elimina.
 

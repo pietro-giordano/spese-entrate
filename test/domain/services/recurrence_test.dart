@@ -266,4 +266,50 @@ void main() {
       expect(() => splitRule(old, boundary: d(2026, 10, 6), next: next(d(2026, 10, 6))), throwsArgumentError);
     });
   });
+
+  group('titolo e nome iniziale', () {
+    RecurrenceRule rule({String name = '', String? note, TransactionType type = TransactionType.expense}) =>
+        RecurrenceRule(
+          id: 'r',
+          name: name,
+          type: type,
+          amountCents: 1299,
+          walletId: 'w',
+          note: note,
+          frequency: RecurrenceFrequency.monthly,
+          startDate: LocalDate(2026, 10, 5),
+          mode: RecurrenceMode.auto,
+        );
+
+    test('nome, altrimenti la nota, altrimenti la categoria', () {
+      expect(
+        recurrenceTitle(
+          rule(name: 'Streaming', note: 'Netflix'),
+          categoryName: 'Abbonamenti',
+        ),
+        'Streaming',
+      );
+      expect(recurrenceTitle(rule(note: 'Netflix'), categoryName: 'Abbonamenti'), 'Netflix');
+      expect(recurrenceTitle(rule(), categoryName: 'Abbonamenti'), 'Abbonamenti');
+    });
+
+    test('spazi come vuoto; senza categoria: "Trasferimento" o "Ricorrenza"', () {
+      expect(
+        recurrenceTitle(
+          rule(name: '  ', note: ' Netflix '),
+          categoryName: 'Abbonamenti',
+        ),
+        'Netflix',
+      );
+      expect(recurrenceTitle(rule(note: '   '), categoryName: 'Abbonamenti'), 'Abbonamenti');
+      expect(recurrenceTitle(rule(type: TransactionType.transfer)), 'Trasferimento');
+      expect(recurrenceTitle(rule()), 'Ricorrenza');
+    });
+
+    test('da "Ripeti": la nota se c\'è, altrimenti vuoto', () {
+      expect(initialRuleName(' Netflix '), 'Netflix');
+      expect(initialRuleName(null), '');
+      expect(initialRuleName('  '), '');
+    });
+  });
 }

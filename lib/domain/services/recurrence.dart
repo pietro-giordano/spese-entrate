@@ -8,6 +8,26 @@ import '../models/transaction.dart';
 
 // Calcolo delle occorrenze delle ricorrenze: funzioni pure, senza database né Flutter.
 
+/// Titolo di una ricorrenza in elenco e dettaglio: il nome, altrimenti la descrizione dei movimenti
+/// (la nota), altrimenti la categoria ([categoryName]), altrimenti "Trasferimento" o "Ricorrenza".
+/// Nomi e note fatti di soli spazi contano come vuoti.
+String recurrenceTitle(RecurrenceRule rule, {String? categoryName}) =>
+    recurrenceTitleOf(name: rule.name, note: rule.note, categoryName: categoryName, type: rule.type);
+
+/// Come [recurrenceTitle], dai singoli valori: serve anche prima che la regola esista
+/// (segnaposto del nome mentre si compila il movimento).
+String recurrenceTitleOf({String? name, String? note, String? categoryName, required TransactionType type}) {
+  String? text(String? value) => (value == null || value.trim().isEmpty) ? null : value.trim();
+  return text(name) ??
+      text(note) ??
+      text(categoryName) ??
+      (type == TransactionType.transfer ? 'Trasferimento' : 'Ricorrenza');
+}
+
+/// Nome iniziale di una regola creata da "Ripeti": la nota del movimento se c'è, altrimenti vuoto
+/// (e il titolo si calcola con [recurrenceTitle]).
+String initialRuleName(String? note) => note?.trim() ?? '';
+
 /// Imposta l'inizio della regola e ne ricava i "punti fissi": il giorno della settimana
 /// per le settimanali, il giorno del mese per le mensili, giorno e mese per le annuali.
 RecurrenceRule anchorRuleAt(RecurrenceRule rule, LocalDate start) => rule.copyWith(

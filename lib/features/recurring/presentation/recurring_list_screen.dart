@@ -189,10 +189,10 @@ class _Names {
   final Map<String, String> categories;
   final Map<String, String> wallets;
 
-  /// "Casa" per spese ed entrate, "Conto corrente → ETF" per i trasferimenti.
+  /// "Abbonamenti · Conto corrente" per spese ed entrate, "Conto corrente → ETF" per i trasferimenti.
   String detailOf(RecurrenceRule rule) => rule.type == TransactionType.transfer
       ? '${wallets[rule.walletId] ?? '—'} → ${wallets[rule.toWalletId] ?? '—'}'
-      : categories[rule.categoryId] ?? '—';
+      : '${categories[rule.categoryId] ?? '—'} · ${wallets[rule.walletId] ?? '—'}';
 }
 
 /// Card di un totale: effettivo del mese e, se ci sono regole non mensili, la media prevista.
@@ -289,7 +289,12 @@ class _RuleRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(rule.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: textTheme.titleSmall),
+                    Text(
+                      recurrenceTitle(rule, categoryName: names.categories[rule.categoryId]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall,
+                    ),
                     const SizedBox(height: 3),
                     Text(
                       '${describeSchedule(rule)} · ${names.detailOf(rule)}',

@@ -81,6 +81,9 @@ abstract class RepeatSettings with _$RepeatSettings {
     LocalDate? endDate,
     int? maxCount,
     @Default(RecurrenceMode.auto) RecurrenceMode mode,
+
+    /// Nome della ricorrenza scelto nel pannello; vuoto = la nota del movimento (vedi [initialRuleName]).
+    @Default('') String name,
   }) = _RepeatSettings;
 }
 
@@ -125,6 +128,10 @@ abstract class TransactionFormState with _$TransactionFormState {
 
     /// Ripetizione del movimento nuovo (null = non si ripete).
     RepeatSettings? repeat,
+
+    /// Nome della ricorrenza in "Questa e le successive" (null = invariato; vuoto = nessun nome,
+    /// vale il titolo calcolato).
+    String? ruleName,
 
     /// True quando si conferma un `pending`: il salvataggio lo porta a `confirmed`.
     @Default(false) bool confirming,
@@ -236,6 +243,7 @@ class TransactionFormController extends _$TransactionFormController {
       a.fromWalletId == b.fromWalletId &&
       a.toWalletId == b.toWalletId &&
       a.note.trim() == b.note.trim() &&
+      a.ruleName?.trim() == b.ruleName?.trim() &&
       a.newAttachments.isEmpty &&
       a.removedAttachments.isEmpty;
 
@@ -309,6 +317,9 @@ class TransactionFormController extends _$TransactionFormController {
 
   void setNote(String note) => state = state.copyWith(note: note);
 
+  /// Nome della ricorrenza, solo per "Questa e le successive".
+  void setRuleName(String name) => state = state.copyWith(ruleName: name);
+
   /// Salva il movimento: nuovo, oppure lo stesso ID se in modifica.
   /// [walletId] è il portafoglio (l'origine per i trasferimenti) e [toWalletId] la destinazione,
   /// già risolti dalla schermata. Restituisce il movimento salvato, o null se i dati non sono validi.
@@ -366,7 +377,8 @@ class TransactionFormController extends _$TransactionFormController {
     final recurrences = ref.read(recurrenceRepositoryProvider);
     final generator = ref.read(recurrenceGeneratorProvider);
     final draftRule = state.draftRule;
-    final ruleName = _ruleName(transaction);
+    final chosenName = state.repeat?.name.trim() ?? '';
+    final ruleName = chosenName.isNotEmpty ? chosenName : initialRuleName(transaction.note);
     try {
       for (final file in state.newAttachments) {
         stored.add(await storage.store(transaction.id, file));
@@ -405,12 +417,6 @@ class TransactionFormController extends _$TransactionFormController {
     }
   }
 
-  /// Nome della regola: la nota, altrimenti la categoria, altrimenti il tipo.
-  String _ruleName(Transaction tx) {
-    final category = ref.read(categoriesProvider).value?.firstWhereOrNull((c) => c.id == tx.categoryId);
-    return tx.note ?? category?.name ?? (tx.type == TransactionType.transfer ? 'Trasferimento' : 'Ricorrenza');
-  }
-
   /// [rule] con i valori del movimento (importo, portafogli, categoria, label, nota),
   /// che parte dalla data del movimento.
   RecurrenceRule _ruleFrom(RecurrenceRule rule, Transaction tx) => anchorRuleAt(
@@ -435,7 +441,7 @@ class TransactionFormController extends _$TransactionFormController {
     final repository = ref.read(recurrenceRepositoryProvider);
     final old = ruleId == null ? null : await repository.getById(ruleId);
     if (old == null || boundary == null) throw StateError('Il movimento non fa parte di una ricorrenza attiva');
-    final next = _ruleFrom(old.copyWith(id: newId()), tx);
+    final next = _ruleFrom(old.copyWith(id: newId(), name: state.ruleName?.trim() ?? old.name), tx);
     final saved = await repository.split(old.id, boundary: boundary, next: next);
     return tx.copyWith(recurrenceId: saved.id, occurrenceDate: saved.startDate);
   }

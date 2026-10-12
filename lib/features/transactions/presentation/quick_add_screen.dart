@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -113,6 +114,11 @@ class _QuickAddFormState extends ConsumerState<_QuickAddForm> {
       repeat: state.repeat,
       today: today,
       weekStart: weekStart,
+      namePlaceholder: recurrenceTitleOf(
+        note: state.note,
+        categoryName: ref.read(categoriesProvider).value?.firstWhereOrNull((c) => c.id == state.categoryId)?.name,
+        type: state.type,
+      ),
     );
     if (choice == null) return;
     controller
