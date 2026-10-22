@@ -243,7 +243,6 @@ class _TransferSection extends ConsumerWidget {
         context,
         title: title,
         wallets: wallets.available,
-        balances: balances,
         selectedId: selectedId,
         otherSelectedId: otherId,
         otherSelectedLabel: otherLabel,
@@ -290,7 +289,6 @@ Future<void> pickFormWallet(BuildContext context, WidgetRef ref, TransactionForm
     context,
     title: state.type == TransactionType.income ? 'Ricevi su' : 'Paga da',
     wallets: wallets.available,
-    balances: ref.read(walletBalancesProvider).value ?? const {},
     selectedId: wallets.walletId,
     hint: state.isEditing
         ? 'Il movimento verrà spostato nel portafoglio scelto.'
