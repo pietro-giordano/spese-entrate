@@ -210,6 +210,11 @@ Al primo avvio, se il database è vuoto:
   \+ entrate confermate nel portafoglio − spese confermate
   − trasferimenti in uscita + trasferimenti in entrata (`to_wallet_id`)
   \+ rettifiche (con segno). Esclusi cancellati e `pending`.
+  Fonte unica: `walletBalances` / `balanceEffect` in `domain/services/balances.dart`, esposta da
+  `walletBalancesProvider` (selettore del portafoglio, scheda Da/A) e `walletOverviewsProvider`
+  (Portafogli, dettaglio). I widget **osservano** il provider (`ref.watch`, anche dentro il pannello
+  del selettore): mai `ref.read(...).value` di un provider autoDispose, che non osservato è vuoto.
+  Nessun ripiego sul saldo iniziale: finché i saldi non sono pronti non se ne mostra nessuno.
 - **Statistiche** (riepiloghi, grafici, confronti): solo `expense` e `income` con `status = confirmed`.
   Trasferimenti e rettifiche **non contano mai** come spese o entrate.
 - **Patrimonio totale**: somma dei saldi dei portafogli con `include_in_total` e non archiviati.
